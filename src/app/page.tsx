@@ -1,9 +1,24 @@
+
 import Image from "next/image";
+import {Poppins} from "next/font/google";
+
+const font = Poppins({
+    subsets: ["latin"],
+    weight: ["400"],
+});
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <h1>pagina inicial sistema alberi</h1>
+    <main className="bg-[#115C5E] h-screen w-full flex justify-center items-center">
+      <div className="flex">
+            <div>
+
+            </div>
+
+            <div>
+
+            </div>
+      </div>
     </main>
   );
 }
