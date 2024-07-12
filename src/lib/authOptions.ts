@@ -1,5 +1,16 @@
 import CredentialsProvider from "next-auth/providers/credentials";
-import dotenv from 'dotenv';
+import {JWT as NextAuthJWT} from "next-auth/jwt";
+import {Session as NextAuthSession} from "node:inspector";
+
+interface JWT extends NextAuthJWT {
+    id?: string;
+}
+
+interface Session extends NextAuthSession {
+    user: {
+        id?: string;
+    };
+}
 
 export const authOptions= {
     providers: [
@@ -14,7 +25,7 @@ export const authOptions= {
                     return null;
                 }
 
-                const response = await fetch(`${process.env.BACKEND_URL}/auth/login`, {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/login`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -27,15 +38,34 @@ export const authOptions= {
 
                 const user = await response.json();
 
-                if (user && response.ok) {
+                if (user && response.ok)
                     return user;
-                }
-
-                return null;
-            },
-        }),
+                else
+                    return null;
+            }
+        })
     ],
+    session:{
+        strategy: 'jwt' as const,
+    },
+    jwt:{
+        secret: process.env.NEXT_PUBLIC_JWT_SECRET,
+    },
     pages: {
         signIn: '/auth/login',
+    },
+    callbacks:{
+        //@ts-ignore
+        async session({ session, token }) {
+            session.user = token.user;
+            return session;
+        },
+        //@ts-ignore
+        async jwt({ token, user }) {
+            if (user) {
+                token.user = user;
+            }
+            return token;
+        }
     }
 }
