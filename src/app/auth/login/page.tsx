@@ -1,81 +1,171 @@
-'use client'
+'use client';
 
-import { SyntheticEvent, useState } from 'react';
-import { signIn } from 'next-auth/react';
+import Image from "next/image";
+import { Poppins } from "next/font/google";
+import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
-import { loginSchema } from "@/schemas/auth.schema";
 
-type Field = 'cpf' | 'password';
+const font = Poppins({
+    subsets: ["latin"],
+    weight: ["400"],
+});
 
-function LoginForm() {
-    const [cpf, setCpf] = useState<string>('');
-    const [password, setPassword] = useState<string>('');
-    const [errors, setErrors] = useState<{ cpf?: string; password?: string }>({});
+const isValidCPF = (cpf: string) => {
+    cpf = cpf.replace(/[^\d]+/g, '');
+    if (cpf.length !== 11) return false;
 
-    const router = useRouter();
+    let sum = 0;
+    let remainder;
 
-    const validateField = (field: Field, value: string) => {
-        const result = loginSchema.safeParse({ cpf, password, [field]: value });
-        setErrors(prevErrors => ({
-            ...prevErrors,
-            [field]: result.success ? undefined : result.error?.flatten().fieldErrors[field]?.[0]
-        }));
-    };
+    if (cpf === "00000000000") return false;
 
-    async function handleSubmit(event: SyntheticEvent) {
-        event.preventDefault();
-
-        const validation = loginSchema.safeParse({ cpf, password });
-        if (validation.success) {
-            const result = await signIn('credentials', {
-                cpf,
-                password,
-                redirect: false
-            });
-
-            if (result?.error) {
-                console.log(result);
-                return;
-            }
-
-            router.push('/home');
-        } else {
-            setErrors({
-                cpf: validation.error.flatten().fieldErrors.cpf?.[0],
-                password: validation.error.flatten().fieldErrors.password?.[0]
-            });
-        }
+    for (let i = 1; i <= 9; i++) {
+        sum = sum + parseInt(cpf.substring(i-1, i)) * (11 - i);
     }
 
+    remainder = (sum * 10) % 11;
+
+    if ((remainder === 10) || (remainder === 11)) remainder = 0;
+    if (remainder !== parseInt(cpf.substring(9, 10))) return false;
+
+    sum = 0;
+    for (let i = 1; i <= 10; i++) {
+        sum = sum + parseInt(cpf.substring(i-1, i)) * (12 - i);
+    }
+
+    remainder = (sum * 10) % 11;
+
+    if ((remainder === 10) || (remainder === 11)) remainder = 0;
+    if (remainder !== parseInt(cpf.substring(10, 11))) return false;
+
+    return true;
+};
+
+export default function Login() {
+    const [showPassword, setShowPassword] = useState(false);
+    const [cpf, setCpf] = useState('');
+    const [password, setPassword] = useState('');
+    const [cpfError, setCpfError] = useState('');
+    const [loginError, setLoginError] = useState('');
+    const router = useRouter();
+
+    useEffect(() => {
+        if (cpf && !isValidCPF(cpf)) {
+            setCpfError('CPF inválido');
+        } else {
+            setCpfError('');
+        }
+    }, [cpf]);
+
+    const handleSubmit = async (event: { preventDefault: () => void; }) => {
+        event.preventDefault();
+
+        if (!isValidCPF(cpf)) {
+            setCpfError('CPF inválido');
+            return;
+        }
+
+        setCpfError('');
+        setLoginError('');
+
+        const userData = {
+            cpf: cpf,
+            password: password,
+        };
+
+        console.log('Enviando dados do usuário:', userData);
+
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_LOGIN_URL}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(userData),
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao fazer login');
+            }
+
+            const data = await response.json();
+            console.log('Login bem-sucedido:', data);
+            setLoginError('Login bem-sucedido!');
+
+            setTimeout(() => {
+                router.push('/home');
+            }, 2000);
+        } catch (error) {
+            console.error('Erro:', error);
+            setLoginError('Erro ao fazer login');
+        }
+    };
+
     return (
-        <div>
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    placeholder="CPF"
-                    value={cpf}
-                    onChange={(event) => {
-                        setCpf(event.target.value);
-                        validateField('cpf', event.target.value);
-                    }}
+        <main className={`bg-[#115C5E] h-screen w-full flex justify-center items-center ${font.className}`}>
+            <div className="flex flex-col items-center">
+                <Image
+                    src="/logo.png"
+                    alt="Alberi Consult"
+                    width={200}
+                    height={200}
                 />
-                {errors.cpf && <p>{errors.cpf}</p>}
-
-                <input
-                    type="password"
-                    placeholder="Senha"
-                    value={password}
-                    onChange={(event) => {
-                        setPassword(event.target.value);
-                        validateField('password', event.target.value);
-                    }}
-                />
-                {errors.password && <p>{errors.password}</p>}
-
-                <button type="submit">Entrar</button>
-            </form>
-        </div>
+                <div className="bg-white p-8 rounded-lg shadow-md mt-4 w-96">
+                    {loginError && <p className={`text-center mb-4 ${loginError.includes('Erro') ? 'text-red-500' : 'text-green-500'}`}>{loginError}</p>}
+                    <form onSubmit={handleSubmit}>
+                        <div className="mb-4">
+                            <label htmlFor="cpf" className="block text-gray-700">
+                                CPF
+                            </label>
+                            <input
+                                type="text"
+                                id="cpf"
+                                className="mt-1 p-2 w-full border border-gray-300 rounded"
+                                value={cpf}
+                                onChange={(e) => setCpf(e.target.value)}
+                                required
+                            />
+                            {cpfError && <p className="text-red-500 mt-2">{cpfError}</p>}
+                        </div>
+                        <div className="mb-4">
+                            <label htmlFor="password" className="block text-gray-700">
+                                Senha
+                            </label>
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                id="password"
+                                className="mt-1 p-2 w-full border border-gray-300 rounded"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="showPassword"
+                                    checked={showPassword}
+                                    onChange={() => setShowPassword(!showPassword)}
+                                    className="cursor-pointer"
+                                />
+                                <label htmlFor="showPassword" className="ml-2 text-gray-700 cursor-pointer">
+                                    Mostrar Senha
+                                </label>
+                            </div>
+                            <a href="/auth/forgot-password" className="text-gray-700 hover:text-[#115C5E] hover:underline">
+                                Esqueci minha senha
+                            </a>
+                        </div>
+                        <button
+                            type="submit"
+                            className="w-full bg-black text-white p-2 rounded mt-4 hover:bg-gray-800 transition duration-200"
+                        >
+                            Entrar
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
     );
 }
-
-export default LoginForm;

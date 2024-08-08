@@ -12,15 +12,18 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-                                     children,
+                                       children,
                                    }: Readonly<{
     children: React.ReactNode;
 }>) {
     return (
         <html lang="en">
-            <body className={inter.className}>
-                <NextAuthSessionProvider>{children}</NextAuthSessionProvider>
-            </body>
+        <head>
+            <link rel="icon" href="/icon.ico" />
+        </head>
+        <body className={inter.className}>
+            <NextAuthSessionProvider>{children}</NextAuthSessionProvider>
+        </body>
         </html>
     );
 }
