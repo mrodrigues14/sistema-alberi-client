@@ -2,7 +2,7 @@
   "name": "sistema-alberi-client",
   "version": "0.1.0",
   "author": "@Jose1277",
-  "author": "mrodrigues14",
+  "author": "@mrodrigues14",
   "private": true,
   "scripts": {
     "dev": "next dev",

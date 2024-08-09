@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Poppins } from "next/font/google";
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 
 const font = Poppins({
     subsets: ["latin"],
@@ -68,33 +69,21 @@ export default function Login() {
         setCpfError('');
         setLoginError('');
 
-        const userData = {
-            cpf: cpf,
-            password: password,
-        };
-
-        console.log('Enviando dados do usuário:', userData);
-
         try {
-            const response = await fetch(`${process.env.NEXT_PUBLIC_LOGIN_URL}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(userData),
+            const result = await signIn('credentials', {
+                redirect: false,
+                cpf,
+                password,
             });
 
-            if (!response.ok) {
-                throw new Error('Erro ao fazer login');
+            if (result?.error) {
+                setLoginError('Erro ao fazer login');
+            } else {
+                setLoginError('Login bem-sucedido!');
+                setTimeout(() => {
+                    router.push('/home');
+                }, 2000);
             }
-
-            const data = await response.json();
-            console.log('Login bem-sucedido:', data);
-            setLoginError('Login bem-sucedido!');
-
-            setTimeout(() => {
-                router.push('/home');
-            }, 2000);
         } catch (error) {
             console.error('Erro:', error);
             setLoginError('Erro ao fazer login');
