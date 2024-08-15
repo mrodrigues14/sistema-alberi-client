@@ -10,16 +10,20 @@ const font = Poppins({
 });
 
 export default function Navbar() {
-    const { data: session } = useSession();
-    const [usuario, setUsuario] = useState('');
-    const [cliente, setCliente] = useState('');
+    const {data: session} =  useSession();
+    const [usuario, setUsuario] = useState('Carregando...');
 
     useEffect(() => {
-        if(session){
-            // @ts-ignore
-            setUsuario(session.user?.name)
+        if (session && session.user) {
+            console.log("ID do usuário:", session.user.id);
+            console.log("Nome do usuário:", session.user.name);
+            console.log("Role do usuário:", session.user.role);
+            console.log("Token de acesso:", session.accessToken);
+            setUsuario(session.user.name || 'Desconhecido');
+        } else {
+            setUsuario('Usuário não autenticado');
         }
-    });
+    }, [session]);
 
     return (
         <nav className={`bg-white shadow-md py-2 ${font.className}`}>
@@ -43,13 +47,13 @@ export default function Navbar() {
                     <a href="/reportar-falha" className="px-4 py-2 border rounded hover:bg-[#8BACAF] transition">
                         Reportar Falha ou melhoria
                     </a>
-                    <a href="/spa-gata" className="px-4 py-2 border rounded hover:bg-[#8BACAF] transition">
-
+                    <a href="" className="px-4 py-2 border rounded hover:bg-[#8BACAF] transition">
+                        Seletor empresa
                     </a>
                 </div>
                 <div>
-                    <a href="/perfil" className="px-4 py-2 border rounded bg-gray-300 hover:bg-[#8BACAF] transition">
-                        Jos? Felipe Duarte Guedes de Oliveira
+                    <a href="/" className="px-4 py-2 border rounded bg-gray-300 hover:bg-[#8BACAF] transition">
+                        {usuario}
                     </a>
                 </div>
             </div>

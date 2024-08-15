@@ -1,15 +1,12 @@
 import CredentialsProvider from "next-auth/providers/credentials";
 import {JWT as NextAuthJWT} from "next-auth/jwt";
-import {Session as NextAuthSession} from "node:inspector";
+import {Session, Session as NextAuthSession} from "next-auth";
 
 interface JWT extends NextAuthJWT {
     id?: string;
-}
-
-interface Session extends NextAuthSession {
-    user: {
-        id?: string;
-    };
+    username?: string;
+    role?: string;
+    accessToken?: string;
 }
 
 export const authOptions= {
@@ -20,7 +17,7 @@ export const authOptions= {
                 cpf: { label: 'CPF', type: 'text' },
                 password: { label: 'Password', type: 'password' },
             },
-            async authorize(credentials, req) {
+            async authorize(credentials) {
                 if (!credentials) {
                     return null;
                 }
@@ -38,34 +35,50 @@ export const authOptions= {
 
                 const user = await response.json();
 
-                if (user && response.ok)
-                    return user;
-                else
+                if (user && response.ok) {
+                    console.log("Dados do usuário autenticado:", user);
+                    return {
+                        id: user.sub,
+                        name: user.username,
+                        role: user.role,
+                        accessToken: user.access_token,
+                    };
+                } else {
+                    console.log("Autenticação falhou:", user);
                     return null;
+                }
             }
         })
     ],
-    session:{
+    session: {
         strategy: 'jwt' as const,
     },
-    jwt:{
+    jwt: {
         secret: process.env.NEXT_PUBLIC_JWT_SECRET,
     },
     pages: {
         signIn: '/auth/login',
     },
-    callbacks:{
-        //@ts-ignore
-        async session({ session, token }) {
-            session.user = token.user;
-            return session;
-        },
-        //@ts-ignore
-        async jwt({ token, user }) {
+    callbacks: {
+        async jwt({ token, user }: { token: JWT, user?: any }) {
             if (user) {
-                token.user = user;
+                token.id = user.id;
+                token.username = user.name;
+                token.role = user.role;
+                token.accessToken = user.accessToken;
             }
             return token;
+        },
+        async session({ session, token }: { session: Session, token: JWT }) {
+            if(token.id != null && token.username != null && token.role != null && token.accessToken != null) {
+                session.user.id = token.id;
+                session.user.name = token.username;
+                session.user.role = token.role;
+            }
+            if (token.accessToken != null) {
+                session.accessToken = token.accessToken;
+            }
+            return session;
         }
     }
 }
