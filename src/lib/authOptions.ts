@@ -36,7 +36,6 @@ export const authOptions= {
                 const user = await response.json();
 
                 if (user && response.ok) {
-                    console.log("Dados do usuário autenticado:", user);
                     return {
                         id: user.sub,
                         name: user.username,
@@ -44,7 +43,6 @@ export const authOptions= {
                         accessToken: user.access_token,
                     };
                 } else {
-                    console.log("Autenticação falhou:", user);
                     return null;
                 }
             }
