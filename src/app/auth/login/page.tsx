@@ -94,7 +94,7 @@ export default function Login() {
         <main className={`bg-[#115C5E] h-screen w-full flex justify-center items-center ${font.className}`}>
             <div className="flex flex-col items-center">
                 <Image
-                    src="/logo.png"
+                    src="/logo3.png"
                     alt="Alberi Consult"
                     width={200}
                     height={200}

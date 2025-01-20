@@ -19,7 +19,7 @@ export default function RootLayout({
     return (
         <html lang="en">
         <head>
-            <link rel="icon" href="/icon.ico" />
+            <link rel="icon" href="icone_alberi.png" />
         </head>
         <body className={inter.className}>
             <NextAuthSessionProvider>{children}</NextAuthSessionProvider>

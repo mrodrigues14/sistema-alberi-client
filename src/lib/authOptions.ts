@@ -18,34 +18,42 @@ export const authOptions= {
                 password: { label: 'Password', type: 'password' },
             },
             async authorize(credentials) {
-                if (!credentials) {
-                    return null;
-                }
-
-                const response = await fetch(`${process.env.NEXT_PUBLIC_LOGIN_URL}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        cpf: credentials.cpf,
-                        password: credentials.password,
-                    })
-                });
-
-                const user = await response.json();
-
-                if (user && response.ok) {
-                    return {
-                        id: user.sub,
-                        name: user.username,
-                        role: user.role,
-                        accessToken: user.access_token,
-                    };
-                } else {
+                if (!credentials) return null;
+            
+                try {
+                    console.log("Tentando login com CPF:", credentials.cpf);
+            
+                    const response = await fetch(`${process.env.NEXT_PUBLIC_LOGIN_URL}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username: credentials.cpf,
+                            password: credentials.password,
+                        }),
+                    });
+            
+                    console.log("Status da resposta:", response.status);
+            
+                    const user = await response.json();
+                    console.log("Resposta da API:", user);
+            
+                    if (user && response.ok) {
+                        return {
+                            id: user.sub,
+                            name: user.username,
+                            role: user.role,
+                            accessToken: user.access_token,
+                        };
+                    } else {
+                        console.error("Erro ao autorizar:", user);
+                        return null;
+                    }
+                } catch (error) {
+                    console.error("Erro na autenticação:", error);
                     return null;
                 }
             }
+            
         })
     ],
     session: {

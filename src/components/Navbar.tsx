@@ -2,9 +2,9 @@
 
 import { Poppins } from "next/font/google";
 import { useEffect, useState } from "react";
+import Link from 'next/link';
 import { useSession } from "next-auth/react";
 
-// Definindo a interface para Empresa
 interface Empresa {
     IDCLIENTE: number;
     CNPJ: string | null;
@@ -89,59 +89,89 @@ export default function Navbar() {
     };
 
     return (
-        <nav className={`bg-white shadow-md py-2 ${font.className}`}>
+        <nav className={`bg-white flex shadow-md ${font.className}`}>
             <div className="w-full flex justify-between items-center px-10">
+                {/* Seção Esquerda: Logo e Menus */}
                 <div className="flex space-x-2 items-center">
-                    <a href="/home" className="px-4 py-2 border border-r-8 border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center mr-20">
-                        Menu inicial
+                    <a href="/home" className="text-center mr-20 p-0">
+                        <img
+                            src="/icone_imagem.png"
+                            alt="Menu inicial"
+                            className="h-20 object-contain"
+                        />
                     </a>
-                    <div className="flex space-x-2 items-center">
+
+                    <div className="flex space-x-4 items-center">
                         <div className="relative">
-                            <button onClick={() => toggleDropdown('estudos')} className="px-9 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center">
+                            <button
+                                onClick={() => toggleDropdown('estudos')}
+                                className="px-9 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center"
+                            >
                                 Estudos
                             </button>
                             {showDropdown === 'estudos' && (
                                 <div className="absolute bg-white border rounded shadow-lg mt-2 w-full">
-                                    <a href="/estudos/resumo-mensal" className="block px-4 py-2 hover:bg-gray-200">Resumo Mensal</a>
-                                    <a href="/estudos/resumo-financeiro" className="block px-4 py-2 hover:bg-gray-200">Resumo Financeiro</a>
-                                    <a href="/estudos/resumo-anual" className="block px-4 py-2 hover:bg-gray-200">Resumo Anual</a>
-                                    <a href="/estudos/resumo-faturamento" className="block px-4 py-2 hover:bg-gray-200">Resumo Faturamento Mensal</a>
-                                    <a href="/estudos/resumo-conta" className="block px-4 py-2 hover:bg-gray-200">Resumo da Conta</a>
+                                    <a href="/estudos/resumo-mensal" className="block px-4 py-2 hover:bg-gray-200">
+                                        Resumo Mensal
+                                    </a>
+                                    <a href="/estudos/resumo-financeiro" className="block px-4 py-2 hover:bg-gray-200">
+                                        Resumo Financeiro
+                                    </a>
+                                    <a href="/estudos/resumo-anual" className="block px-4 py-2 hover:bg-gray-200">
+                                        Resumo Anual
+                                    </a>
+                                    <a href="/estudos/resumo-faturamento" className="block px-4 py-2 hover:bg-gray-200">
+                                        Resumo Faturamento Mensal
+                                    </a>
+                                    <a href="/estudos/resumo-conta" className="block px-4 py-2 hover:bg-gray-200">
+                                        Resumo da Conta
+                                    </a>
                                     <a href="/estudos/metas" className="block px-4 py-2 hover:bg-gray-200">Metas</a>
                                 </div>
                             )}
                         </div>
+
                         <div className="relative">
-                            <button onClick={() => toggleDropdown('extrato-bancario')} className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center">
-                                Extrato bancário
-                            </button>
-                            {showDropdown === 'extrato-bancario' && (
-                                <div className="absolute bg-white border rounded shadow-lg mt-2 w-full">
-                                    <a href="/extrato-bancario/inserir" className="block px-4 py-2 hover:bg-gray-200">Inserir extrato</a>
-                                    <a href="/extrato-bancario/consultar" className="block px-4 py-2 hover:bg-gray-200">Consultar extrato</a>
-                                    <a href="/extrato-bancario/rubricas" className="block px-4 py-2 hover:bg-gray-200">Rubricas</a>
-                                    <a href="/extrato-bancario/adicionar-fornecedor" className="block px-4 py-2 hover:bg-gray-200">Adicionar fornecedor</a>
-                                    <a href="/extrato-bancario/adicionar-banco" className="block px-4 py-2 hover:bg-gray-200">Adicionar Banco</a>
-                                </div>
-                            )}
-                        </div>
+            <Link
+                href="/extrato"
+                className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center"
+            >
+                Extrato bancário
+            </Link>
+        </div>
+
                         <div className="relative">
-                            <button onClick={() => toggleDropdown('configuracao-cliente')} className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center">
+                            <button
+                                onClick={() => toggleDropdown('configuracao-cliente')}
+                                className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center"
+                            >
                                 Configuração de Cliente
                             </button>
                             {showDropdown === 'configuracao-cliente' && (
                                 <div className="absolute bg-white border rounded shadow-lg mt-2 w-full">
-                                    <a href="/configuracao-cliente/cadastro" className="block px-4 py-2 hover:bg-gray-200">Cadastro de Cliente</a>
-                                    <a href="/configuracao-cliente/editar" className="block px-4 py-2 hover:bg-gray-200">Editar Cliente</a>
+                                    <a href="/configuracao-cliente/cadastro" className="block px-4 py-2 hover:bg-gray-200">
+                                        Cadastro de Cliente
+                                    </a>
+                                    <a href="/configuracao-cliente/editar" className="block px-4 py-2 hover:bg-gray-200">
+                                        Editar Cliente
+                                    </a>
                                 </div>
                             )}
                         </div>
-                        <a href="/reportar-falha" className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center">
+
+                        <a
+                            href="/reportar-falha"
+                            className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center"
+                        >
                             Reportar Falha ou Melhoria
                         </a>
+
                         <div className="relative">
-                            <button onClick={() => toggleDropdown('seletor-empresa')} className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center">
-                                {selectedEmpresa ? selectedEmpresa.NOME : "Seletor empresa"}
+                            <button
+                                onClick={() => toggleDropdown('seletor-empresa')}
+                                className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center"
+                            >
+                                {selectedEmpresa ? selectedEmpresa.NOME : 'Seletor empresa'}
                             </button>
                             {showDropdown === 'seletor-empresa' && (
                                 <div className="absolute bg-white border rounded shadow-lg mt-2 w-[300px]">
@@ -167,12 +197,19 @@ export default function Navbar() {
                         </div>
                     </div>
                 </div>
-                <div>
-                    <a href="/perfil" className="px-4 py-2 border border-gray-300 rounded bg-gray-300 hover:bg-[#8BACAF] transition shadow-md text-center">
+
+                {/* Seção Direita: Botão de Perfil */}
+                
+            </div>
+            <div className=" flex items-center justify-center px-8" style={{backgroundColor: '#2d3692'}}>
+            <a
+                        href="/perfil"
+                        className="px-4 py-2 border border-gray-300 rounded bg-white hover:bg-[#8BACAF] transition shadow-md text-center"
+                    >
                         {usuario}
                     </a>
                 </div>
-            </div>
         </nav>
+
     );
 }

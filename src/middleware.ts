@@ -4,7 +4,6 @@ import type { NextRequest } from 'next/server';
 export function middleware(req: NextRequest) {
     const loginPage = '/auth/login';
 
-    // Define as rotas protegidas
     const protectedRoutes = ['/home'];
 
     if (protectedRoutes.some(route => req.nextUrl.pathname.startsWith(route))) {

@@ -1,7 +1,6 @@
 {
   "name": "sistema-alberi-client",
   "version": "0.1.0",
-  "author": "@Jose1277",
   "author": "@mrodrigues14",
   "private": true,
   "scripts": {
@@ -18,6 +17,8 @@
     "next-auth": "^4.24.7",
     "react": "^18",
     "react-dom": "^18",
+    "react-icons": "^5.4.0",
+    "react-router-dom": "^7.1.3",
     "zod": "^3.23.8"
   },
   "devDependencies": {
