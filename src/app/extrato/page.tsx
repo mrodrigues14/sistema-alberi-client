@@ -93,25 +93,25 @@ const Extrato: React.FC = () => {
                 </div>
             </div>
             <div className="mt-8 w-full px-10 flex">
-    <div className="ml-auto flex items-center space-x-4">
-        <div className="text-center">
-            <div className="bg-blue-700 text-white px-4 py-2 rounded-t">
-                Saldo Inicial
+                <div className="ml-auto flex items-center space-x-4">
+                    <div className="text-center">
+                        <div className="bg-blue-700 text-white px-4 py-2 rounded-t">
+                            Saldo Inicial
+                        </div>
+                        <div className="border px-4 py-2 rounded-b">
+                            0,00
+                        </div>
+                    </div>
+                    <div className="text-center">
+                        <div className="bg-blue-700 text-white px-4 py-2 rounded-t">
+                            Saldo Final
+                        </div>
+                        <div className="border px-4 py-2 rounded-b">
+                            0,00
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div className="border px-4 py-2 rounded-b">
-                0,00
-            </div>
-        </div>
-        <div className="text-center">
-            <div className="bg-blue-700 text-white px-4 py-2 rounded-t">
-                Saldo Final
-            </div>
-            <div className="border px-4 py-2 rounded-b">
-                0,00
-            </div>
-        </div>
-    </div>
-</div>
 
             <div className="mt-16 w-full flex justify-between items-center px-10">
                 <div className="flex space-x-4">
@@ -151,9 +151,9 @@ const Extrato: React.FC = () => {
                 </div>
             </div>
             <div className='flex justify-center items-center mt-8'>
-                <Calendario/>
+                <Calendario />
             </div>
-            <div>            <TabelaExtrato/>
+            <div>            <TabelaExtrato />
             </div>
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">

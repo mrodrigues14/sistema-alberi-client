@@ -102,10 +102,18 @@ export default function Navbar() {
                     </a>
 
                     <div className="flex space-x-4 items-center">
+                    <div className="relative">
+                            <Link
+                                href="/kanban"
+                                className="px-4 py-2 border border-gray-300 rounded  hover:bg-[#2d3692] hover:text-white transition shadow-md text-center"
+                            >
+                                Tarefas
+                            </Link>
+                        </div>
                         <div className="relative">
                             <button
                                 onClick={() => toggleDropdown('estudos')}
-                                className="px-9 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center"
+                                className="px-9 py-2 border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md text-center"
                             >
                                 Estudos
                             </button>
@@ -132,18 +140,18 @@ export default function Navbar() {
                         </div>
 
                         <div className="relative">
-            <Link
-                href="/extrato"
-                className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center"
-            >
-                Extrato bancário
-            </Link>
-        </div>
+                            <Link
+                                href="/extrato"
+                                className="px-4 py-2 border border-gray-300 rounded  hover:bg-[#2d3692] hover:text-white transition shadow-md text-center"
+                            >
+                                Extrato bancário
+                            </Link>
+                        </div>
 
                         <div className="relative">
                             <button
                                 onClick={() => toggleDropdown('configuracao-cliente')}
-                                className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center"
+                                className="px-4 py-2 border border-gray-300 rounded  hover:bg-[#2d3692] hover:text-white transition shadow-md text-center"
                             >
                                 Configuração de Cliente
                             </button>
@@ -161,7 +169,7 @@ export default function Navbar() {
 
                         <a
                             href="/reportar-falha"
-                            className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center"
+                            className="px-4 py-2 border border-gray-300 rounded  hover:bg-[#2d3692] hover:text-white transition shadow-md text-center"
                         >
                             Reportar Falha ou Melhoria
                         </a>
@@ -199,16 +207,16 @@ export default function Navbar() {
                 </div>
 
                 {/* Seção Direita: Botão de Perfil */}
-                
+
             </div>
-            <div className=" flex items-center justify-center px-8" style={{backgroundColor: '#2d3692'}}>
-            <a
-                        href="/perfil"
-                        className="px-4 py-2 border border-gray-300 rounded bg-white hover:bg-[#8BACAF] transition shadow-md text-center"
-                    >
-                        {usuario}
-                    </a>
-                </div>
+            <div className=" flex items-center justify-center px-8" style={{ backgroundColor: '#2d3692' }}>
+                <a
+                    href="/perfil"
+                    className="px-4 py-2 border border-gray-300 rounded bg-white hover:bg-[#8BACAF] transition shadow-md text-center"
+                >
+                    {usuario}
+                </a>
+            </div>
         </nav>
 
     );

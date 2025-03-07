@@ -11,44 +11,45 @@ const font = Poppins({
     weight: ["400"],
 });
 
-const isValidCPF = (cpf: string) => {
-    cpf = cpf.replace(/[^\d]+/g, '');
-    if (cpf.length !== 11) return false;
-
-    let sum = 0;
-    let remainder;
-
-    if (cpf === "00000000000") return false;
-
-    for (let i = 1; i <= 9; i++) {
-        sum = sum + parseInt(cpf.substring(i - 1, i)) * (11 - i);
-    }
-
-    remainder = (sum * 10) % 11;
-
-    if ((remainder === 10) || (remainder === 11)) remainder = 0;
-    if (remainder !== parseInt(cpf.substring(9, 10))) return false;
-
-    sum = 0;
-    for (let i = 1; i <= 10; i++) {
-        sum = sum + parseInt(cpf.substring(i - 1, i)) * (12 - i);
-    }
-
-    remainder = (sum * 10) % 11;
-
-    if ((remainder === 10) || (remainder === 11)) remainder = 0;
-    if (remainder !== parseInt(cpf.substring(10, 11))) return false;
-
-    return true;
-};
-
 export default function Login() {
     const [showPassword, setShowPassword] = useState(false);
     const [cpf, setCpf] = useState('');
     const [password, setPassword] = useState('');
     const [cpfError, setCpfError] = useState('');
     const [loginError, setLoginError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
+
+    const isValidCPF = (cpf: string) => {
+        cpf = cpf.replace(/[^\d]+/g, '');
+        if (cpf.length !== 11) return false;
+
+        let sum = 0;
+        let remainder;
+
+        if (cpf === "00000000000") return false;
+
+        for (let i = 1; i <= 9; i++) {
+            sum = sum + parseInt(cpf.substring(i - 1, i)) * (11 - i);
+        }
+
+        remainder = (sum * 10) % 11;
+
+        if (remainder === 10 || remainder === 11) remainder = 0;
+        if (remainder !== parseInt(cpf.substring(9, 10))) return false;
+
+        sum = 0;
+        for (let i = 1; i <= 10; i++) {
+            sum = sum + parseInt(cpf.substring(i - 1, i)) * (12 - i);
+        }
+
+        remainder = (sum * 10) % 11;
+
+        if (remainder === 10 || remainder === 11) remainder = 0;
+        if (remainder !== parseInt(cpf.substring(10, 11))) return false;
+
+        return true;
+    };
 
     useEffect(() => {
         if (cpf && !isValidCPF(cpf)) {
@@ -68,7 +69,7 @@ export default function Login() {
 
         setCpfError('');
         setLoginError('');
-
+        setIsLoading(true);
         try {
             const result = await signIn('credentials', {
                 redirect: false,
@@ -78,6 +79,7 @@ export default function Login() {
 
             if (result?.error) {
                 setLoginError('Erro ao fazer login');
+                setIsLoading(false);
             } else {
                 setLoginError('Login bem-sucedido!');
                 setTimeout(() => {
@@ -87,22 +89,23 @@ export default function Login() {
         } catch (error) {
             console.error('Erro:', error);
             setLoginError('Erro ao fazer login');
+            setIsLoading(false);
         }
+
     };
 
     return (
         <main className={`bg-[#2d3692] h-screen w-full flex justify-center items-center ${font.className}`}>
-            <div className="flex flex-col items-center" style={{
-                marginTop: '-13rem',
-            }}>
+            <div className="flex flex-col items-center" style={{ marginTop: '-13rem' }}>
                 <Image
                     src="/logo3.png"
                     alt="Alberi Consult"
-                    width={380}
-                    height={200}
+                    width={680}
+                    height={300}
                     style={{
                         filter: 'brightness(0) invert(1)',
-                        marginBottom: '-4rem',
+                        marginBottom: '-10rem',
+                        marginTop: '-7rem',
                     }}
                 />
                 <div className="bg-white p-8 rounded-lg shadow-md mt-4 w-96">
@@ -154,10 +157,16 @@ export default function Login() {
                         </div>
                         <button
                             type="submit"
-                            className="w-full bg-black text-white p-2 rounded mt-4 hover:bg-gray-800 transition duration-200"
+                            className="w-full bg-black text-white p-2 rounded mt-4 hover:bg-gray-800 transition duration-200 flex justify-center items-center"
+                            disabled={isLoading}
                         >
-                            Entrar
+                            {isLoading ? (
+                                <div className="spinner-border animate-spin inline-block w-6 h-6 border-2 rounded-full border-white border-t-transparent"></div>
+                            ) : (
+                                "Entrar"
+                            )}
                         </button>
+
                     </form>
                 </div>
             </div>
