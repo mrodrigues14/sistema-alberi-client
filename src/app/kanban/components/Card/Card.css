@@ -1,5 +1,5 @@
 .custom__card {
-  background-color: var(--card-color);
+  background-color: #d2d4d6 !important; /* Azul */
   border-radius: 3px;
   box-shadow: 0px 2px var(--card-box-shadow);
   margin-inline: auto;

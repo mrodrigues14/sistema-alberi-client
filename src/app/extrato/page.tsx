@@ -17,23 +17,86 @@ const Extrato: React.FC = () => {
 
     const [bancoSelecionado, setBancoSelecionado] = useState<number | null>(null);
     const [metodoInsercao, setMetodoInsercao] = useState<string>("");
-    const [isModalOpen, setIsModalOpen] = useState(false);
-
+    const [dadosTabela, setDadosTabela] = useState([
+        {
+            id: 1,
+            data: "12/03/2024",
+            rubricaSelecionada: "Salários",
+            fornecedorSelecionado: "Empresa XPTO",
+            observacao: "Pagamento mensal",
+            nomeExtrato: "Folha de pagamento",
+            rubricaContabil: "Despesas Fixas",
+            entrada: "",
+            saida: "5.000,00"
+        },
+        {
+            id: 2,
+            data: "15/03/2024",
+            rubricaSelecionada: "Impostos",
+            fornecedorSelecionado: "Receita Federal",
+            observacao: "Pagamento de impostos",
+            nomeExtrato: "IRPJ",
+            rubricaContabil: "Tributos",
+            entrada: "",
+            saida: "1.200,00"
+        },
+        {
+            id: 3,
+            data: "18/03/2024",
+            rubricaSelecionada: "Materiais",
+            fornecedorSelecionado: "Loja ABC",
+            observacao: "Compra de insumos",
+            nomeExtrato: "Compra de papel",
+            rubricaContabil: "Despesas Variáveis",
+            entrada: "",
+            saida: "350,00"
+        },
+        {
+            id: 4,
+            data: "20/03/2024",
+            rubricaSelecionada: "Marketing",
+            fornecedorSelecionado: "Agência Criativa",
+            observacao: "Campanha publicitária",
+            nomeExtrato: "Publicidade",
+            rubricaContabil: "Investimentos",
+            entrada: "",
+            saida: "2.500,00"
+        },
+        {
+            id: 5,
+            data: "22/03/2024",
+            rubricaSelecionada: "Recebimentos",
+            fornecedorSelecionado: "Cliente Y",
+            observacao: "Pagamento de serviço prestado",
+            nomeExtrato: "Fatura #1234",
+            rubricaContabil: "Receitas",
+            entrada: "8.000,00",
+            saida: ""
+        },
+        {
+            id: 6,
+            data: "25/03/2024",
+            rubricaSelecionada: "Aluguel",
+            fornecedorSelecionado: "Imobiliária ABC",
+            observacao: "Pagamento mensal",
+            nomeExtrato: "Aluguel da sede",
+            rubricaContabil: "Despesas Fixas",
+            entrada: "",
+            saida: "4.200,00"
+        },
+    ]);
+    
     const handleBancoChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         setBancoSelecionado(Number(event.target.value));
     };
 
     const handleInsercaoChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const value = event.target.value;
-        setMetodoInsercao(value);
-
-        if (value === 'manual') {
-            setIsModalOpen(true);
-        }
+        setMetodoInsercao(event.target.value);
     };
 
-    const toggleModal = () => {
-        setIsModalOpen(!isModalOpen);
+    // Adiciona entrada na tabela de extrato
+    const adicionarEntrada = (novaEntrada: any) => {
+        setDadosTabela((prevDados) => [...prevDados, novaEntrada]);
     };
 
     return (
@@ -48,9 +111,7 @@ const Extrato: React.FC = () => {
                         value={bancoSelecionado || ''}
                         onChange={handleBancoChange}
                     >
-                        <option value="" disabled>
-                            Selecione o Banco
-                        </option>
+                        <option value="" disabled>Selecione o Banco</option>
                         {bancos.map((banco) => (
                             <option key={banco.id} value={banco.id}>
                                 {banco.nome}
@@ -69,120 +130,63 @@ const Extrato: React.FC = () => {
                     </select>
 
                     {metodoInsercao === 'importar' && (
-                        <button
-                            className="px-4 py-2 border rounded shadow-md hover:bg-gray-100 transition"
-                        >
+                        <button className="px-4 py-2 border rounded shadow-md hover:bg-gray-100 transition">
                             Download Template
                         </button>
                     )}
                 </div>
 
                 <div className="flex space-x-4 mt-8">
-                    <button
-                        className="flex items-center justify-center w-12 h-12 bg-red-500 text-white rounded-full hover:bg-red-600 transition shadow-md"
-                        title="Gerar PDF"
-                    >
+                    <button className="flex items-center justify-center w-12 h-12 bg-red-500 text-white rounded-full hover:bg-red-600 transition shadow-md" title="Gerar PDF">
                         <FaFilePdf size={24} />
                     </button>
-                    <button
-                        className="flex items-center justify-center w-12 h-12 bg-green-500 text-white rounded-full hover:bg-green-600 transition shadow-md"
-                        title="Gerar Excel"
-                    >
+                    <button className="flex items-center justify-center w-12 h-12 bg-green-500 text-white rounded-full hover:bg-green-600 transition shadow-md" title="Gerar Excel">
                         <FaFileExcel size={24} />
                     </button>
                 </div>
-            </div>
-            <div className="mt-8 w-full px-10 flex">
-                <div className="ml-auto flex items-center space-x-4">
-                    <div className="text-center">
-                        <div className="bg-blue-700 text-white px-4 py-2 rounded-t">
-                            Saldo Inicial
-                        </div>
-                        <div className="border px-4 py-2 rounded-b">
-                            0,00
-                        </div>
+
+                {/* Inserção Manual será exibida aqui se selecionado */}
+                {metodoInsercao === "manual" && (
+                    <div className="p-6 border rounded shadow-md mt-6">
+                        <h2 className="text-xl font-bold mb-4">Inserção Manual</h2>
+                        <InsercaoManual adicionarEntrada={adicionarEntrada} />
                     </div>
-                    <div className="text-center">
-                        <div className="bg-blue-700 text-white px-4 py-2 rounded-t">
-                            Saldo Final
-                        </div>
-                        <div className="border px-4 py-2 rounded-b">
-                            0,00
-                        </div>
-                    </div>
-                </div>
+                )}
             </div>
+            
 
             <div className="mt-16 w-full flex justify-between items-center px-10">
                 <div className="flex space-x-4">
-                    <button
-                        className="px-4 py-2 border rounded hover:bg-gray-100 transition"
-                    >
+                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
                         Adicionar Rubricas
                     </button>
-                    <button
-                        className="px-4 py-2 border rounded hover:bg-gray-100 transition"
-                    >
+                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
                         Adicionar Fornecedor
                     </button>
-                    <button
-                        className="px-4 py-2 border rounded hover:bg-gray-100 transition"
-                    >
+                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
                         Adicionar Banco
                     </button>
                 </div>
 
                 <div className="flex space-x-4">
-                    <button
-                        className="px-4 py-2 border rounded hover:bg-gray-100 transition"
-                    >
+                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
                         Selecionar Todos
                     </button>
-                    <button
-                        className="px-4 py-2 border rounded hover:bg-gray-100 transition"
-                    >
+                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
                         Deletar Selecionados
                     </button>
-                    <button
-                        className="px-4 py-2 border rounded hover:bg-gray-100 transition"
-                    >
+                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
                         Editar Todas as Linhas
                     </button>
                 </div>
-            </div>
+            </div>   
             <div className='flex justify-center items-center mt-8'>
                 <Calendario />
             </div>
-            <div>            <TabelaExtrato />
+                
+            <div className="mt-8 w-full px-10">
+                <TabelaExtrato dados={dadosTabela} />
             </div>
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-                    <div className="bg-white w-11/12 max-w-4xl p-6 rounded shadow-md">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold">Inserção Manual</h2>
-                            <button
-                                className="text-red-600 font-bold"
-                                onClick={toggleModal}
-                            >
-                                Fechar
-                            </button>
-                        </div>
-
-                        <div className="overflow-auto">
-                            <InsercaoManual></InsercaoManual>
-                        </div>
-
-                        <div className="mt-4 flex justify-end">
-                            <button
-                                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-                                onClick={toggleModal}
-                            >
-                                Salvar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </>
     );
 };

@@ -3,22 +3,20 @@ import {
   Calendar,
   Check,
   CheckSquare,
-  Clock,
   CreditCard,
   List,
   Plus,
-  Tag,
-  Trash,
   Type,
   X,
+  Star, Tag, Clock, Trash, User, Briefcase
 } from "react-feather";
 import Editable from "../../Editable/Editable";
 import Modal from "../../Modal/Modal";
 import "./CardDetails.css";
 import { v4 as uuidv4 } from "uuid";
 import Label from "../../Label/Label";
+import { useCallback } from "react";
 
-// Definindo tipos para as props
 interface Task {
   id: string;
   task: string;
@@ -37,9 +35,12 @@ interface CardDetailsProps {
     title: string;
     tags: Tag[];
     task: Task[];
+    priority: number;
+    executor?: string;
+    company?: string;
   };
   bid: string;
-  updateCard?: (bid: string, cardId: string, updatedCard: any) => void;
+  updateCard: (updatedCard: any) => void;
   removeCard: (bid: string, cardId: string) => void;
   onClose: () => void;
 }
@@ -47,25 +48,36 @@ interface CardDetailsProps {
 export default function CardDetails(props: CardDetailsProps) {
   const colors = ["#61bd4f", "#f2d600", "#ff9f1a", "#eb5a46", "#c377e0"];
 
-  const [values, setValues] = useState({ ...props.card });
+  const [values, setValues] = useState(() => {
+    if (typeof window !== "undefined") {
+      const savedCard = localStorage.getItem(`card-${props.card.id}`);
+      return savedCard ? JSON.parse(savedCard) : { ...props.card };
+    }
+    return { ...props.card };
+  });
   const [input, setInput] = useState(false);
   const [text, setText] = useState(values.title);
   const [labelShow, setLabelShow] = useState(false);
 
   const Input = (props: { title: string }) => {
     return (
-      <div>
-        <input
-          autoFocus
-          defaultValue={text}
-          type={"text"}
-          onChange={(e) => {
-            setText(e.target.value);
-          }}
-        />
-      </div>
+      <input
+        autoFocus
+        defaultValue={text}
+        type="text"
+        onBlur={() => {
+          if (text !== values.title) { 
+            updateTitle(text);
+          }
+          setInput(false);
+        }}
+        onChange={(e) => {
+          setText(e.target.value);
+        }}
+      />
     );
   };
+  
 
   const addTask = (value: string) => {
     values.task.push({
@@ -77,7 +89,7 @@ export default function CardDetails(props: CardDetailsProps) {
   };
 
   const removeTask = (id: string) => {
-    const remaningTask = values.task.filter((item) => item.id !== id);
+    const remaningTask = values.task.filter((item: Task) => item.id !== id);
     setValues({ ...values, task: remaningTask });
   };
 
@@ -89,26 +101,37 @@ export default function CardDetails(props: CardDetailsProps) {
   };
 
   const updateTask = (id: string) => {
-    const taskIndex = values.task.findIndex((item) => item.id === id);
+    const taskIndex = values.task.findIndex((item: Task) => item.id === id);
     values.task[taskIndex].completed = !values.task[taskIndex].completed;
     setValues({ ...values });
   };
 
-  const updateTitle = (value: string) => {
-    setValues({ ...values, title: value });
-  };
+  const updateTitle = useCallback((value: string) => {
+    setValues((prevValues: typeof values) => {
+      const updatedValues: typeof values = { ...prevValues, title: value };
+
+      props.updateCard(updatedValues); // Atualiza o card globalmente
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem(`card-${updatedValues.id}`, JSON.stringify(updatedValues));
+      }
+
+      return updatedValues;
+    });
+  }, [props]);
+  
 
   const calculatePercent = () => {
     const totalTask = values.task.length;
     const completedTask = values.task.filter(
-      (item) => item.completed === true
+      (item: Task) => item.completed === true
     ).length;
 
     return Math.floor((completedTask * 100) / totalTask) || 0;
   };
 
   const removeTag = (id: string) => {
-    const tempTag = values.tags.filter((item) => item.id !== id);
+    const tempTag = values.tags.filter((item: Tag) => item.id !== id);
     setValues({
       ...values,
       tags: tempTag,
@@ -125,26 +148,35 @@ export default function CardDetails(props: CardDetailsProps) {
     setValues({ ...values });
   };
 
-  const handelClickListner = (e: KeyboardEvent) => {
+  const handelClickListner = useCallback((e: KeyboardEvent) => {
     if (e.code === "Enter") {
       setInput(false);
       updateTitle(text === "" ? values.title : text);
     } else return;
-  };
+  }, [text, values.title, updateTitle]);
 
   useEffect(() => {
     document.addEventListener("keypress", handelClickListner);
     return () => {
       document.removeEventListener("keypress", handelClickListner);
     };
-  });
+  }, [text, values.title, handelClickListner]);
+
+  const { updateCard } = props;
 
   useEffect(() => {
-    if (props.updateCard) props.updateCard(props.bid, values.id, values);
-  }, [values]);
+    updateCard(values);
+  
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`card-${values.id}`, JSON.stringify(values));
+    }
+  }, [values, updateCard]);
 
   return (
-    <Modal onClose={props.onClose}>
+    <Modal onClose={() => {
+      props.updateCard(values);
+      props.onClose();
+    }}>
       <div className="local__bootstrap">
         <div
           className="container"
@@ -169,13 +201,13 @@ export default function CardDetails(props: CardDetailsProps) {
           </div>
           <div className="row">
             <div className="col-8">
-              <h6 className="text-justify">Label</h6>
+              <h6 className="text-justify">Etiqueta</h6>
               <div
                 className="d-flex label__color flex-wrap"
                 style={{ width: "500px", paddingRight: "10px" }}
               >
                 {values.tags.length !== 0 ? (
-                  values.tags.map((item) => (
+                  values.tags.map((item: Tag) => (
                     <span
                       key={item.id}
                       className="d-flex justify-content-between align-items-center gap-2"
@@ -195,7 +227,7 @@ export default function CardDetails(props: CardDetailsProps) {
                     style={{ color: "#ccc" }}
                     className="d-flex justify-content-between align-items-center gap-2"
                   >
-                    <i> No Labels</i>
+                    <i> Sem etiquetas</i>
                   </span>
                 )}
               </div>
@@ -203,11 +235,11 @@ export default function CardDetails(props: CardDetailsProps) {
                 <div className="d-flex align-items-end  justify-content-between">
                   <div className="d-flex align-items-center gap-2">
                     <CheckSquare className="icon__md" />
-                    <h6>Check List</h6>
+                    <h6>Lista de Tarefas</h6>
                   </div>
                   <div className="card__action__btn">
                     <button onClick={() => deleteAllTask()}>
-                      Delete all tasks
+                     Excluir todas as tarefas
                     </button>
                   </div>
                 </div>
@@ -228,7 +260,7 @@ export default function CardDetails(props: CardDetailsProps) {
 
                 <div className="my-2">
                   {values.task.length !== 0 ? (
-                    values.task.map((item) => (
+                    values.task.map((item: Task) => (
                       <div
                         key={item.id}
                         className="task__list d-flex align-items-start gap-2"
@@ -243,9 +275,8 @@ export default function CardDetails(props: CardDetailsProps) {
                         />
 
                         <h6
-                          className={`flex-grow-1 ${
-                            item.completed === true ? "strike-through" : ""
-                          }`}
+                          className={`flex-grow-1 ${item.completed === true ? "strike-through" : ""
+                            }`}
                         >
                           {item.task}
                         </h6>
@@ -275,14 +306,58 @@ export default function CardDetails(props: CardDetailsProps) {
               </div>
             </div>
             <div className="col-4">
-              <h6>Add to card</h6>
+              <h6>Adicionar ao cartão</h6>
               <div className="d-flex card__action__btn flex-column gap-2">
                 <button onClick={() => setLabelShow(true)}>
                   <span className="icon__sm">
                     <Tag />
                   </span>
-                  Add Label
+                  Adicionar Etiqueta
                 </button>
+                {/* Prioridade (estrelas) */}
+                <h6>Priority</h6>
+                <div className="priority-stars">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      className={values.priority >= star ? "star selected" : "star"}
+                      fill={values.priority >= star ? "gold" : "gray"} // Apenas a estrela será preenchida
+                      stroke="none" // Remove o contorno preto
+                      onClick={() => setValues({ ...values, priority: star })}
+                    />
+                  ))}
+                </div>
+
+                {/* Executor */}
+                <h6>Responsável</h6>
+                <select
+                  className="select-field"
+                  value={values.executor || ""}
+                  onChange={(e) => setValues({ ...values, executor: e.target.value })}
+                >
+                  <option value="" disabled>Selecione um responsável</option>
+                  {["João Silva", "Maria Oliveira", "Carlos Santos", "Ana Souza"].map((executor) => (
+                    <option key={executor} value={executor}>
+                      {executor}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Empresa */}
+                <h6>Empresa</h6>
+                <select
+                  className="select-field"
+                  value={values.company || ""}
+                  onChange={(e) => setValues({ ...values, company: e.target.value })}
+                >
+                  <option value="" disabled>Selecione uma empresa</option>
+                  {["Empresa A", "Empresa B", "Empresa C", "Empresa D"].map((company) => (
+                    <option key={company} value={company}>
+                      {company}
+                    </option>
+                  ))}
+                </select>
+
                 {labelShow && (
                   <Label
                     color={colors}
@@ -295,14 +370,14 @@ export default function CardDetails(props: CardDetailsProps) {
                   <span className="icon__sm">
                     <Clock />
                   </span>
-                  Date
+                  Data
                 </button>
 
                 <button onClick={() => props.removeCard(props.bid, values.id)}>
                   <span className="icon__sm">
                     <Trash />
                   </span>
-                  Delete Card
+                  Excluir Cartão
                 </button>
               </div>
             </div>
@@ -312,3 +387,5 @@ export default function CardDetails(props: CardDetailsProps) {
     </Modal>
   );
 }
+
+// Removed the conflicting local declaration of useCallback

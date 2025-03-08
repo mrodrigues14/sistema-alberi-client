@@ -1,142 +1,121 @@
-.popover__wrapper {
-  position: absolute;
-  left: 55%;
-  top: 55%;
-  width: 400px;
-  max-width: 45%;
-  display: flex;
-  justify-content: center;
-  background-color: #fff;
-  align-items: center;
-  z-index: 30;
+.label-modal {
+  position: fixed;
+  top: 65%;
+  left: 65%;
+  transform: translate(-50%, -50%);
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0px 8px 24px rgba(0, 0, 0, 0.15);
+  width: 340px;
+  padding: 20px;
+  z-index: 1000;
 }
-.popover__content {
-  /* overflow-y: auto; */
-  max-height: 95vh;
-  box-shadow: 1px 1px 20px rgba(0, 0, 0, 0.12);
 
-  border-radius: 3px;
-  width: 100%;
-  padding-inline: 0.5rem;
+.label-container {
+  display: flex;
+  flex-direction: column;
 }
-.label__heading {
-  border-bottom: 1px solid #ccc;
-  height: 25px;
+
+.label-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 10px;
 }
-.label__input > input {
-  width: 100% !important;
-  -webkit-appearance: none;
-  background-color: #fafbfc;
-  border: none;
-  border-radius: 3px;
-  box-shadow: inset 0 0 0 2px #dfe1e6;
-  box-sizing: border-box;
-  display: block;
-  line-height: 20px;
-  margin-bottom: 12px;
-  outline: none;
-  padding: 8px 12px;
-  transition-duration: 85ms;
-  transition-property: background-color, border-color, box-shadow;
-  transition-timing-function: ease;
+
+.label-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: bold;
 }
-.color__palette > span {
-  height: 32px;
-  box-sizing: border-box;
-  min-width: 52px;
-  width: auto;
-  padding: 0px 12px;
-  display: block;
-  border-radius: 3px;
-  font-weight: 600;
-  color: #fff;
-  line-height: 28px;
-  float: left;
-  margin: 0px 4px 4px 0px;
-}
-.icon__sm {
-  height: 20px;
-  width: 20px;
-}
-.create__btn {
-  background-color: #0079bf;
-  height: 2rem;
-  color: white;
-  font-size: 15px;
-  border: none;
-  border-radius: 3px;
-  margin-bottom: 5px;
-}
-.create__btn:hover {
-  background-color: #026aa7;
+
+.close-icon {
   cursor: pointer;
+  color: #6b6b6b;
+  transition: color 0.2s;
 }
-.h1,
-.h2,
-.h3,
-.h4,
-.h5,
-.h6,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  line-height: 1.2;
+
+.close-icon:hover {
+  color: #000;
 }
-.h1,
-h1 {
-  font-size: calc(1.375rem + 1.5vw);
+
+.label-body {
+  margin-top: 15px;
 }
-@media (min-width: 1200px) {
-  .h1,
-  h1 {
-    font-size: 2.5rem;
-  }
+
+.label-text {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 6px;
 }
-.h2,
-h2 {
-  font-size: calc(1.325rem + 0.9vw);
+
+.label-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s ease-in-out;
 }
-@media (min-width: 1200px) {
-  .h2,
-  h2 {
-    font-size: 2rem;
-  }
+
+.label-input:focus {
+  border-color: #007bff;
+  box-shadow: 0px 0px 5px rgba(0, 123, 255, 0.3);
 }
-.h3,
-h3 {
-  font-size: calc(1.3rem + 0.6vw);
+
+.color-palette {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
 }
-@media (min-width: 1200px) {
-  .h3,
-  h3 {
-    font-size: 1.75rem;
-  }
+
+.color-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s, opacity 0.2s;
 }
-.h4,
-h4 {
-  font-size: calc(1.275rem + 0.3vw);
+
+.color-box:hover {
+  transform: scale(1.1);
 }
-@media (min-width: 1200px) {
-  .h4,
-  h4 {
-    font-size: 1.5rem;
-  }
+
+.selected {
+  border: 2px solid #000;
 }
-.h5,
-h5 {
-  font-size: 1.25rem;
-}
-.h6,
-h6 {
-  font-size: 1rem;
-}
-.disabled__color {
-  pointer-events: none;
+
+.disabled-color {
   opacity: 0.4;
+  pointer-events: none;
+}
+
+.check-icon {
+  color: white;
+  width: 18px;
+  height: 18px;
+}
+
+.create-button {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  background-color: #007bff;
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.create-button:hover {
+  background-color: #0056b3;
 }

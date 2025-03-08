@@ -13,6 +13,9 @@ const Modal: React.FC<ModalProps> = (props) => {
         className="modal__content"
         onClick={(event) => event.stopPropagation()}
       >
+        <button className="modal__close" onClick={() => props.onClose(false)}>
+          ✖
+        </button>
         {props.children}
       </div>
     </div>

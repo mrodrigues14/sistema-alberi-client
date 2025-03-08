@@ -20,7 +20,7 @@ const Editable: FC<EditableProps> = (props) => {
 
   const handleOnSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (text && props.onSubmit) {
+    if (text.trim() && props.onSubmit) {
       setText("");
       props.onSubmit(text);
     }
@@ -30,26 +30,25 @@ const Editable: FC<EditableProps> = (props) => {
   return (
     <div className={`editable ${props.parentClass}`}>
       {show ? (
-        <form onSubmit={handleOnSubmit}>
-          <div className={`editable__input ${props.class}`}>
-            <textarea
-              placeholder={props.placeholder}
-              autoFocus
-              id={"edit-input"}
-              onChange={(e) => setText(e.target.value)}
+        <form onSubmit={handleOnSubmit} className="add-card-container">
+          <textarea
+            className="add-card-input"
+            placeholder={props.placeholder}
+            autoFocus
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+          />
+          <div className="add-card-buttons">
+            <button className="add-card-button" type="submit">
+              {props.btnName || "Add Card"}
+            </button>
+            <X
+              className="cancel-button"
+              onClick={() => {
+                setShow(false);
+                props?.setHandler && props.setHandler(false);
+              }}
             />
-            <div className="btn__control">
-              <button className="add__btn" type="submit">
-                {`${props.btnName}` || "Add"}
-              </button>
-              <X
-                className="close"
-                onClick={() => {
-                  setShow(false);
-                  props?.setHandler && props.setHandler(false);
-                }}
-              />
-            </div>
           </div>
         </form>
       ) : (
@@ -57,9 +56,10 @@ const Editable: FC<EditableProps> = (props) => {
           onClick={() => {
             setShow(true);
           }}
+          className="add-card-trigger"
         >
-          {props.defaultValue === undefined ? <Plus /> : <></>}
-          {props?.name || "Add"}
+          <Plus />
+          {props?.name || "Add Card"}
         </p>
       )}
     </div>

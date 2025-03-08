@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Draggable } from "react-beautiful-dnd";
 import { Calendar, CheckSquare, Clock, MoreHorizontal } from "react-feather";
 import Dropdown from "../Dropdown/Dropdown";
@@ -13,13 +13,24 @@ interface CardProps {
   card: any;
   title: string;
   tags: { tagName: string; color: string }[];
-  updateCard: (bid: string, cid: string, card: any) => void;  bid: string;
+  updateCard: (bid: string, cid: string, card: any) => void;
+  bid: string;
   removeCard: (boardId: string, cardId: string) => void;
 }
 
 const Card: React.FC<CardProps> = ({ id, index, card, title, tags, updateCard, bid, removeCard }) => {
   const [dropdown, setDropdown] = useState(false);
   const [modalShow, setModalShow] = useState(false);
+  const [cardData, setCardData] = useState(card);
+
+  useEffect(() => {
+    setCardData(card);
+  }, [card]);
+
+  const handleUpdateCard = (updatedCard: any) => {
+    setCardData(updatedCard);
+    updateCard(bid, id, updatedCard);
+  };
 
   return (
     <Draggable key={id.toString()} draggableId={id.toString()} index={index}>
@@ -27,9 +38,9 @@ const Card: React.FC<CardProps> = ({ id, index, card, title, tags, updateCard, b
         <>
           {modalShow && (
             <CardDetails
-              updateCard={updateCard}
+              updateCard={handleUpdateCard}
               onClose={() => setModalShow(false)}
-              card={card}
+              card={cardData}
               bid={bid}
               removeCard={removeCard}
             />
@@ -43,7 +54,7 @@ const Card: React.FC<CardProps> = ({ id, index, card, title, tags, updateCard, b
             ref={provided.innerRef}
           >
             <div className="card__text">
-              <p>{title}</p>
+              <p>{cardData.title}</p>
               <MoreHorizontal
                 className="car__more"
                 onClick={() => setDropdown(true)}
@@ -57,18 +68,17 @@ const Card: React.FC<CardProps> = ({ id, index, card, title, tags, updateCard, b
             </div>
 
             <div className="card__footer">
-              {card.task.length !== 0 && (
+              {cardData.task.length !== 0 && (
                 <div className="task">
                   <CheckSquare />
                   <span>
-                    {card.task.length !== 0
-                      ? `${card.task.filter((item: { completed: any; }) => item.completed).length} / ${card.task.length}`
+                    {cardData.task.length !== 0
+                      ? `${cardData.task.filter((item: { completed: any; }) => item.completed).length} / ${cardData.task.length}`
                       : "0/0"}
                   </span>
                 </div>
               )}
             </div>
-
           </div>
         </>
       )}
