@@ -1,90 +1,92 @@
 import CredentialsProvider from "next-auth/providers/credentials";
-import {JWT as NextAuthJWT} from "next-auth/jwt";
-import {Session, Session as NextAuthSession} from "next-auth";
+import { JWT as NextAuthJWT } from "next-auth/jwt";
+import { Session } from "next-auth";
 
 interface JWT extends NextAuthJWT {
     id?: string;
-    username?: string;
+    cpf?: string;
     role?: string;
     accessToken?: string;
 }
 
-export const authOptions= {
+export const authOptions = {
     providers: [
         CredentialsProvider({
-            name: 'Credentials',
+            name: "Credentials",
             credentials: {
-                cpf: { label: 'CPF', type: 'text' },
-                password: { label: 'Password', type: 'password' },
+                cpf: { label: "CPF", type: "text" },
+                senha: { label: "Senha", type: "password" },
             },
             async authorize(credentials) {
                 if (!credentials) return null;
-            
+
                 try {
                     console.log("Tentando login com CPF:", credentials.cpf);
-            
-                    const response = await fetch(`${process.env.NEXT_PUBLIC_LOGIN_URL}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+
+                    const response = await fetch(`${process.env.API_URL}/auth/login`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            username: credentials.cpf,
-                            password: credentials.password,
+                            cpf: credentials.cpf,
+                            senha: credentials.senha,
                         }),
                     });
-            
+
                     console.log("Status da resposta:", response.status);
-            
+
                     const user = await response.json();
                     console.log("Resposta da API:", user);
-            
-                    if (user && response.ok) {
+
+                    if (response.ok && user) {
                         return {
-                            id: user.sub,
-                            name: user.username,
+                            id: user.idusuarios,
+                            name: user.name,
+                            cpf: user.cpf,
                             role: user.role,
-                            accessToken: user.access_token,
+                            accessToken: user.token,
                         };
                     } else {
                         console.error("Erro ao autorizar:", user);
-                        return null;
+                        throw new Error(user.message || "Falha ao autenticar");
                     }
-                } catch (error) {
+                } catch (error: any) {
                     console.error("Erro na autenticação:", error);
-                    return null;
+                    throw new Error(error.message || "Erro inesperado ao autenticar");
                 }
-            }
-            
-        })
+            },
+        }),
     ],
     session: {
-        strategy: 'jwt' as const,
+        strategy: "jwt" as const,
     },
     jwt: {
-        secret: process.env.NEXT_PUBLIC_JWT_SECRET,
+        secret: process.env.NEXTAUTH_SECRET,
     },
     pages: {
-        signIn: '/auth/login',
+        signIn: "/auth",
     },
     callbacks: {
-        async jwt({ token, user }: { token: JWT, user?: any }) {
+        async jwt({ token, user }: { token: JWT; user?: any }) {
             if (user) {
                 token.id = user.id;
-                token.username = user.name;
+                token.cpf = user.cpf;
                 token.role = user.role;
                 token.accessToken = user.accessToken;
             }
             return token;
         },
-        async session({ session, token }: { session: Session, token: JWT }) {
-            if(token.id != null && token.username != null && token.role != null && token.accessToken != null) {
-                session.user.id = token.id;
-                session.user.name = token.username;
-                session.user.role = token.role;
+        async session({ session, token }: { session: Session; token: JWT }) {
+            if (token.id && token.cpf && token.role) {
+                session.user = {
+                    id: token.id,
+                    cpf: token.cpf,
+                    role: token.role,
+                };
             }
-            if (token.accessToken != null) {
+            if (token.accessToken) {
                 session.accessToken = token.accessToken;
             }
             return session;
-        }
-    }
-}
+        },
+    },
+};
