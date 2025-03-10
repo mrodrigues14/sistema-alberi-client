@@ -7,6 +7,7 @@ import "./bootstrap.css";
 import Board from "./components/Board/Board";
 import Navbar from "@/components/Navbar"; 
 import "./page.css";
+import { useTarefas } from "@/lib/hooks/useTarefas";
 
 // Estrutura de cada card
 interface Card {
@@ -34,6 +35,22 @@ const Kanban = () => {
 
   ]); 
 
+  const {tarefas,isLoading,isError} = useTarefas();
+  useEffect(() => {
+    if (isLoading) {
+      console.log("Carregando tarefas...");
+    }
+
+    if (isError) {
+      console.error("Erro ao buscar tarefas:", isError);
+    }
+
+    if (tarefas) {
+      console.log("📌 Tarefas carregadas:", tarefas);
+    }
+  }, [tarefas, isLoading, isError]);
+
+  
   const addCard = (title: string, bid: string) => {
     const index = data.findIndex((item) => item.id === bid);
     const tempData = [...data];

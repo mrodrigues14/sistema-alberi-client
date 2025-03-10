@@ -1,4 +1,4 @@
-import CredentialsProvider from "next-auth/providers/credentials";
+import CredentialsProvider from "next-auth/providers/credentials"; 
 import { JWT as NextAuthJWT } from "next-auth/jwt";
 import { Session } from "next-auth";
 
@@ -6,6 +6,7 @@ interface JWT extends NextAuthJWT {
     id?: string;
     cpf?: string;
     role?: string;
+    nomeDoUsuario?: string;
     accessToken?: string;
 }
 
@@ -34,20 +35,21 @@ export const authOptions = {
 
                     console.log("Status da resposta:", response.status);
 
-                    const user = await response.json();
-                    console.log("Resposta da API:", user);
+                    const userResponse = await response.json();
+                    console.log("Resposta da API:", userResponse);
 
-                    if (response.ok && user) {
+                    if (response.ok && userResponse.user) {
+                        const { user } = userResponse; 
                         return {
                             id: user.idusuarios,
-                            name: user.name,
+                            name: user.nomeDoUsuario, 
                             cpf: user.cpf,
                             role: user.role,
                             accessToken: user.token,
                         };
                     } else {
-                        console.error("Erro ao autorizar:", user);
-                        throw new Error(user.message || "Falha ao autenticar");
+                        console.error("Erro ao autorizar:", userResponse);
+                        throw new Error(userResponse.message || "Falha ao autenticar");
                     }
                 } catch (error: any) {
                     console.error("Erro na autenticação:", error);
@@ -71,16 +73,18 @@ export const authOptions = {
                 token.id = user.id;
                 token.cpf = user.cpf;
                 token.role = user.role;
+                token.nomeDoUsuario = user.nomeDoUsuario; // Agora armazenando corretamente o nome do usuário
                 token.accessToken = user.accessToken;
             }
             return token;
         },
         async session({ session, token }: { session: Session; token: JWT }) {
-            if (token.id && token.cpf && token.role) {
+            if (token.id && token.cpf && token.role && token.nomeDoUsuario) {
                 session.user = {
                     id: token.id,
                     cpf: token.cpf,
                     role: token.role,
+                    name: token.nomeDoUsuario, // Agora a sessão recebe corretamente o nome
                 };
             }
             if (token.accessToken) {

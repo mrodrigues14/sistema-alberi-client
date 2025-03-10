@@ -1,97 +1,106 @@
 'use client';
 
 import { Poppins } from "next/font/google";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from 'next/link';
 import { useSession } from "next-auth/react";
-
-interface Empresa {
-    IDCLIENTE: number;
-    CNPJ: string | null;
-    CPF: string | null;
-    TELEFONE: string | null;
-    NOME: string;
-    ENDERECO: string | null;
-    cep: string;
-    nome_responsavel: string | null;
-    cpf_responsavel: string | null;
-    inscricao_estadual: string | null;
-    cnae_principal: string | null;
-    APELIDO: string;
-    socio: any[];
-}
+import { useCliente } from "@/lib/hooks/useCliente";
 
 const font = Poppins({
     subsets: ["latin"],
     weight: ["400"],
 });
 
+export interface Cliente {
+    idcliente: number;
+    cnpj: string | null;
+    cpf: string | null;
+    telefone: string | null;
+    nome: string;
+    endereco: string | null;
+    cep: string | null;
+    nome_responsavel: string | null;
+    cpf_responsavel: string | null;
+    inscricao_estadual: string | null;
+    cnae_principal: string | null;
+    apelido?: string;
+    socio: any[];
+}
+
 export default function Navbar() {
     const { data: session } = useSession();
+    const { clientes, isLoading, isError } = useCliente();
     const [usuario, setUsuario] = useState('Carregando...');
     const [showDropdown, setShowDropdown] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-    const [empresas, setEmpresas] = useState<Empresa[]>([]); // Inicializa como array vazio de Empresa
-    const [filteredEmpresas, setFilteredEmpresas] = useState<Empresa[]>([]);
-    const [selectedEmpresa, setSelectedEmpresa] = useState<Empresa | null>(null);
+    // Estado para armazenar o cliente selecionado
+    const [selectedCliente, setSelectedCliente] = useState<{ id: number, nome: string } | null>(null);
 
     useEffect(() => {
-        if (session && session.user) {
-            setUsuario(session.user.name || 'Desconhecido');
+        if (session?.user?.name) {
+            setUsuario(session.user.name);
         } else {
             setUsuario('Usuário não autenticado');
         }
-    }, [session]);
 
-    useEffect(() => {
-        const fetchEmpresas = async () => {
-            try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_LISTAR_CLIENTES}`, {
-                    headers: {
-                        'Authorization': `Bearer ${session?.accessToken}`
-                    }
-                });
-                const data: Empresa[] = await res.json();
-
-                if (Array.isArray(data)) {
-                    setEmpresas(data);
-                    setFilteredEmpresas(data);
-                } else {
-                    console.error('A API não retornou um array:', data);
-                }
-            } catch (err) {
-                console.error('Erro ao buscar empresas:', err);
-            }
-        };
-
-        if (session) {
-            fetchEmpresas()
-                .then()
+        const savedCliente = sessionStorage.getItem("selectedCliente");
+        if (savedCliente) {
+            setSelectedCliente(JSON.parse(savedCliente));
         }
     }, [session]);
 
     useEffect(() => {
-        setFilteredEmpresas(
-            empresas.filter((empresa) =>
-                empresa.APELIDO.toLowerCase().includes(searchQuery.toLowerCase())
-            )
-        );
-    }, [searchQuery, empresas]);
+        if (clientes?.length > 0 && !selectedCliente) {
+            const savedCliente = sessionStorage.getItem("selectedCliente");
+            if (savedCliente) {
+                setSelectedCliente(JSON.parse(savedCliente));
+            }
+        }
+    }, [clientes]);
+
+    // Ordenar clientes alfabeticamente e garantir "Todos Clientes Vinculados ao Perfil!" como primeiro
+    const sortedClientes = clientes?.slice().sort((a: Cliente, b: Cliente) => {
+        if (a.idcliente === 68) return -1; // "Todos Clientes" sempre primeiro
+        if (b.idcliente === 68) return 1;
+        return (a.apelido || a.nome).localeCompare(b.apelido || b.nome);
+    }) || [];
+
+
+    // Filtrar clientes conforme a pesquisa
+    const filteredClientes = sortedClientes.filter((cliente: Cliente) =>
+        (cliente.apelido || cliente.nome).toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     const toggleDropdown = (dropdownName: string) => {
-        setShowDropdown(showDropdown === dropdownName ? null : dropdownName);
+        setShowDropdown(prev => (prev === dropdownName ? null : dropdownName));
     };
 
-    const handleEmpresaSelect = (empresa: Empresa) => {
-        setSelectedEmpresa(empresa);
+
+    const handleClienteSelect = (cliente: Cliente) => {
+        const clienteNome = cliente.apelido || cliente.nome;
+        setSelectedCliente({ id: cliente.idcliente, nome: clienteNome });
+        sessionStorage.setItem("selectedCliente", JSON.stringify({ id: cliente.idcliente, nome: clienteNome }));
         setShowDropdown(null);
     };
+
+    // Fechar dropdown ao clicar fora
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowDropdown(null);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, []);
 
     return (
         <nav className={`bg-white flex shadow-md ${font.className}`}>
             <div className="w-full flex justify-between items-center px-10">
-                {/* Seção Esquerda: Logo e Menus */}
                 <div className="flex space-x-2 items-center">
                     <a href="/home" className="text-center mr-20 p-0">
                         <img
@@ -102,7 +111,7 @@ export default function Navbar() {
                     </a>
 
                     <div className="flex space-x-4 items-center">
-                    <div className="relative">
+                        <div className="relative">
                             <Link
                                 href="/kanban"
                                 className="px-4 py-2 border border-gray-300 rounded  hover:bg-[#2d3692] hover:text-white transition shadow-md text-center"
@@ -174,15 +183,17 @@ export default function Navbar() {
                             Reportar Falha ou Melhoria
                         </a>
 
-                        <div className="relative">
+                        {/* Seletor de Cliente */}
+                        <div className="relative" ref={dropdownRef}>
                             <button
-                                onClick={() => toggleDropdown('seletor-empresa')}
-                                className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center"
+                                onClick={() => toggleDropdown('cliente')}
+                                className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center w-[250px]"
                             >
-                                {selectedEmpresa ? selectedEmpresa.NOME : 'Seletor empresa'}
+                                {selectedCliente ? selectedCliente.nome : 'Selecionar Cliente'}
                             </button>
-                            {showDropdown === 'seletor-empresa' && (
-                                <div className="absolute bg-white border rounded shadow-lg mt-2 w-[300px]">
+
+                            {showDropdown === 'cliente' && ( // 🔥 Agora só exibe o dropdown certo!
+                                <div className="absolute bg-white border rounded shadow-lg mt-2 w-[250px] z-10">
                                     <input
                                         type="text"
                                         className="block px-4 py-2 border-b w-full"
@@ -190,26 +201,32 @@ export default function Navbar() {
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                     />
-                                    {filteredEmpresas.map((empresa) => (
-                                        <a
-                                            key={empresa.IDCLIENTE}
-                                            href="#"
-                                            className="block px-4 py-2 hover:bg-gray-200"
-                                            onClick={() => handleEmpresaSelect(empresa)}
-                                        >
-                                            {empresa.APELIDO}
-                                        </a>
-                                    ))}
+                                    {isLoading && <p className="text-center p-2">Carregando...</p>}
+                                    {isError && <p className="text-red-500 text-center p-2">Erro ao buscar clientes</p>}
+                                    {filteredClientes.length === 0 && !isLoading && (
+                                        <p className="text-center p-2">Nenhum cliente encontrado</p>
+                                    )}
+                                    <div className="max-h-60 overflow-y-auto">
+                                        {filteredClientes.slice(0, 5).map((cliente: Cliente) => (
+                                            <button
+                                                key={cliente.idcliente}
+                                                className="block w-full text-left px-4 py-2 hover:bg-gray-200"
+                                                onClick={() => handleClienteSelect(cliente)}
+                                            >
+                                                {cliente.apelido || cliente.nome}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
+
                         </div>
                     </div>
                 </div>
-
-                {/* Seção Direita: Botão de Perfil */}
-
             </div>
-            <div className=" flex items-center justify-center px-8" style={{ backgroundColor: '#2d3692' }}>
+
+            {/* Perfil do usuário */}
+            <div className="flex items-center justify-center px-8" style={{ backgroundColor: '#2d3692' }}>
                 <a
                     href="/perfil"
                     className="px-4 py-2 border border-gray-300 rounded bg-white hover:bg-[#8BACAF] transition shadow-md text-center"
@@ -218,6 +235,5 @@ export default function Navbar() {
                 </a>
             </div>
         </nav>
-
     );
 }

@@ -9,9 +9,27 @@ export function useTarefas(idCliente?: number, idUsuario?: number) {
 
   const { data, error, isLoading } = useSWR(query, fetcher);
 
+  // Normalizar os dados para corrigir valores inválidos
+  const normalizeTarefas = (tarefas: any[]) => {
+    return tarefas.map((tarefa) => ({
+      ...tarefa,
+      dataInicio: isValidDate(tarefa.dataInicio) ? tarefa.dataInicio : null,
+      dataConclusao: isValidDate(tarefa.dataConclusao) ? tarefa.dataConclusao : null,
+      dataLimite: isValidDate(tarefa.dataLimite) ? tarefa.dataLimite : null,
+    }));
+  };
+
   return {
-    tarefas: data,
+    tarefas: data ? normalizeTarefas(data) : [],
     isLoading,
     isError: error,
   };
+}
+
+// Função para validar se a data recebida é válida
+function isValidDate(date: any) {
+  if (!date || date === "0000-00-00" || date === "1899-11-30" || new Date(date).toString() === "Invalid Date") {
+    return false;
+  }
+  return true;
 }
