@@ -16,6 +16,8 @@ import "./CardDetails.css";
 import { v4 as uuidv4 } from "uuid";
 import Label from "../../Label/Label";
 import { useCallback } from "react";
+import { useUsuarios, Usuario } from "@/lib/hooks/useUsuarios";
+import Card from "../Card";
 
 interface Task {
   id: string;
@@ -35,8 +37,8 @@ interface CardDetailsProps {
     title: string;
     tags: Tag[];
     task: Task[];
-    priority: number;
-    executor?: string;
+    prioridade: number;
+    autor: string;
     company?: string;
   };
   bid: string;
@@ -48,16 +50,21 @@ interface CardDetailsProps {
 export default function CardDetails(props: CardDetailsProps) {
   const colors = ["#61bd4f", "#f2d600", "#ff9f1a", "#eb5a46", "#c377e0"];
 
+  const [input, setInput] = useState(false);
+  const [labelShow, setLabelShow] = useState(false);
+  const { usuarios } = useUsuarios(); // Obtém os usuários do sistema
+  const [searchTerm, setSearchTerm] = useState(""); // Estado da pesquisa no dropdown
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Controla a abertura do dropdown
   const [values, setValues] = useState(() => {
     if (typeof window !== "undefined") {
       const savedCard = localStorage.getItem(`card-${props.card.id}`);
-      return savedCard ? JSON.parse(savedCard) : { ...props.card };
+      return savedCard
+        ? JSON.parse(savedCard)
+        : { ...props.card, autor: props.card.autor || "" };
     }
-    return { ...props.card };
+    return { ...props.card, autor: props.card.autor || "" };
   });
-  const [input, setInput] = useState(false);
   const [text, setText] = useState(values.title);
-  const [labelShow, setLabelShow] = useState(false);
 
   const Input = (props: { title: string }) => {
     return (
@@ -66,7 +73,7 @@ export default function CardDetails(props: CardDetailsProps) {
         defaultValue={text}
         type="text"
         onBlur={() => {
-          if (text !== values.title) { 
+          if (text !== values.title) {
             updateTitle(text);
           }
           setInput(false);
@@ -77,7 +84,7 @@ export default function CardDetails(props: CardDetailsProps) {
       />
     );
   };
-  
+
 
   const addTask = (value: string) => {
     values.task.push({
@@ -119,7 +126,7 @@ export default function CardDetails(props: CardDetailsProps) {
       return updatedValues;
     });
   }, [props]);
-  
+
 
   const calculatePercent = () => {
     const totalTask = values.task.length;
@@ -166,12 +173,12 @@ export default function CardDetails(props: CardDetailsProps) {
 
   useEffect(() => {
     updateCard(values);
-  
+
     if (typeof window !== "undefined") {
       localStorage.setItem(`card-${values.id}`, JSON.stringify(values));
     }
   }, [values, updateCard]);
-
+  
   return (
     <Modal onClose={() => {
       props.updateCard(values);
@@ -239,7 +246,7 @@ export default function CardDetails(props: CardDetailsProps) {
                   </div>
                   <div className="card__action__btn">
                     <button onClick={() => deleteAllTask()}>
-                     Excluir todas as tarefas
+                      Excluir todas as tarefas
                     </button>
                   </div>
                 </div>
@@ -330,18 +337,50 @@ export default function CardDetails(props: CardDetailsProps) {
 
                 {/* Executor */}
                 <h6>Responsável</h6>
-                <select
-                  className="select-field"
-                  value={values.executor || ""}
-                  onChange={(e) => setValues({ ...values, executor: e.target.value })}
-                >
-                  <option value="" disabled>Selecione um responsável</option>
-                  {["João Silva", "Maria Oliveira", "Carlos Santos", "Ana Souza"].map((executor) => (
-                    <option key={executor} value={executor}>
-                      {executor}
-                    </option>
-                  ))}
-                </select>
+                <div className="responsavel-dropdown">
+                  {/* Exibir nome do responsável e permitir clique para abrir dropdown */}
+                  <div
+                    className="responsavel-selecionado"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  >
+                    <User className="icon__sm" />
+                    {values.autor || "Selecione um responsável"}
+                  </div>
+
+                  {/* Dropdown pesquisável */}
+                  {isDropdownOpen && (
+                    <div className="responsavel-dropdown-list">
+                      <input
+                        type="text"
+                        placeholder="Pesquisar responsável..."
+                        className="responsavel-search"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                      />
+
+                      {/* Lista filtrada de usuários */}
+                      <ul>
+                        {usuarios
+                          .filter((user: Usuario) =>
+                            user.nomeDoUsuario.toLowerCase().includes(searchTerm.toLowerCase())
+                          )
+                          .map((user: Usuario) => (
+                            <li
+                              key={user.idusuarios}
+                              onClick={() => {
+                                setValues({ ...values, autor: user.nomeDoUsuario }); // Atualiza o responsável no card
+                                setIsDropdownOpen(false); // Fecha o dropdown
+                              }}
+                            >
+                              {user.nomeDoUsuario}
+                            </li>
+                          ))}
+                      </ul>
+
+                    </div>
+                  )}
+                </div>
+
 
                 {/* Empresa */}
                 <h6>Empresa</h6>

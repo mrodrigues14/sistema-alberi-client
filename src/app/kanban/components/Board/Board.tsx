@@ -11,7 +11,7 @@ const boardColors: { [key: string]: string } = {
   "Em Execução": "#1D4D50",
   "Entregas do Dia": "#187518",
   "Atividades para Reunião": "#A02C2C",
-  "Finalizados": "#3B82F6",
+  "Finalizado": "#3B82F6",
 };
 
 interface BoardProps {

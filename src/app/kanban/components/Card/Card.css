@@ -17,12 +17,18 @@
   flex-wrap: wrap;
   align-self: flex-start;
 }
-
 .card__text {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px; /* Espaço entre o ícone e o título */
 }
+
+.drag-handle {
+  cursor: grab;
+  display: flex;
+  align-items: center;
+}
+
 
 .car__more {
   opacity: 0.5;
@@ -69,4 +75,13 @@
   display: flex;
   gap: 5px;
   margin-bottom: 10px;
+}.priority-stars {
+  display: flex;
+  gap: 2px;
+  margin-left: auto; /* Move para a direita */
+}
+
+.priority-stars i {
+  font-size: 14px;
+  cursor: pointer;
 }

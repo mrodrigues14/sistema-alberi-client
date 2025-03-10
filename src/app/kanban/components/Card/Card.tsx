@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { Calendar, CheckSquare, Clock, MoreHorizontal } from "react-feather";
+import { Menu } from "react-feather"; // Ícone de arraste
 import Dropdown from "../Dropdown/Dropdown";
 import Modal from "../Modal/Modal";
 import Tag from "../Tags/Tag";
 import "./Card.css";
 import CardDetails from "./CardDetails/CardDetails";
+import { useCliente } from "@/lib/hooks/useCliente";
 
 interface CardProps {
   id: string;
@@ -18,10 +20,22 @@ interface CardProps {
   removeCard: (boardId: string, cardId: string) => void;
 }
 
-const Card: React.FC<CardProps> = ({ id, index, card, title, tags, updateCard, bid, removeCard }) => {
+const Card: React.FC<CardProps> = ({
+  id,
+  index,
+  card,
+  title,
+  tags,
+  updateCard,
+  bid,
+  removeCard,
+}) => {
   const [dropdown, setDropdown] = useState(false);
   const [modalShow, setModalShow] = useState(false);
   const [cardData, setCardData] = useState(card);
+  const [clickStart, setClickStart] = useState({ x: 0, y: 0 });
+  console.log(cardData)
+  const { cliente, isLoading } = useCliente(cardData.idCliente);
 
   useEffect(() => {
     setCardData(card);
@@ -41,48 +55,75 @@ const Card: React.FC<CardProps> = ({ id, index, card, title, tags, updateCard, b
     transition: "transform 0.2s ease",
   };
 
+  // Captura a posição do clique
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    setClickStart({ x: e.clientX, y: e.clientY });
+  };
+
+  // Verifica se o movimento foi pequeno o suficiente para considerar um clique
+  const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+    const distance = Math.sqrt(
+      Math.pow(e.clientX - clickStart.x, 2) + Math.pow(e.clientY - clickStart.y, 2)
+    );
+    if (distance < 5) {
+      setModalShow(true);
+    }
+  };
+
   return (
     <>
       {modalShow && (
         <CardDetails
-          updateCard={handleUpdateCard}
-          onClose={() => setModalShow(false)}
-          card={cardData}
-          bid={bid}
-          removeCard={removeCard}
-        />
+        updateCard={handleUpdateCard}
+        onClose={() => setModalShow(false)}
+        card={{ ...cardData, autor: cardData.autor || "" }} // 🔹 Garante que o autor seja passado
+        bid={bid}
+        removeCard={removeCard}
+      />
+      
       )}
 
-      <div
-        className="custom__card"
-        ref={setNodeRef} // Define o card como "arrastável"
-        style={style}
-        {...listeners}
-        {...attributes}
-        onClick={() => setModalShow(true)}
-      >
-        <div className="card__text">
-          <p>{cardData.title}</p>
-          <MoreHorizontal className="car__more" onClick={() => setDropdown(true)} />
-        </div>
+      <div className="custom__card" ref={setNodeRef} style={style} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
 
-        <div className="card__tags">
-          {tags?.map((item, index) => (
-            <Tag key={index} tagName={item.tagName} color={item.color} />
-          ))}
-        </div>
-
-        <div className="card__footer">
-          {cardData.task.length !== 0 && (
-            <div className="task">
-              <CheckSquare />
-              <span>
-                {cardData.task.length !== 0
-                  ? `${cardData.task.filter((item: { completed: any }) => item.completed).length} / ${cardData.task.length}`
-                  : "0/0"}
-              </span>
+        <div onClick={() => setModalShow(true)}>
+          <div className="card__text">
+            <div className="drag-handle" {...listeners} {...attributes}>
+              <i className="bi bi-grip-vertical"></i> {/* Ícone de arraste */}
             </div>
-          )}
+            <p>{cardData.title}</p>            
+
+          </div>
+          <div className="card__tags">
+            {tags?.map((item, index) => (
+              <Tag key={index} tagName={item.tagName} color={item.color} />
+            ))}
+          </div>
+          <div className="priority-stars">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <i
+                  key={star}
+                  className={`bi bi-star${cardData.priority >= star ? "-fill" : ""}`}
+                  style={{
+                    color: cardData.priority >= star ? "gold" : "gray",
+                  }}
+                ></i>
+              ))}
+            </div>
+          <div className="card__footer">
+            {cardData.task.length !== 0 && (
+              <div className="task">
+                <CheckSquare />
+                <span>
+                  {`${cardData.task.filter((item: { completed: any }) => item.completed).length} / ${cardData.task.length}`}
+                </span>
+              </div>
+            )}
+          </div>
+          <p className="empresa-nome">
+  {isLoading ? "Carregando empresa..." : cliente?.apelido || "Sem empresa"}
+</p>
+
+
         </div>
       </div>
     </>

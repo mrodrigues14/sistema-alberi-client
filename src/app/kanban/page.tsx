@@ -8,8 +8,9 @@ import "./bootstrap.css";
 import Board from "./components/Board/Board";
 import Navbar from "@/components/Navbar"; 
 import "./page.css";
-import { useTarefas } from "@/lib/hooks/useTarefas";
+import { updateTarefa, useTarefas } from "@/lib/hooks/useTarefas";
 import Card from "./components/Card/Card";
+import { useUsuarios } from "@/lib/hooks/useUsuarios";
 
 // Estrutura de cada card (tarefa)
 interface Card {
@@ -18,6 +19,8 @@ interface Card {
   tags: { tagName: string; color: string }[];
   task: { text: string; completed: boolean }[];
   prioridade?: number;
+  idCliente?: number;
+  autor: string;
 }
 
 // Estrutura de cada board
@@ -34,19 +37,18 @@ const Kanban = () => {
     { id: "3", boardName: "Em Execução", card: [] },
     { id: "4", boardName: "Entregas do Dia", card: [] },
     { id: "5", boardName: "Atividades para Reunião", card: [] },
-    { id: "6", boardName: "Finalizados", card: [] },
+    { id: "6", boardName: "Finalizado", card: [] },
   ]);
 
   // Estado para armazenar o card sendo arrastado
   const [activeCard, setActiveCard] = useState<Card | null>(null);
 
   // Hook para buscar as tarefas do banco
-  const { tarefas } = useTarefas();
+  const { usuarios } = useUsuarios();
 
+  const { tarefas } = useTarefas();
   useEffect(() => {
     if (!tarefas || tarefas.length === 0 || data.some(board => board.card.length > 0)) return;
-
-    console.log("📌 Tarefas carregadas:", tarefas);
 
     const newBoards: BoardData[] = data.map(board => ({
       ...board,
@@ -54,12 +56,19 @@ const Kanban = () => {
     }));
 
     tarefas.forEach((tarefa: any) => {
+      // 🔹 Encontrar o nome do autor com base no idUsuario
+      console.log(usuarios)
+      const usuarioAutor = usuarios.find((user: { idusuarios: number }) => user.idusuarios === tarefa.idUsuario);
+      const nomeAutor = usuarioAutor ? usuarioAutor.nomeDoUsuario : "Desconhecido"; // Se não encontrar, exibe "Desconhecido"
+
       const card: Card = {
         id: tarefa.idtarefa.toString(),
         title: tarefa.titulo,
         tags: tarefa.labels || [],
         task: JSON.parse(tarefa.descricoes || "[]"),
         prioridade: tarefa.prioridade || 0,
+        idCliente: tarefa.idCliente,
+        autor: nomeAutor, // 🔹 Adicionamos o nome do autor aqui
       };
 
       const boardIndex = newBoards.findIndex(board => board.boardName === tarefa.status);
@@ -71,13 +80,13 @@ const Kanban = () => {
     });
 
     setData(newBoards);
-  }, [tarefas]);
+  }, [tarefas, usuarios]);
 
   // Função para adicionar um card
   const addCard = useCallback((title: string, bid: string) => {
     setData(prevData => {
       return prevData.map(board =>
-        board.id === bid ? { ...board, card: [...board.card, { id: uuidv4(), title, tags: [], task: [] }] } : board
+        board.id === bid ? { ...board, card: [...board.card, { id: uuidv4(), title, tags: [], task: [], autor: "Unknown" }] } : board
       );
     });
   }, []);
@@ -107,28 +116,44 @@ const Kanban = () => {
   
     if (!over) return;
   
-    setData(prevData => {
+    setData((prevData) => {
       let updatedBoards = [...prevData];
   
-      let sourceBoardIdx = updatedBoards.findIndex(board => board.card.some(card => card.id === active.id));
-      let destinationBoardIdx = updatedBoards.findIndex(board => board.id === over.id);
+      let sourceBoardIdx = updatedBoards.findIndex((board) =>
+        board.card.some((card) => card.id === active.id)
+      );
+      let destinationBoardIdx = updatedBoards.findIndex(
+        (board) => board.id === over.id
+      );
   
       if (sourceBoardIdx === -1 || destinationBoardIdx === -1) return prevData;
   
-      let card = updatedBoards[sourceBoardIdx].card.find(card => card.id === active.id);
+      let card = updatedBoards[sourceBoardIdx].card.find(
+        (card) => card.id === active.id
+      );
       if (!card) return prevData;
   
-      updatedBoards[sourceBoardIdx].card = updatedBoards[sourceBoardIdx].card.filter(card => card.id !== active.id);
+      // Remover card da coluna de origem
+      updatedBoards[sourceBoardIdx].card = updatedBoards[
+        sourceBoardIdx
+      ].card.filter((card) => card.id !== active.id);
   
-      // Adiciona o card no destino e ordena alfabeticamente
-      updatedBoards[destinationBoardIdx].card = [...updatedBoards[destinationBoardIdx].card, card].sort((a, b) =>
-        a.title.localeCompare(b.title)
-      );
+      // Nome do novo status com base na board de destino
+      const newStatus = updatedBoards[destinationBoardIdx].boardName;
+  
+      // Atualizar o status no banco
+      updateTarefa(Number(card.id), { status: newStatus });
+  
+      // Adiciona o card no destino e atualiza o status localmente
+      updatedBoards[destinationBoardIdx].card = [
+        ...updatedBoards[destinationBoardIdx].card,
+        { ...card, status: newStatus },
+      ].sort((a, b) => a.title.localeCompare(b.title));
   
       return [...updatedBoards];
     });
   }, []);
-
+  
   return (
     <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <div className="App">

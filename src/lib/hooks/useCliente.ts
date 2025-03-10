@@ -18,23 +18,29 @@ interface Cliente {
   ativo?: boolean;
 }
 
-// Hook para buscar clientes
+// Hook para buscar todos os clientes ou um cliente específico
 export function useCliente(id?: number, cpf?: string, cnpj?: string) {
   let query = "/clientes";
 
-  if (id) query += `?id=${id}`;
-  if (cpf) query += `?cpf=${cpf}`;
-  if (cnpj) query += `?cnpj=${cnpj}`;
+  if (id) {
+    query = `/clientes?id=${id}`; // Busca específica por ID
+  } else if (cpf) {
+    query = `/clientes?cpf=${cpf}`;
+  } else if (cnpj) {
+    query = `/clientes?cnpj=${cnpj}`;
+  }
 
-  const { data, error, isLoading, mutate } = useSWR(query, fetcher);
-  
+  const { data, error, isLoading, mutate } = useSWR(id || cpf || cnpj ? query : "/clientes", fetcher);
+
   return {
-    clientes: data,
+    clientes: data, // Se for uma busca geral, retorna todos os clientes
+    cliente: data && Array.isArray(data) ? data[0] : null, // Retorna um único cliente quando buscar por ID
     isLoading,
     isError: error,
-    mutate, // Para revalidar os dados após criar, atualizar ou deletar
+    mutate, // Para revalidar os dados
   };
 }
+
 
 // Criar um novo cliente
 export async function createCliente(cliente: Partial<Cliente>) {

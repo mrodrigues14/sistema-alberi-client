@@ -1,53 +1,91 @@
 import useSWR, { mutate } from "swr";
 import { fetcher } from "../api";
 
-// URL base para as requisições
-const BASE_URL = "/tarefas";
+const BASE_URL = "http://localhost:8080/tarefas";
 
+// 🔹 Hook para buscar todas as tarefas ou filtrar por cliente/usuário
 export function useTarefas(idCliente?: number, idUsuario?: number) {
-  let query = BASE_URL;
+  let query = "/tarefas";
 
   if (idCliente) query += `?id_cliente=${idCliente}`;
   if (idUsuario) query += `?id_usuario=${idUsuario}`;
 
   const { data, error, isLoading } = useSWR(query, fetcher);
 
-  // Função para criar uma nova tarefa
-  const createTarefa = async (novaTarefa: any) => {
+  return {
+    tarefas: data || [],
+    isLoading,
+    isError: error,
+    mutateTarefas: () => mutate(query), // Atualiza os dados no SWR
+  };
+}
+
+// 🔹 Buscar uma única tarefa pelo ID
+export function useTarefaById(id: number) {
+  const { data, error, isLoading } = useSWR(id ? `${BASE_URL}/${id}` : null, fetcher);
+
+  return {
+    tarefa: data || null,
+    isLoading,
+    isError: error,
+  };
+}
+
+// 🔹 Criar uma nova tarefa
+export async function createTarefa(novaTarefa: any) {
+  try {
     const res = await fetch(BASE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(novaTarefa),
     });
-    mutate(query); // Atualiza os dados no SWR
-    return res.json();
-  };
 
-  // Função para atualizar uma tarefa (incluindo mudar de coluna)
-  const updateTarefa = async (id: number, updates: any) => {
+    if (!res.ok) throw new Error("Erro ao criar tarefa");
+
+    await mutate(BASE_URL); // Atualiza a lista de tarefas
+    return await res.json();
+  } catch (error) {
+    console.error("Erro ao criar tarefa:", error);
+    throw error;
+  }
+}
+
+// 🔹 Atualizar uma tarefa (status ou qualquer outro campo)
+export async function updateTarefa(id: number, updates: any) {
+  try {
+    console.log(id)
     const res = await fetch(`${BASE_URL}/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
     });
-    mutate(query);
-    return res.json();
-  };
 
-  // Função para deletar uma tarefa
-  const deleteTarefa = async (id: number) => {
-    await fetch(`${BASE_URL}/${id}`, {
+    if (!res.ok) {
+      const errorData = await res.json();
+      console.error("❌ Erro ao atualizar tarefa:", errorData);
+      throw new Error(errorData.message || "Erro ao atualizar tarefa");
+    }
+
+    await mutate(BASE_URL); // Atualiza os dados no cache SWR
+    return await res.json();
+  } catch (error) {
+    console.error("Erro ao atualizar tarefa:", error);
+    throw error;
+  }
+}
+
+// 🔹 Deletar uma tarefa
+export async function deleteTarefa(id: number) {
+  try {
+    const res = await fetch(`${BASE_URL}/${id}`, {
       method: "DELETE",
     });
-    mutate(query);
-  };
 
-  return {
-    tarefas: data || [],
-    isLoading,
-    isError: error,
-    createTarefa,
-    updateTarefa,
-    deleteTarefa,
-  };
+    if (!res.ok) throw new Error("Erro ao deletar tarefa");
+
+    await mutate(BASE_URL); // Atualiza a lista de tarefas no SWR
+  } catch (error) {
+    console.error("Erro ao deletar tarefa:", error);
+    throw error;
+  }
 }
