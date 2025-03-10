@@ -1,35 +1,53 @@
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { fetcher } from "../api";
 
+// URL base para as requisições
+const BASE_URL = "/tarefas";
+
 export function useTarefas(idCliente?: number, idUsuario?: number) {
-  let query = "/tarefas";
+  let query = BASE_URL;
 
   if (idCliente) query += `?id_cliente=${idCliente}`;
   if (idUsuario) query += `?id_usuario=${idUsuario}`;
 
   const { data, error, isLoading } = useSWR(query, fetcher);
 
-  // Normalizar os dados para corrigir valores inválidos
-  const normalizeTarefas = (tarefas: any[]) => {
-    return tarefas.map((tarefa) => ({
-      ...tarefa,
-      dataInicio: isValidDate(tarefa.dataInicio) ? tarefa.dataInicio : null,
-      dataConclusao: isValidDate(tarefa.dataConclusao) ? tarefa.dataConclusao : null,
-      dataLimite: isValidDate(tarefa.dataLimite) ? tarefa.dataLimite : null,
-    }));
+  // Função para criar uma nova tarefa
+  const createTarefa = async (novaTarefa: any) => {
+    const res = await fetch(BASE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(novaTarefa),
+    });
+    mutate(query); // Atualiza os dados no SWR
+    return res.json();
+  };
+
+  // Função para atualizar uma tarefa (incluindo mudar de coluna)
+  const updateTarefa = async (id: number, updates: any) => {
+    const res = await fetch(`${BASE_URL}/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
+    mutate(query);
+    return res.json();
+  };
+
+  // Função para deletar uma tarefa
+  const deleteTarefa = async (id: number) => {
+    await fetch(`${BASE_URL}/${id}`, {
+      method: "DELETE",
+    });
+    mutate(query);
   };
 
   return {
-    tarefas: data ? normalizeTarefas(data) : [],
+    tarefas: data || [],
     isLoading,
     isError: error,
+    createTarefa,
+    updateTarefa,
+    deleteTarefa,
   };
-}
-
-// Função para validar se a data recebida é válida
-function isValidDate(date: any) {
-  if (!date || date === "0000-00-00" || date === "1899-11-30" || new Date(date).toString() === "Invalid Date") {
-    return false;
-  }
-  return true;
 }

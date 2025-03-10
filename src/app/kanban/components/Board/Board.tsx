@@ -1,7 +1,7 @@
 import React from "react";
 import Card from "../Card/Card";
 import "./Board.css";
-import { Droppable } from "react-beautiful-dnd";
+import { useDroppable } from "@dnd-kit/core";
 import Editable from "../Editable/Editable";
 
 // Definição das cores dos títulos dos boards
@@ -23,50 +23,50 @@ interface BoardProps {
   updateCard: (bid: string, cid: string, card: any) => void;
 }
 
-const Board: React.FC<BoardProps> = (props) => {
+const Board: React.FC<BoardProps> = ({ id, name, card, addCard, removeCard, updateCard }) => {
+  const { setNodeRef, isOver } = useDroppable({ id });
+
   return (
     <div className="board">
       <div
         className="board__top"
-        style={{ backgroundColor: boardColors[props.name] || "#555" }}
+        style={{ backgroundColor: boardColors[name] || "#555" }}
       >
-        <p className="board__title">
-          {props?.name || "Board"}
-        </p>
-        <span className="total__cards">{props.card?.length}</span>
+        <p className="board__title">{name || "Board"}</p>
+        <span className="total__cards">{card.length}</span>
       </div>
 
-      <Droppable droppableId={String(props.id)}>
-      {(provided) => (
-          <div
-            className="board__cards"
-            ref={provided.innerRef}
-            {...provided.droppableProps}
-          >
-            {props.card?.map((items, index) => (
-              <Card
-                bid={props.id}
-                id={items.id}
-                index={index}
-                key={items.id}
-                title={items.title}
-                tags={items.tags}
-                updateCard={props.updateCard}
-                removeCard={props.removeCard}
-                card={items}
-              />
-            ))}
-            {provided.placeholder}
-          </div>
-        )}
-      </Droppable>
+      {/* Área "dropável" do Board com efeito visual ao arrastar */}
+      <div
+        className="board__cards"
+        ref={setNodeRef}
+        style={{
+          backgroundColor: isOver ? "rgba(0, 255, 0, 0.2)" : "transparent",
+          transition: "background-color 0.3s ease",
+          border: isOver ? "2px dashed green" : "2px solid transparent",
+        }}
+      >
+        {card.map((item, index) => (
+          <Card
+            bid={id}
+            id={item.id}
+            index={index}
+            key={item.id}
+            title={item.title}
+            tags={item.tags}
+            updateCard={updateCard}
+            removeCard={removeCard}
+            card={item}
+          />
+        ))}
+      </div>
 
       <div className="board__footer">
         <Editable
           name={"Add Card"}
           btnName={"Add Card"}
           placeholder={"Enter Card Title"}
-          onSubmit={(value: string) => props.addCard(value, props.id)}
+          onSubmit={(value: string) => addCard(value, id)}
         />
       </div>
     </div>

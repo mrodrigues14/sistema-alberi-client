@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { DragDropContext, DropResult } from "react-beautiful-dnd";
+import { useEffect, useState, useCallback } from "react";
+import { DndContext, DragEndEvent, DragOverlay } from "@dnd-kit/core";
+import { SortableContext, arrayMove } from "@dnd-kit/sortable";
 import { v4 as uuidv4 } from "uuid";
 import "./bootstrap.css";
 import Board from "./components/Board/Board";
 import Navbar from "@/components/Navbar"; 
 import "./page.css";
 import { useTarefas } from "@/lib/hooks/useTarefas";
+import Card from "./components/Card/Card";
 
 // Estrutura de cada card (tarefa)
 interface Card {
@@ -33,28 +35,25 @@ const Kanban = () => {
     { id: "4", boardName: "Entregas do Dia", card: [] },
     { id: "5", boardName: "Atividades para Reunião", card: [] },
     { id: "6", boardName: "Finalizados", card: [] },
-  ]); 
+  ]);
+
+  // Estado para armazenar o card sendo arrastado
+  const [activeCard, setActiveCard] = useState<Card | null>(null);
 
   // Hook para buscar as tarefas do banco
-  const { tarefas, isLoading, isError } = useTarefas();
+  const { tarefas } = useTarefas();
 
   useEffect(() => {
-    if (!tarefas || tarefas.length === 0 || data.some(board => board.card.length > 0)) {
-      return; // ❌ Não refaz a requisição se já há tarefas carregadas
-    }
-  
+    if (!tarefas || tarefas.length === 0 || data.some(board => board.card.length > 0)) return;
+
     console.log("📌 Tarefas carregadas:", tarefas);
-  
-    const newBoards: BoardData[] = [
-      { id: "1", boardName: "Pendente de Dados", card: [] },
-      { id: "2", boardName: "A Fazer", card: [] },
-      { id: "3", boardName: "Em Execução", card: [] },
-      { id: "4", boardName: "Entregas do Dia", card: [] },
-      { id: "5", boardName: "Atividades para Reunião", card: [] },
-      { id: "6", boardName: "Finalizados", card: [] },
-    ];
-  
-    tarefas.forEach((tarefa) => {
+
+    const newBoards: BoardData[] = data.map(board => ({
+      ...board,
+      card: [],
+    }));
+
+    tarefas.forEach((tarefa: any) => {
       const card: Card = {
         id: tarefa.idtarefa.toString(),
         title: tarefa.titulo,
@@ -62,116 +61,112 @@ const Kanban = () => {
         task: JSON.parse(tarefa.descricoes || "[]"),
         prioridade: tarefa.prioridade || 0,
       };
-  
-      switch (tarefa.status) {
-        case "Pendente de Dados":
-          newBoards[0].card.push(card);
-          break;
-        case "A Fazer":
-          newBoards[1].card.push(card);
-          break;
-        case "Em Execução":
-          newBoards[2].card.push(card);
-          break;
-        case "Entregas do Dia":
-          newBoards[3].card.push(card);
-          break;
-        case "Atividades para Reunião":
-          newBoards[4].card.push(card);
-          break;
-        case "Finalizado":
-          newBoards[5].card.push(card);
-          break;
-        default:
-          newBoards[1].card.push(card);
-          break;
+
+      const boardIndex = newBoards.findIndex(board => board.boardName === tarefa.status);
+      if (boardIndex !== -1) {
+        newBoards[boardIndex].card.push(card);
+      } else {
+        newBoards[1].card.push(card); // Default para "A Fazer"
       }
     });
-  
-    setData(newBoards);
-  }, [tarefas]); // ✅ Agora só roda uma vez quando `tarefas` muda
-  
 
-  // Função para adicionar um novo card manualmente
-  const addCard = (title: string, bid: string) => {
-    const index = data.findIndex((item) => item.id === bid);
-    const tempData = [...data];
-    if (index >= 0) {
-      tempData[index].card.push({
-        id: uuidv4(),
-        title: title,
-        tags: [],
-        task: [],
-      });
-      setData(tempData);
-    }
-  };
+    setData(newBoards);
+  }, [tarefas]);
+
+  // Função para adicionar um card
+  const addCard = useCallback((title: string, bid: string) => {
+    setData(prevData => {
+      return prevData.map(board =>
+        board.id === bid ? { ...board, card: [...board.card, { id: uuidv4(), title, tags: [], task: [] }] } : board
+      );
+    });
+  }, []);
 
   // Função para remover um card
-  const removeCard = (boardId: string, cardId: string) => {
-    const index = data.findIndex((item) => item.id === boardId);
-    const tempData = [...data];
-    const cardIndex = data[index]?.card.findIndex((item) => item.id === cardId);
-
-    if (cardIndex !== undefined && cardIndex >= 0) {
-      tempData[index].card.splice(cardIndex, 1);
-      setData(tempData);
-    }
-  };
-
-  const dragCardInBoard = (source: any, destination: any) => {
-    setData((prevData) => {
-      let tempData = [...prevData];
-  
-      const sourceBoardIdx = tempData.findIndex((item) => item.id === source.droppableId);
-      const destinationBoardIdx = tempData.findIndex((item) => item.id === destination.droppableId);
-  
-      if (sourceBoardIdx === -1 || destinationBoardIdx === -1) return tempData;
-  
-      const movedCard = tempData[sourceBoardIdx].card[source.index]; // Captura o card a ser movido
-  
-      // Remove do board de origem
-      tempData[sourceBoardIdx].card = tempData[sourceBoardIdx].card.filter((_, idx) => idx !== source.index);
-  
-      // Adiciona no board de destino
-      tempData[destinationBoardIdx].card.splice(destination.index, 0, movedCard);
-  
-      return [...tempData]; // ✅ Força o React a perceber a mudança
+  const removeCard = useCallback((boardId: string, cardId: string) => {
+    setData(prevData => {
+      return prevData.map(board =>
+        board.id === boardId ? { ...board, card: board.card.filter(card => card.id !== cardId) } : board
+      );
     });
-  };
-  
+  }, []);
 
+  // Capturar o card que está sendo arrastado
+  const onDragStart = useCallback((event: any) => {
+    const { active } = event;
+    if (!active) return;
 
-  // Função para tratar o evento de "arrastar e soltar" os cards
-  const onDragEnd = (result: DropResult) => {
-    const { source, destination } = result;
-    if (!destination) return;
-    if (source.droppableId === destination.droppableId) return;
-    dragCardInBoard(source, destination);  // ✅ Agora atualiza o estado corretamente
-  };
+    const foundCard = data.flatMap(board => board.card).find(card => card.id === active.id);
+    setActiveCard(foundCard || null);
+  }, [data]);
+
+  // Lidar com a finalização do drag
+  const onDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveCard(null);
   
+    if (!over) return;
+  
+    setData(prevData => {
+      let updatedBoards = [...prevData];
+  
+      let sourceBoardIdx = updatedBoards.findIndex(board => board.card.some(card => card.id === active.id));
+      let destinationBoardIdx = updatedBoards.findIndex(board => board.id === over.id);
+  
+      if (sourceBoardIdx === -1 || destinationBoardIdx === -1) return prevData;
+  
+      let card = updatedBoards[sourceBoardIdx].card.find(card => card.id === active.id);
+      if (!card) return prevData;
+  
+      updatedBoards[sourceBoardIdx].card = updatedBoards[sourceBoardIdx].card.filter(card => card.id !== active.id);
+  
+      // Adiciona o card no destino e ordena alfabeticamente
+      updatedBoards[destinationBoardIdx].card = [...updatedBoards[destinationBoardIdx].card, card].sort((a, b) =>
+        a.title.localeCompare(b.title)
+      );
+  
+      return [...updatedBoards];
+    });
+  }, []);
 
   return (
-    <DragDropContext onDragEnd={onDragEnd}>
+    <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <div className="App">
         <Navbar />
         <div className="app_outer">
           <div className="app_boards">
             {data.map((item) => (
-              <Board
-                key={item.id}
-                id={item.id}
-                name={item.boardName}
-                card={item.card}
-                addCard={addCard}
-                removeCard={removeCard}
-                updateCard={() => {}}
-              />
+              <SortableContext key={item.id} items={item.card.map(c => c.id)}>
+                <Board
+                  id={item.id}
+                  name={item.boardName}
+                  card={item.card}
+                  addCard={addCard}
+                  removeCard={removeCard}
+                  updateCard={() => {}}
+                />
+              </SortableContext>
             ))}
           </div>
         </div>
       </div>
-    </DragDropContext>
+
+      {/* Mantém o card visível em toda a página enquanto é arrastado */}
+      <DragOverlay>
+        {activeCard ? (
+          <Card
+            bid=""
+            id={activeCard.id}
+            index={0}
+            title={activeCard.title}
+            tags={activeCard.tags}
+            card={activeCard}
+            updateCard={() => {}}
+            removeCard={() => {}}
+          />
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 };
 
