@@ -36,8 +36,8 @@ const Board: React.FC<BoardProps> = (props) => {
         <span className="total__cards">{props.card?.length}</span>
       </div>
 
-      <Droppable droppableId={props.id.toString()}>
-        {(provided) => (
+      <Droppable droppableId={String(props.id)}>
+      {(provided) => (
           <div
             className="board__cards"
             ref={provided.innerRef}

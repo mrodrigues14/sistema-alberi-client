@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Draggable } from "react-beautiful-dnd";
-import { Calendar, CheckSquare, Clock, MoreHorizontal } from "react-feather";
+import { Calendar, CheckSquare, Clock, MoreHorizontal, Star } from "react-feather";
 import Dropdown from "../Dropdown/Dropdown";
 import Modal from "../Modal/Modal";
 import Tag from "../Tags/Tag";
@@ -61,6 +61,20 @@ const Card: React.FC<CardProps> = ({ id, index, card, title, tags, updateCard, b
               />
             </div>
 
+            {/* Exibir as estrelas de prioridade apenas se houver prioridade */}
+            {cardData.priority > 0 && (
+              <div className="card__priority priority-stars">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    className={cardData.priority >= star ? "star selected" : "star"}
+                    fill={cardData.priority >= star ? "gold" : "gray"}
+                    stroke="none"
+                  />
+                ))}
+              </div>
+            )}
+
             <div className="card__tags">
               {tags?.map((item, index) => (
                 <Tag key={index} tagName={item.tagName} color={item.color} />
@@ -72,9 +86,7 @@ const Card: React.FC<CardProps> = ({ id, index, card, title, tags, updateCard, b
                 <div className="task">
                   <CheckSquare />
                   <span>
-                    {cardData.task.length !== 0
-                      ? `${cardData.task.filter((item: { completed: any; }) => item.completed).length} / ${cardData.task.length}`
-                      : "0/0"}
+                    {cardData.task.filter((item: { completed: any }) => item.completed).length} / {cardData.task.length}
                   </span>
                 </div>
               )}
@@ -83,6 +95,7 @@ const Card: React.FC<CardProps> = ({ id, index, card, title, tags, updateCard, b
         </>
       )}
     </Draggable>
+
   );
 };
 
