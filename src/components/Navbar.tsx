@@ -207,7 +207,7 @@ export default function Navbar() {
                                         <p className="text-center p-2">Nenhum cliente encontrado</p>
                                     )}
                                     <div className="max-h-60 overflow-y-auto">
-                                        {filteredClientes.slice(0, 5).map((cliente: Cliente) => (
+                                        {filteredClientes.map((cliente: Cliente) => (
                                             <button
                                                 key={cliente.idcliente}
                                                 className="block w-full text-left px-4 py-2 hover:bg-gray-200"
