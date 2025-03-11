@@ -1,20 +1,16 @@
 "use client";
 
 import Navbar from '@/components/Navbar';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FaFilePdf, FaFileExcel } from 'react-icons/fa'; // Ícones de PDF e Excel
 import InsercaoManual from './components/insercaoManual/insercaoManual';
 import Calendario from './components/calendario/calendario';
 import TabelaExtrato from './components/tabelaExtrato/tabelaExtrato';
+import { useBanco, Banco } from '@/lib/hooks/userBanco';
 
 const Extrato: React.FC = () => {
-    const [bancos, setBancos] = useState([
-        { id: 1, nome: 'Banco do Brasil - CONTA CORRENTE' },
-        { id: 2, nome: 'Caixa Econômica - POUPANÇA' },
-        { id: 3, nome: 'Santander - CONTA CORRENTE' },
-        { id: 4, nome: 'Itaú - CONTA SALÁRIO' },
-    ]);
-
+    const [showModal, setShowModal] = useState(false);
+    const { bancos } = useBanco(96);
     const [bancoSelecionado, setBancoSelecionado] = useState<number | null>(null);
     const [metodoInsercao, setMetodoInsercao] = useState<string>("");
     const [dadosTabela, setDadosTabela] = useState([
@@ -85,19 +81,33 @@ const Extrato: React.FC = () => {
             saida: "4.200,00"
         },
     ]);
-    
+
     const handleBancoChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        setBancoSelecionado(Number(event.target.value));
+        const selectedBanco = Number(event.target.value);
+        setBancoSelecionado(selectedBanco);
+
+        if (typeof window !== "undefined") {
+            sessionStorage.setItem("bancoSelecionado", String(selectedBanco));
+        }
     };
+
 
     const handleInsercaoChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         setMetodoInsercao(event.target.value);
     };
 
-    // Adiciona entrada na tabela de extrato
     const adicionarEntrada = (novaEntrada: any) => {
         setDadosTabela((prevDados) => [...prevDados, novaEntrada]);
     };
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const storedBanco = sessionStorage.getItem("bancoSelecionado");
+            if (storedBanco) {
+                setBancoSelecionado(Number(storedBanco));
+            }
+        }
+    }, []);
 
     return (
         <>
@@ -112,12 +122,13 @@ const Extrato: React.FC = () => {
                         onChange={handleBancoChange}
                     >
                         <option value="" disabled>Selecione o Banco</option>
-                        {bancos.map((banco) => (
-                            <option key={banco.id} value={banco.id}>
-                                {banco.nome}
+                        {bancos.map((banco: Banco) => (
+                            <option key={banco.idbanco} value={banco.idbanco}>
+                                {banco.nome} - {banco.tipo}
                             </option>
                         ))}
                     </select>
+
 
                     <select
                         className="px-4 py-2 border rounded shadow-md"
@@ -153,7 +164,7 @@ const Extrato: React.FC = () => {
                     </div>
                 )}
             </div>
-            
+
 
             <div className="mt-16 w-full flex justify-between items-center px-10">
                 <div className="flex space-x-4">
@@ -163,9 +174,13 @@ const Extrato: React.FC = () => {
                     <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
                         Adicionar Fornecedor
                     </button>
-                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
+                    <button
+                        className="px-4 py-2 border rounded hover:bg-gray-100 transition"
+                        onClick={() => setShowModal(true)}
+                    >
                         Adicionar Banco
                     </button>
+
                 </div>
 
                 <div className="flex space-x-4">
@@ -179,14 +194,30 @@ const Extrato: React.FC = () => {
                         Editar Todas as Linhas
                     </button>
                 </div>
-            </div>   
+            </div>
             <div className='flex justify-center items-center mt-8'>
                 <Calendario />
             </div>
-                
+
             <div className="mt-8 w-full px-10">
                 <TabelaExtrato dados={dadosTabela} />
             </div>
+
+            {showModal && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-6 rounded shadow-lg w-[800px]">
+                        <h2 className="text-xl font-bold mb-4">Adicionar Banco</h2>
+                        <iframe src="/banco" className="w-full h-[600px] border-none"></iframe>
+                        <button
+                            className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                            onClick={() => setShowModal(false)}
+                        >
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            )}
+
         </>
     );
 };
