@@ -65,26 +65,42 @@
   width: 30%;
 }
 .task__list {
-  min-height: 20px;
-  height: auto;
-  padding-top: 6px;
-  padding-inline: 0.5rem;
-  border-radius: 2px;
+  min-height: 50px; /* 🔹 Altura mínima uniforme */
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 10px;
 }
+
 .task__list:hover {
   background-color: var(--task-hover);
 }
 
 .task__checkbox {
-  height: 18px !important;
-  width: 18px !important;
-  cursor: pointer;
+  width: 20px !important; /* 🔹 Tamanho fixo do checkbox */
+  height: 20px !important;
+  flex-shrink: 0; /* 🔹 Evita redimensionamento */
 }
+
+.task__list h6 {
+  font-size: 14px !important; /* 🔹 Mantém fonte consistente */
+  min-height: 40px;
+  line-height: 1.4;
+  word-break: break-word;
+  white-space: pre-wrap;
+  flex-grow: 1; /* 🔹 Permite o texto ocupar o espaço necessário */
+  margin-bottom: 0 !important;
+}
+
 .task__list > div > p {
   text-align: left;
   font-size: 16px;
 }
-
+.task__list svg {
+  width: 20px !important; /* 🔹 Tamanho fixo da lixeira */
+  height: 20px !important;
+  flex-shrink: 0;
+}
 .strike-through {
   text-decoration: line-through;
 }

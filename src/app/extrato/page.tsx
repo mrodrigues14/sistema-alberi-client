@@ -7,107 +7,121 @@ import InsercaoManual from './components/insercaoManual/insercaoManual';
 import Calendario from './components/calendario/calendario';
 import TabelaExtrato from './components/tabelaExtrato/tabelaExtrato';
 import { useBanco, Banco } from '@/lib/hooks/userBanco';
+import { useExtratos } from '@/lib/hooks/useExtrato';
+import { useClienteContext } from '@/context/ClienteContext';
+import { useSaldoInicial } from '@/lib/hooks/useSaldoInicial';
 
 const Extrato: React.FC = () => {
-    const [showModal, setShowModal] = useState(false);
-    const { bancos } = useBanco(96);
+    const { idCliente } = useClienteContext();
+    const [showModalRubrica, setShowModalRubrica] = useState(false);
+    const [showModalBanco, setShowModalBanco] = useState(false);
+    const { bancos, isLoading: loadingBancos, isError: errorBancos, mutate: mutateBancos } = useBanco(
+        idCliente ? idCliente : undefined
+    );
     const [bancoSelecionado, setBancoSelecionado] = useState<number | null>(null);
     const [metodoInsercao, setMetodoInsercao] = useState<string>("");
-    const [dadosTabela, setDadosTabela] = useState([
-        {
-            id: 1,
-            data: "12/03/2024",
-            rubricaSelecionada: "Salários",
-            fornecedorSelecionado: "Empresa XPTO",
-            observacao: "Pagamento mensal",
-            nomeExtrato: "Folha de pagamento",
-            rubricaContabil: "Despesas Fixas",
-            entrada: "",
-            saida: "5.000,00"
-        },
-        {
-            id: 2,
-            data: "15/03/2024",
-            rubricaSelecionada: "Impostos",
-            fornecedorSelecionado: "Receita Federal",
-            observacao: "Pagamento de impostos",
-            nomeExtrato: "IRPJ",
-            rubricaContabil: "Tributos",
-            entrada: "",
-            saida: "1.200,00"
-        },
-        {
-            id: 3,
-            data: "18/03/2024",
-            rubricaSelecionada: "Materiais",
-            fornecedorSelecionado: "Loja ABC",
-            observacao: "Compra de insumos",
-            nomeExtrato: "Compra de papel",
-            rubricaContabil: "Despesas Variáveis",
-            entrada: "",
-            saida: "350,00"
-        },
-        {
-            id: 4,
-            data: "20/03/2024",
-            rubricaSelecionada: "Marketing",
-            fornecedorSelecionado: "Agência Criativa",
-            observacao: "Campanha publicitária",
-            nomeExtrato: "Publicidade",
-            rubricaContabil: "Investimentos",
-            entrada: "",
-            saida: "2.500,00"
-        },
-        {
-            id: 5,
-            data: "22/03/2024",
-            rubricaSelecionada: "Recebimentos",
-            fornecedorSelecionado: "Cliente Y",
-            observacao: "Pagamento de serviço prestado",
-            nomeExtrato: "Fatura #1234",
-            rubricaContabil: "Receitas",
-            entrada: "8.000,00",
-            saida: ""
-        },
-        {
-            id: 6,
-            data: "25/03/2024",
-            rubricaSelecionada: "Aluguel",
-            fornecedorSelecionado: "Imobiliária ABC",
-            observacao: "Pagamento mensal",
-            nomeExtrato: "Aluguel da sede",
-            rubricaContabil: "Despesas Fixas",
-            entrada: "",
-            saida: "4.200,00"
-        },
-    ]);
+    const [mesSelecionado, setMesSelecionado] = useState<string>("");
+    const [anoSelecionado, setAnoSelecionado] = useState<string>("");
+    const [dadosTabela, setDadosTabela] = useState<any[]>([]);
 
+    const shouldFetchData = !!idCliente && !!bancoSelecionado && !!mesSelecionado && !!anoSelecionado;
+
+    const { extratos, isLoading, isError, mutate } = useExtratos(
+        shouldFetchData ? idCliente : undefined,
+        shouldFetchData ? bancoSelecionado : undefined,
+        shouldFetchData ? mesSelecionado : undefined,
+        shouldFetchData ? anoSelecionado : undefined
+    );
+
+    const { saldoInicial, isLoading: loadingSaldo } = useSaldoInicial(
+        shouldFetchData ? idCliente : undefined,
+        shouldFetchData ? bancoSelecionado : undefined,
+        shouldFetchData ? mesSelecionado : undefined,
+        shouldFetchData ? anoSelecionado : undefined
+    );
+
+
+    const formatarData = (data: string): string => {
+        const [ano, mes, dia] = data.split("-");
+        return `${dia}/${mes}/${ano}`;
+    };
+
+    console.log("Extratos:", extratos);
+    console.log("Cliente/Banco/Data:", idCliente, bancoSelecionado, mesSelecionado, anoSelecionado);
+    console.log("Saldo Inicial:", saldoInicial);
+
+    /** ✅ Atualiza o banco selecionado e salva no sessionStorage **/
     const handleBancoChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedBanco = Number(event.target.value);
-        setBancoSelecionado(selectedBanco);
-
-        if (typeof window !== "undefined") {
-            sessionStorage.setItem("bancoSelecionado", String(selectedBanco));
+        if (bancoSelecionado !== selectedBanco) {
+            setBancoSelecionado(selectedBanco);
+            if (typeof window !== "undefined") {
+                sessionStorage.setItem("bancoSelecionado", String(selectedBanco));
+            }
         }
     };
 
-
+    /** ✅ Atualiza o método de inserção **/
     const handleInsercaoChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         setMetodoInsercao(event.target.value);
     };
 
-    const adicionarEntrada = (novaEntrada: any) => {
-        setDadosTabela((prevDados) => [...prevDados, novaEntrada]);
+
+    const handleSelectMonth = (mes: string, ano: string) => {
+        if (mes !== mesSelecionado || ano !== anoSelecionado) {
+            setMesSelecionado(mes);
+            setAnoSelecionado(ano);
+        }
     };
 
     useEffect(() => {
         if (typeof window !== "undefined") {
             const storedBanco = sessionStorage.getItem("bancoSelecionado");
-            if (storedBanco) {
+            if (storedBanco && bancoSelecionado === null) {
                 setBancoSelecionado(Number(storedBanco));
             }
         }
     }, []);
+
+    useEffect(() => {
+        if (!idCliente) return;
+
+        mutateBancos();
+        setBancoSelecionado((prev) => (prev ? prev : null)); // Mantém se já tiver um selecionado
+        setMesSelecionado((prev) => (prev ? prev : ""));
+        setAnoSelecionado((prev) => (prev ? prev : ""));
+    }, [idCliente]);
+
+
+
+    useEffect(() => {
+        if (extratos) {
+            setDadosTabela(
+                extratos.map((extrato: any) => ({
+                    id: extrato.idextrato,
+                    data: formatarData(extrato.data),
+                    rubricaSelecionada: extrato.categoria || "Sem categoria",
+                    fornecedorSelecionado: extrato.fornecedor || "Não informado",
+                    observacao: extrato.descricao || "Sem descrição",
+                    nomeExtrato: extrato.nomeNoExtrato || "Sem nome",
+                    rubricaContabil: extrato.rubricaContabil || "Não definida",
+                    entrada: extrato.tipoDeTransacao === "ENTRADA" ? extrato.valor.toFixed(2) : "",
+                    saida: extrato.tipoDeTransacao === "SAIDA" ? extrato.valor.toFixed(2) : "",
+                }))
+            );
+        }
+    }, [extratos]);
+
+    useEffect(() => {
+        if ((idCliente || bancoSelecionado) && (!mesSelecionado || !anoSelecionado)) {
+            const dataAtual = new Date();
+            const mesAtual = (dataAtual.getMonth() + 1).toString().padStart(2, "0");
+            const anoAtual = dataAtual.getFullYear().toString();
+            setMesSelecionado(mesAtual);
+            setAnoSelecionado(anoAtual);
+        }
+    }, [idCliente, bancoSelecionado]);
+
 
     return (
         <>
@@ -160,7 +174,11 @@ const Extrato: React.FC = () => {
                 {metodoInsercao === "manual" && (
                     <div className="p-6 border rounded shadow-md mt-6">
                         <h2 className="text-xl font-bold mb-4">Inserção Manual</h2>
-                        <InsercaoManual adicionarEntrada={adicionarEntrada} />
+                        <InsercaoManual
+                            idCliente={idCliente}
+                            bancoSelecionado={bancoSelecionado}
+                        />
+
                     </div>
                 )}
             </div>
@@ -168,15 +186,19 @@ const Extrato: React.FC = () => {
 
             <div className="mt-16 w-full flex justify-between items-center px-10">
                 <div className="flex space-x-4">
-                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
+                    <button
+                        className="px-4 py-2 border rounded hover:bg-gray-100 transition"
+                        onClick={() => setShowModalRubrica(true)}
+                    >
                         Adicionar Rubricas
                     </button>
+
                     <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
                         Adicionar Fornecedor
                     </button>
                     <button
                         className="px-4 py-2 border rounded hover:bg-gray-100 transition"
-                        onClick={() => setShowModal(true)}
+                        onClick={() => setShowModalBanco(true)}
                     >
                         Adicionar Banco
                     </button>
@@ -195,28 +217,44 @@ const Extrato: React.FC = () => {
                     </button>
                 </div>
             </div>
-            <div className='flex justify-center items-center mt-8'>
-                <Calendario />
+            <div className="mt-20 flex flex-col items-center space-y-4 px-4">
+                <Calendario onSelectMonth={handleSelectMonth} />
             </div>
 
             <div className="mt-8 w-full px-10">
-                <TabelaExtrato dados={dadosTabela} />
+                <TabelaExtrato dados={dadosTabela} saldoInicial={saldoInicial} />
             </div>
 
-            {showModal && (
+            {showModalBanco && (
                 <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
                     <div className="bg-white p-6 rounded shadow-lg w-[800px]">
                         <h2 className="text-xl font-bold mb-4">Adicionar Banco</h2>
                         <iframe src="/banco" className="w-full h-[600px] border-none"></iframe>
                         <button
                             className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
-                            onClick={() => setShowModal(false)}
+                            onClick={() => setShowModalBanco(false)}
                         >
                             Fechar
                         </button>
                     </div>
                 </div>
             )}
+
+            {showModalRubrica && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-6 rounded shadow-lg w-[800px]">
+                        <h2 className="text-xl font-bold mb-4">Adicionar Rubrica</h2>
+                        <iframe src="/categoria" className="w-full h-[600px] border-none"></iframe>
+                        <button
+                            className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                            onClick={() => setShowModalRubrica(false)}
+                        >
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            )}
+
 
         </>
     );

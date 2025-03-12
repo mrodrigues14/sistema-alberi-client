@@ -86,7 +86,6 @@
 }
 .local__bootstrap h6, .local__bootstrap .h6, .local__bootstrap h5, .local__bootstrap .h5, .local__bootstrap h4, .local__bootstrap .h4, .local__bootstrap h3, .local__bootstrap .h3, .local__bootstrap h2, .local__bootstrap .h2, .local__bootstrap h1, .local__bootstrap .h1 {
   margin-top: 0;
-  margin-bottom: 0.5rem;
   font-weight: 500;
   line-height: 1.2;
 }

@@ -5,9 +5,10 @@ import { deleteBanco, useBanco } from "@/lib/hooks/userBanco";
 import { FaTrash, FaEdit, FaPlus } from "react-icons/fa";
 import AdicionarBanco from "./components/adicionarBanco/adicionarBanco";
 import EditarBanco from "./components/editarBanco/editarBanco";
+import { useClienteContext } from "@/context/ClienteContext";
 
 const Bancos = () => {
-    const [idCliente, setIdCliente] = useState<number | null>(null);
+    const { idCliente } = useClienteContext();
     const { bancos, isLoading, isError, mutate } = useBanco(idCliente || undefined);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,14 +32,10 @@ const Bancos = () => {
     };
 
     useEffect(() => {
-        if (typeof window !== "undefined") {
-            const storedCliente = sessionStorage.getItem("selectedCliente");
-            if (storedCliente) {
-                const parsedCliente = JSON.parse(storedCliente);
-                setIdCliente(parsedCliente.id);
-            }
+        if (idCliente) {
+          mutate(); 
         }
-    }, []);
+      }, [idCliente, mutate]);
     return (
         <div className="p-6 max-w-3xl mx-auto bg-white rounded-lg shadow-md">
             <h2 className="text-2xl font-bold text-center mb-4">Bancos Vinculados</h2>

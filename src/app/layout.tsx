@@ -4,6 +4,7 @@ import "./globals.css";
 import NextAuthSessionProvider from "@/providers/sessionProvider";
 import React from "react";
 import "bootstrap-icons/font/bootstrap-icons.css";
+import { ClienteProvider } from "@/context/ClienteContext"; // 🔥 Importa o ClienteProvider
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -13,17 +14,19 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-                                       children,
-                                   }: Readonly<{
-    children: React.ReactNode;
-}>) {
+    children,
+}: Readonly<{ children: React.ReactNode }>) {
     return (
         <html lang="en">
         <head>
             <link rel="icon" href="icone_alberi.png" />
         </head>
         <body className={inter.className}>
-            <NextAuthSessionProvider>{children}</NextAuthSessionProvider>
+            <NextAuthSessionProvider>
+                <ClienteProvider> 
+                    {children}
+                </ClienteProvider>
+            </NextAuthSessionProvider>
         </body>
         </html>
     );

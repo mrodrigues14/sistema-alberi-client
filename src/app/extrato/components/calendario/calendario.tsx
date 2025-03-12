@@ -2,7 +2,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import styles from "./Calendar.module.css";
 
-const Calendario: React.FC = () => {
+interface CalendarioProps {
+    onSelectMonth: (mes: string, ano: string) => void; // 🆕 Prop para passar o mês/ano
+  }
+  
+const Calendario: React.FC<CalendarioProps> = ({ onSelectMonth }) => {
     const [currentDate] = useState(new Date());
     const [months, setMonths] = useState<string[]>([]);
     const [selectedMonth, setSelectedMonth] = useState<string>("");
@@ -94,7 +98,9 @@ const Calendario: React.FC = () => {
 
     const handleSelectMonth = (month: string) => {
         setSelectedMonth(month);
-    };
+        const [mes, ano] = month.split("/");
+        onSelectMonth(mes, ano); // 🔥 Passa para o `Extrato.tsx`
+      };;
 
     return (
         <div className="flex items-center w-full overflow-hidden p-1 w-3/4">

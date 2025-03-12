@@ -14,6 +14,7 @@ const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: st
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>({});
 
+  console.log(dados);
   useEffect(() => {
     let saldoAcumulado = saldoInicial;
     dados.forEach((row) => {
@@ -45,25 +46,33 @@ const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: st
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, field: string) => {
     setEditData({ ...editData, [field]: e.target.value });
   };
-  const formatarMoeda = (valor: string) => {
-    // Remove qualquer caractere que não seja número
-    const numeroLimpo = valor.replace(/\D/g, "");
+  const formatarMoeda = (valor: string | number) => {
 
-    if (!numeroLimpo) return "";
+    if (typeof valor === "number") {
+      return valor.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
 
-    // Converte para número e divide por 100 para manter casas decimais
-    const numero = parseFloat(numeroLimpo) / 100;
+    if (typeof valor === "string") {
+      const numero = parseFloat(valor.replace(/\./g, "").replace(",", "."));
 
-    // Retorna no formato BRL
-    return numero.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: 2,
-    });
+      if (isNaN(numero)) return "-";
+
+      return numero.toLocaleString("pt-BR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+    }
+
+    return "-";
   };
+
+
   return (
     <div className="flex justify-center items-center mt-8">
-      <div className="w-3/4 bg-white rounded-lg shadow-lg p-4 overflow-auto">
+      <div className="w-[5000px] bg-white rounded-lg shadow-lg p-4 overflow-auto">
 
         {/* Linha de Saldos e Título */}
         <div className="flex justify-center items-center mt-4">
@@ -128,35 +137,47 @@ const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: st
                       row.data
                     )}
                   </td>
-                  <td className="border px-2 py-2 whitespace-nowrap">
+                  <td className="border px-2 py-2 whitespace-nowrap relative group">
                     {editIndex === index ? (
-                      <CustomDropdown
-                        label="Selecione uma rubrica"
-                        options={["Aluguel", "Salários", "Impostos", "Materiais", "Marketing"]}
-                        selectedValue={editData.rubricaSelecionada}
-                        onSelect={(value) => setEditData({ ...editData, rubricaSelecionada: value })}
+                      <input
+                        type="text"
+                        value={editData.rubricaSelecionada}
+                        onChange={(e) => handleChange(e, "rubricaSelecionada")}
+                        className="w-full border px-2 py-1"
                       />
-
-
                     ) : (
-                      row.rubricaSelecionada
+                      <span className="group relative cursor-pointer">
+                        {row.rubricaSelecionada.length > 30 ? row.rubricaSelecionada.slice(0, 30) + "..." : row.rubricaSelecionada}
+                        {row.rubricaSelecionada.length > 30 && (
+                          <span className="absolute left-1/2 -translate-x-1/2 -top-10 bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            {row.rubricaSelecionada}
+                          </span>
+                        )}
+                      </span>
                     )}
                   </td>
-                  <td className="border px-2 py-2 whitespace-nowrap">
+
+                  <td className="border px-2 py-2 whitespace-nowrap relative group">
                     {editIndex === index ? (
-                      <CustomDropdown
-                        label="Selecione um fornecedor"
-                        options={["Fornecedor A", "Fornecedor B", "Fornecedor C", "Fornecedor D"]}
-                        selectedValue={editData.fornecedorSelecionado}
-                        onSelect={(value) => setEditData({ ...editData, fornecedorSelecionado: value })}
+                      <input
+                        type="text"
+                        value={editData.fornecedorSelecionado}
+                        onChange={(e) => handleChange(e, "fornecedorSelecionado")}
+                        className="w-full border px-2 py-1"
                       />
-
-
                     ) : (
-                      row.fornecedorSelecionado
+                      <span className="group relative cursor-pointer">
+                        {row.fornecedorSelecionado.length > 30 ? row.fornecedorSelecionado.slice(0, 30) + "..." : row.fornecedorSelecionado}
+                        {row.fornecedorSelecionado.length > 30 && (
+                          <span className="absolute left-1/2 -translate-x-1/2 -top-10 bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            {row.fornecedorSelecionado}
+                          </span>
+                        )}
+                      </span>
                     )}
                   </td>
-                  <td className="border px-2 py-2 whitespace-nowrap">
+
+                  <td className="border px-2 py-2 whitespace-nowrap relative group">
                     {editIndex === index ? (
                       <input
                         type="text"
@@ -165,10 +186,18 @@ const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: st
                         className="w-full border px-2 py-1"
                       />
                     ) : (
-                      row.observacao
+                      <span className="group relative cursor-pointer">
+                        {row.observacao.length > 30 ? row.observacao.slice(0, 30) + "..." : row.observacao}
+                        {row.observacao.length > 30 && (
+                          <span className="absolute left-1/2 -translate-x-1/2 -top-10 bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            {row.observacao}
+                          </span>
+                        )}
+                      </span>
                     )}
                   </td>
-                  <td className="border px-2 py-2 whitespace-nowrap">
+
+                  <td className="border px-2 py-2 whitespace-nowrap relative group">
                     {editIndex === index ? (
                       <input
                         type="text"
@@ -177,10 +206,18 @@ const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: st
                         className="w-full border px-2 py-1"
                       />
                     ) : (
-                      row.nomeExtrato
+                      <span className="group relative cursor-pointer">
+                        {row.nomeExtrato.length > 30 ? row.nomeExtrato.slice(0, 30) + "..." : row.nomeExtrato}
+                        {row.nomeExtrato.length > 30 && (
+                          <span className="absolute left-1/2 -translate-x-1/2 -top-10 bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            {row.nomeExtrato}
+                          </span>
+                        )}
+                      </span>
                     )}
                   </td>
-                  <td className="border px-2 py-2 whitespace-nowrap">
+
+                  <td className="border px-2 py-2 whitespace-nowrap relative group">
                     {editIndex === index ? (
                       <input
                         type="text"
@@ -189,35 +226,48 @@ const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: st
                         className="w-full border px-2 py-1"
                       />
                     ) : (
-                      row.rubricaContabil
+                      <span className="group relative cursor-pointer">
+                        {row.rubricaContabil.length > 30 ? row.rubricaContabil.slice(0, 30) + "..." : row.rubricaContabil}
+                        {row.rubricaContabil.length > 30 && (
+                          <span className="absolute left-1/2 -translate-x-1/2 -top-10 bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            {row.rubricaContabil}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </td>
+
+                  <td className="border px-2 py-2 text-right whitespace-nowrap">
+                    {editIndex === index ? (
+                      <input
+                        type="text"
+                        value={formatarMoeda(editData.entrada)} // Formata na exibição
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/[^\d,]/g, "").replace(",", ".");
+                          setEditData({ ...editData, entrada: rawValue });
+                        }}
+                        className="w-full border px-2 py-1 text-right"
+                      />
+                    ) : (
+                      formatarMoeda(row.entrada) || '-'
                     )}
                   </td>
                   <td className="border px-2 py-2 text-right whitespace-nowrap">
                     {editIndex === index ? (
                       <input
                         type="text"
-                        value={editData.entrada}
-                        onChange={(e) => setEditData({ ...editData, entrada: formatarMoeda(e.target.value) })}
+                        value={formatarMoeda(editData.saida)} // Formata na exibição
+                        onChange={(e) => {
+                          const rawValue = e.target.value.replace(/[^\d,]/g, "").replace(",", ".");
+                          setEditData({ ...editData, saida: rawValue });
+                        }}
                         className="w-full border px-2 py-1 text-right"
                       />
-
                     ) : (
-                      row.entrada || '-'
+                      formatarMoeda(row.saida) || '-'
                     )}
                   </td>
-                  <td className="border px-2 py-2 text-right whitespace-nowrap">
-                    {editIndex === index ? (
-                      <input
-                        type="text"
-                        value={editData.saida}
-                        onChange={(e) => setEditData({ ...editData, saida: formatarMoeda(e.target.value) })}
-                        className="w-full border px-2 py-1 text-right"
-                      />
 
-                    ) : (
-                      row.saida || '-'
-                    )}
-                  </td>
                   <td className="border px-2 py-2 text-right whitespace-nowrap">
                     {saldoAcumulado.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>

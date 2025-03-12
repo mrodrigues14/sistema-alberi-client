@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from 'next/link';
 import { useSession } from "next-auth/react";
 import { useCliente } from "@/lib/hooks/useCliente";
+import { useClienteContext } from "@/context/ClienteContext";
 
 const font = Poppins({
     subsets: ["latin"],
@@ -31,9 +32,10 @@ export default function Navbar() {
     const { data: session } = useSession();
     const { clientes, isLoading, isError } = useCliente();
     const [usuario, setUsuario] = useState('Carregando...');
-    const [showDropdown, setShowDropdown] = useState<string | null>(null);
+    const [showDropdown, setShowDropdownCliente] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const dropdownRef = useRef<HTMLDivElement | null>(null);
+    const { idCliente, setIdCliente } = useClienteContext();
 
     // Estado para armazenar o cliente selecionado
     const [selectedCliente, setSelectedCliente] = useState<{ id: number, nome: string } | null>(null);
@@ -74,22 +76,32 @@ export default function Navbar() {
     );
 
     const toggleDropdown = (dropdownName: string) => {
-        setShowDropdown(prev => (prev === dropdownName ? null : dropdownName));
+        setShowDropdownCliente(prev => (prev === dropdownName ? null : dropdownName));
     };
 
 
     const handleClienteSelect = (cliente: Cliente) => {
         const clienteNome = cliente.apelido || cliente.nome;
-        setSelectedCliente({ id: cliente.idcliente, nome: clienteNome });
+
+        setSelectedCliente({ id: cliente.idcliente, nome: clienteNome }); // 🔥 Atualiza o nome imediatamente
         sessionStorage.setItem("selectedCliente", JSON.stringify({ id: cliente.idcliente, nome: clienteNome }));
-        setShowDropdown(null);
+        setIdCliente(cliente.idcliente);
+        setShowDropdownCliente(null);
     };
 
-    // Fechar dropdown ao clicar fora
+    useEffect(() => {
+        if (idCliente && clientes?.length > 0) {
+            const clienteEncontrado: Cliente | undefined = clientes.find((cliente: Cliente) => cliente.idcliente === idCliente);
+            if (clienteEncontrado) {
+                setSelectedCliente({ id: clienteEncontrado.idcliente, nome: clienteEncontrado.apelido || clienteEncontrado.nome });
+            }
+        }
+    }, [idCliente, clientes]); 
+
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setShowDropdown(null);
+                setShowDropdownCliente(null);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);

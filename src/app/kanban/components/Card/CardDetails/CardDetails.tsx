@@ -20,6 +20,7 @@ import { useUsuarios, Usuario } from "@/lib/hooks/useUsuarios";
 import Card from "../Card";
 
 interface Task {
+  text: string;
   id: string;
   task: string;
   completed: boolean;
@@ -48,6 +49,7 @@ interface CardDetailsProps {
 }
 
 export default function CardDetails(props: CardDetailsProps) {
+  console.log(props.card);
   const colors = ["#61bd4f", "#f2d600", "#ff9f1a", "#eb5a46", "#c377e0"];
 
   const [input, setInput] = useState(false);
@@ -55,15 +57,34 @@ export default function CardDetails(props: CardDetailsProps) {
   const { usuarios } = useUsuarios(); // Obtém os usuários do sistema
   const [searchTerm, setSearchTerm] = useState(""); // Estado da pesquisa no dropdown
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Controla a abertura do dropdown
-  const [values, setValues] = useState(() => {
-    if (typeof window !== "undefined") {
-      const savedCard = localStorage.getItem(`card-${props.card.id}`);
-      return savedCard
-        ? JSON.parse(savedCard)
-        : { ...props.card, autor: props.card.autor || "" };
-    }
-    return { ...props.card, autor: props.card.autor || "" };
-  });
+ const [values, setValues] = useState(() => {
+  if (typeof window !== "undefined") {
+    const savedCard = localStorage.getItem(`card-${props.card.id}`);
+    return savedCard
+      ? JSON.parse(savedCard)
+      : { 
+          ...props.card, 
+          autor: props.card.autor || "", 
+          task: props.card.task.map((t, index) => ({
+            id: index + 1, // 🔹 Usa o índice da task para gerar um ID numérico sequencial
+            text: t.text, 
+            completed: t.completed 
+          })) 
+        };
+  }
+  return { 
+    ...props.card, 
+    autor: props.card.autor || "", 
+    task: props.card.task.map((t, index) => ({
+      id: index + 1, // 🔹 Mesmo ajuste para SSR (Server Side Rendering)
+      text: t.text, 
+      completed: t.completed 
+    })) 
+  };
+});
+
+  console.log(values);
+
   const [text, setText] = useState(values.title);
 
   const Input = (props: { title: string }) => {
@@ -89,11 +110,12 @@ export default function CardDetails(props: CardDetailsProps) {
   const addTask = (value: string) => {
     values.task.push({
       id: uuidv4(),
-      task: value,
+      text: value, // 🔹 Alterado de "task" para "text"
       completed: false,
     });
     setValues({ ...values });
   };
+
 
   const removeTask = (id: string) => {
     const remaningTask = values.task.filter((item: Task) => item.id !== id);
@@ -108,10 +130,16 @@ export default function CardDetails(props: CardDetailsProps) {
   };
 
   const updateTask = (id: string) => {
-    const taskIndex = values.task.findIndex((item: Task) => item.id === id);
-    values.task[taskIndex].completed = !values.task[taskIndex].completed;
-    setValues({ ...values });
+    setValues((prevValues: typeof values) => ({
+      ...prevValues,
+      task: prevValues.task.map((task: Task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task
+      ),
+    }));
   };
+  
+  
+
 
   const updateTitle = useCallback((value: string) => {
     setValues((prevValues: typeof values) => {
@@ -178,7 +206,7 @@ export default function CardDetails(props: CardDetailsProps) {
       localStorage.setItem(`card-${values.id}`, JSON.stringify(values));
     }
   }, [values, updateCard]);
-  
+
   return (
     <Modal onClose={() => {
       props.updateCard(values);
@@ -269,35 +297,53 @@ export default function CardDetails(props: CardDetailsProps) {
                   {values.task.length !== 0 ? (
                     values.task.map((item: Task) => (
                       <div
-                        key={item.id}
-                        className="task__list d-flex align-items-start gap-2"
+                        className="task__list d-flex align-items-center gap-2"
+                        style={{
+                          minHeight: "50px", // 🔹 Mantém altura uniforme
+                          display: "flex",
+                          alignItems: "center",
+                          width: "100%",
+                        }}
                       >
                         <input
                           className="task__checkbox"
                           type="checkbox"
-                          defaultChecked={item.completed}
-                          onChange={() => {
-                            updateTask(item.id);
+                          checked={item.completed} // 🔹 Garante controle do estado
+                          onChange={() => updateTask(item.id)}
+                          style={{
+                            flexShrink: 0, // 🔹 Evita que o checkbox redimensione
+                            height: "20px", // 🔹 Tamanho fixo do checkbox
+                            width: "20px",
                           }}
                         />
 
                         <h6
-                          className={`flex-grow-1 ${item.completed === true ? "strike-through" : ""
-                            }`}
-                        >
-                          {item.task}
-                        </h6>
-                        <Trash
-                          onClick={() => {
-                            removeTask(item.id);
-                          }}
+                          className={`flex-grow-1 ${item.completed ? "strike-through" : ""}`}
                           style={{
+                            fontSize: "14px", // 🔹 Mantém tamanho de fonte fixo
+                            minHeight: "40px",
+                            lineHeight: "1.4",
+                            display: "flex",
+                            alignItems: "center",
+                            wordBreak: "break-word",
+                            whiteSpace: "pre-wrap",
+                            maxWidth: "100%",
+                          }}
+                        >
+                          {item.text}
+                        </h6>
+
+                        <Trash
+                          onClick={() => removeTask(item.id)}
+                          style={{
+                            flexShrink: 0, // 🔹 Mantém tamanho fixo do ícone
                             cursor: "pointer",
-                            width: "18px",
-                            height: "18px",
+                            width: "20px",
+                            height: "20px",
                           }}
                         />
                       </div>
+
                     ))
                   ) : (
                     <></>

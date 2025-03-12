@@ -1,12 +1,65 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import CustomDropdown from "../dropdown/CustomDropdown";
 import { FaCalendarAlt } from "react-icons/fa";
+import { createExtrato } from "@/lib/hooks/useExtrato";
+import { useCategoriasPorCliente } from "@/lib/hooks/useCategoria";
+import { useFornecedoresPorCliente } from "@/lib/hooks/useFornecedor";
 
-const InsercaoManual: React.FC<{ adicionarEntrada: (novaEntrada: any) => void }> = ({ adicionarEntrada }) => {
-    const [rubricas, setRubricas] = useState(["Aluguel", "Salários", "Impostos", "Materiais", "Marketing"]);
-    const [fornecedores, setFornecedores] = useState(["Fornecedor A", "Fornecedor B", "Fornecedor C", "Fornecedor D"]);
+interface Categoria {
+    idcategoria: number;
+    nome: string;
+    idCategoriaPai?: number | null;
+}
+
+const InsercaoManual: React.FC<{
+    idCliente: number | null;
+    bancoSelecionado: number | null;
+}> = ({ idCliente, bancoSelecionado }) => {
+    const { categoriasCliente, isLoading } = useCategoriasPorCliente(idCliente || undefined);
+    const [categoriaSelecionada, setCategoriaSelecionada] = useState<{ id: number; nome: string } | null>(null);
+
+    const categoriasFormatadas = useMemo(() => {
+        if (!categoriasCliente || categoriasCliente.length === 0) return [];
+    
+        const categoriasPai: Categoria[] = categoriasCliente.filter((cat: Categoria) => !cat.idCategoriaPai);
+        const categoriasFilhas: Categoria[] = categoriasCliente.filter((cat: Categoria) => cat.idCategoriaPai);
+    
+        return categoriasPai
+            .sort((a, b) => a.nome.localeCompare(b.nome)) // 🔹 Ordenando pais em ordem alfabética
+            .flatMap((pai) => {
+                const subrubricas = categoriasFilhas
+                    .filter((filha) => filha.idCategoriaPai === pai.idcategoria)
+                    .sort((a, b) => a.nome.localeCompare(b.nome)) // 🔹 Ordenando filhos em ordem alfabética
+                    .map((filha) => ({
+                        label: `   └ ${filha.nome}`,
+                        value: filha.idcategoria,
+                        disabled: false,
+                    }));
+    
+                return [
+                    { label: pai.nome, value: pai.idcategoria, disabled: subrubricas.length > 0 }, // 🔹 Pai aparece antes dos filhos
+                    ...subrubricas,
+                ];
+            });
+    }, [categoriasCliente]);
+    
+    const { fornecedores } = useFornecedoresPorCliente();
+    
+    const fornecedoresFormatados = useMemo(() => {
+        if (!fornecedores?.length) return [];
+    
+        return fornecedores
+            .sort((a, b) => a.nome.localeCompare(b.nome)) // 🔹 Ordena os fornecedores por nome
+            .map((fornecedor) => ({
+                label: fornecedor?.nome,
+                value: fornecedor?.idfornecedor,
+            }));
+    }, [fornecedores]);
+    
+    
+    console.log(fornecedoresFormatados);
 
     const [entrada, setEntrada] = useState({
         id: Date.now(),
@@ -17,33 +70,74 @@ const InsercaoManual: React.FC<{ adicionarEntrada: (novaEntrada: any) => void }>
         nomeExtrato: "",
         rubricaContabil: "",
         entrada: "",
-        saida: ""
+        saida: "",
     });
 
     const handleInputChange = (field: string, value: string) => {
         setEntrada((prev) => ({
             ...prev,
-            entrada: field === "saida" ? "" : prev.entrada, // Limpa "entrada" se estiver preenchendo "saida"
-            saida: field === "entrada" ? "" : prev.saida, // Limpa "saida" se estiver preenchendo "entrada"
-            [field]: value
+            entrada: field === "saida" ? "" : prev.entrada,
+            saida: field === "entrada" ? "" : prev.saida,
+            [field]: value,
         }));
     };
+
+
+    console.log(fornecedores);
+    const handleCategoriaChange = (idCategoria: number) => {
+        const categoriaFilha: Categoria | undefined = categoriasCliente?.find((cat: Categoria) => cat.idcategoria === idCategoria);
+        const categoriaPai: Categoria | null = categoriaFilha ? categoriasCliente?.find((cat: Categoria) => cat.idcategoria === categoriaFilha.idCategoriaPai) || null : null;
+
+        if (categoriaFilha) {
+            setCategoriaSelecionada({
+                id: categoriaFilha.idcategoria,
+                nome: categoriaPai ? `${categoriaPai.nome} - ${categoriaFilha.nome}` : categoriaFilha.nome,
+            });
+        }
+    };
+
     const handleDateChange = (value: string) => {
-        // Remove qualquer caractere que não seja número
         let cleaned = value.replace(/\D/g, "");
-    
-        // Formata enquanto digita
+
         if (cleaned.length > 2) cleaned = cleaned.replace(/^(\d{2})/, "$1/");
         if (cleaned.length > 5) cleaned = cleaned.replace(/^(\d{2})\/(\d{2})/, "$1/$2/");
-    
-        // Permite apenas até DD/MM/YYYY
+
         if (cleaned.length > 10) return;
-    
+
         setEntrada((prev) => ({ ...prev, data: cleaned }));
     };
-    const adicionarLinha = () => {
-        if (entrada.entrada || entrada.saida) {
-            adicionarEntrada(entrada); // Adiciona na tabela Extrato
+
+    const adicionarLinha = async () => {
+        if (!entrada.entrada && !entrada.saida) {
+            alert("Preencha pelo menos Entrada ou Saída!");
+            return;
+        }
+
+        if (!idCliente || !bancoSelecionado || !categoriaSelecionada) {
+            alert("Selecione um cliente, um banco e uma categoria antes de adicionar!");
+            return;
+        }
+
+        const novoExtrato = {
+            idCliente,
+            idBanco: bancoSelecionado,
+            idCategoria: categoriaSelecionada.id, // 🔹 Envia apenas o ID da categoria filha para o banco
+            data: entrada.data.split("/").reverse().join("-"),
+            nomeExtrato: entrada.nomeExtrato,
+            descricao: entrada.nomeExtrato,
+            valor: entrada.entrada
+                ? Number(entrada.entrada.replace(/\D/g, "")) / 100
+                : Number(entrada.saida.replace(/\D/g, "")) / 100,
+            tipoDeTransacao: entrada.entrada ? "ENTRADA" as "ENTRADA" : "SAIDA" as "SAIDA",
+            idFornecedor: null,
+            rubricaContabil: entrada.rubricaContabil || null,
+            observacao: entrada.observacao || null,
+        };
+
+        try {
+            await createExtrato(novoExtrato);
+            alert("Extrato inserido com sucesso!");
+
             setEntrada({
                 id: Date.now(),
                 data: "",
@@ -53,29 +147,25 @@ const InsercaoManual: React.FC<{ adicionarEntrada: (novaEntrada: any) => void }>
                 nomeExtrato: "",
                 rubricaContabil: "",
                 entrada: "",
-                saida: ""
+                saida: "",
             });
-        } else {
-            alert("Preencha pelo menos Entrada ou Saída!");
+
+            setCategoriaSelecionada(null);
+        } catch (error) {
+            console.error("Erro ao inserir extrato:", error);
+            alert("Erro ao inserir extrato.");
         }
     };
     const formatarMoeda = (valor: string) => {
-        // Remove qualquer caractere que não seja número
         const numeroLimpo = valor.replace(/\D/g, "");
-
         if (!numeroLimpo) return "";
 
-        // Converte para número e divide por 100 para manter casas decimais
         const numero = parseFloat(numeroLimpo) / 100;
-
-        // Retorna no formato BRL
         return numero.toLocaleString("pt-BR", {
             style: "currency",
-            currency: "BRL",
             minimumFractionDigits: 2,
         });
     };
-
     return (
         <div className="w-full p-4">
             <table className="w-full border-collapse border">
@@ -93,37 +183,33 @@ const InsercaoManual: React.FC<{ adicionarEntrada: (novaEntrada: any) => void }>
                 </thead>
                 <tbody>
                     <tr>
-                    <td className="border px-4 py-2 relative">
-    <div className="flex items-center border rounded w-full px-2">
-        <input
-            type="text"
-            className="w-full outline-none"
-            placeholder="DD/MM/YYYY"
-            value={entrada.data}
-            onChange={(e) => handleDateChange(e.target.value)}
-            onPaste={(e) => {
-                const pastedData = e.clipboardData.getData("text");
-                handleDateChange(pastedData);
-            }}
-        />
-        <FaCalendarAlt className="text-gray-500 cursor-pointer ml-2" />
-    </div>
-</td>
-
                         <td className="border px-4 py-2">
-                            <CustomDropdown
-                                label="Selecione uma rubrica"
-                                options={rubricas}
-                                selectedValue={entrada.rubricaSelecionada}
-                                onSelect={(value) => handleInputChange("rubricaSelecionada", value)}
+                            <input
+                                type="text"
+                                className="border rounded w-full px-2"
+                                placeholder="DD/MM/YYYY"
+                                value={entrada.data}
+                                onChange={(e) => handleDateChange(e.target.value)}
                             />
                         </td>
                         <td className="border px-4 py-2">
                             <CustomDropdown
+                                label="Selecione uma rubrica"
+                                options={categoriasFormatadas} // ✅ Já estruturado corretamente { label, value }
+                                selectedValue={categoriaSelecionada?.id || null} // ✅ Usa o ID para garantir correspondência
+                                onSelect={(value) => handleCategoriaChange(value)}
+                                type="rubrica"
+                            />
+                        </td>
+
+                        <td className="border px-4 py-2">
+                            <CustomDropdown
                                 label="Selecione um fornecedor"
-                                options={fornecedores}
+                                options={fornecedoresFormatados}
                                 selectedValue={entrada.fornecedorSelecionado}
                                 onSelect={(value) => handleInputChange("fornecedorSelecionado", value)}
+                                type="rubrica"
+
                             />
                         </td>
                         <td className="border px-4 py-2">
@@ -145,17 +231,13 @@ const InsercaoManual: React.FC<{ adicionarEntrada: (novaEntrada: any) => void }>
                             />
                         </td>
                         <td className="border px-4 py-2">
-                            <select
+                            <input
+                                type="text"
                                 className="border rounded w-full px-2"
+                                placeholder="Rubrica Contábil"
                                 value={entrada.rubricaContabil}
                                 onChange={(e) => handleInputChange("rubricaContabil", e.target.value)}
-                            >
-                                <option value="">Selecione uma rubrica contábil</option>
-                                <option value="Despesas Fixas">Despesas Fixas</option>
-                                <option value="Investimentos">Investimentos</option>
-                                <option value="Tributos">Tributos</option>
-                                <option value="Outros">Outros</option>
-                            </select>
+                            />
                         </td>
                         <td className="border px-4 py-2">
                             <input
@@ -175,17 +257,12 @@ const InsercaoManual: React.FC<{ adicionarEntrada: (novaEntrada: any) => void }>
                                 onChange={(e) => handleInputChange("saida", formatarMoeda(e.target.value))}
                             />
                         </td>
-
                     </tr>
                 </tbody>
             </table>
 
-            {/* Botão Adicionar */}
             <div className="mt-4 flex justify-center">
-                <button
-                    className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-                    onClick={adicionarLinha}
-                >
+                <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition" onClick={adicionarLinha}>
                     + Adicionar Linha
                 </button>
             </div>
