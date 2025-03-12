@@ -34,9 +34,20 @@ const Card: React.FC<CardProps> = ({
   const [modalShow, setModalShow] = useState(false);
   const [cardData, setCardData] = useState(card);
   const [clickStart, setClickStart] = useState({ x: 0, y: 0 });
-  console.log(cardData)
-  const { cliente, isLoading } = useCliente(cardData.idCliente);
-
+  const { clientes, isLoading, isError } = useCliente(); 
+  const [empresaNome, setEmpresaNome] = useState<string>("Sem empresa");
+  useEffect(() => {
+    if (clientes.length > 0 && cardData.idCliente) {
+      const clienteEncontrado = clientes.find(
+        (cliente: { idcliente: number }) => cliente.idcliente === cardData.idCliente
+      );
+  
+      if (clienteEncontrado) {
+        setEmpresaNome(clienteEncontrado.apelido || clienteEncontrado.nome); // 🔹 Define apelido ou nome
+      }
+    }
+  }, [clientes]); // 🔹 Atualiza apenas se a lista de clientes mudar
+  
   useEffect(() => {
     setCardData(card);
   }, [card]);
@@ -119,9 +130,8 @@ const Card: React.FC<CardProps> = ({
               </div>
             )}
           </div>
-          <p className="empresa-nome">
-  {isLoading ? "Carregando empresa..." : cliente?.apelido || "Sem empresa"}
-</p>
+          <p className="empresa-nome">{empresaNome}</p>
+
 
 
         </div>

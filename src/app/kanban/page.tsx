@@ -56,10 +56,11 @@ const Kanban = () => {
     }));
 
     tarefas.forEach((tarefa: any) => {
-      // 🔹 Encontrar o nome do autor com base no idUsuario
-      console.log(usuarios)
+      console.log("ÄAAAAAAAAAAAAAAAA",tarefa);
+      console.log(usuarios);
       const usuarioAutor = usuarios.find((user: { idusuarios: number }) => user.idusuarios === tarefa.idUsuario);
-      const nomeAutor = usuarioAutor ? usuarioAutor.nomeDoUsuario : "Desconhecido"; // Se não encontrar, exibe "Desconhecido"
+      console.log(usuarioAutor);
+      const nomeAutor = usuarioAutor ? usuarioAutor.nomeDoUsuario : "Desconhecido";
 
       const card: Card = {
         id: tarefa.idtarefa.toString(),

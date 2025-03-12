@@ -17,6 +17,8 @@ import { v4 as uuidv4 } from "uuid";
 import Label from "../../Label/Label";
 import { useCallback } from "react";
 import { useUsuarios, Usuario } from "@/lib/hooks/useUsuarios";
+import { useCliente } from "@/lib/hooks/useCliente";
+
 import Card from "../Card";
 
 interface Task {
@@ -41,11 +43,18 @@ interface CardDetailsProps {
     prioridade: number;
     autor: string;
     company?: string;
+    idCliente?: number;
   };
   bid: string;
   updateCard: (updatedCard: any) => void;
   removeCard: (bid: string, cardId: string) => void;
   onClose: () => void;
+}
+
+interface ClienteCategoria {
+  idcliente: number;
+  nome: string;
+  apelido?: string;
 }
 
 export default function CardDetails(props: CardDetailsProps) {
@@ -57,31 +66,38 @@ export default function CardDetails(props: CardDetailsProps) {
   const { usuarios } = useUsuarios(); // Obtém os usuários do sistema
   const [searchTerm, setSearchTerm] = useState(""); // Estado da pesquisa no dropdown
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Controla a abertura do dropdown
- const [values, setValues] = useState(() => {
-  if (typeof window !== "undefined") {
-    const savedCard = localStorage.getItem(`card-${props.card.id}`);
-    return savedCard
-      ? JSON.parse(savedCard)
-      : { 
-          ...props.card, 
-          autor: props.card.autor || "", 
+  const { clientes, isLoading, isError } = useCliente(); // 🔹 Obtendo a lista de empresas
+  const [clientName, setClientName] = useState<string>("");
+
+  const [values, setValues] = useState(() => {
+    if (typeof window !== "undefined") {
+      const savedCard = localStorage.getItem(`card-${props.card.id}`);
+      return savedCard
+        ? JSON.parse(savedCard)
+        : {
+          ...props.card,
+          autor: props.card.autor || "",
+          company: String(props.card.idCliente) || "", // ✅ Define a empresa com base no idCliente
           task: props.card.task.map((t, index) => ({
-            id: index + 1, // 🔹 Usa o índice da task para gerar um ID numérico sequencial
-            text: t.text, 
-            completed: t.completed 
-          })) 
+            id: index + 1,
+            text: t.text,
+            completed: t.completed,
+          })),
         };
-  }
-  return { 
-    ...props.card, 
-    autor: props.card.autor || "", 
-    task: props.card.task.map((t, index) => ({
-      id: index + 1, // 🔹 Mesmo ajuste para SSR (Server Side Rendering)
-      text: t.text, 
-      completed: t.completed 
-    })) 
-  };
-});
+    }
+    return {
+      ...props.card,
+      autor: props.card.autor || "",
+      company: String(props.card.idCliente) || "", // ✅ Mesmo ajuste para SSR
+      task: props.card.task.map((t, index) => ({
+        id: index + 1,
+        text: t.text,
+        completed: t.completed,
+      })),
+    };
+  });
+
+
 
   console.log(values);
 
@@ -137,8 +153,6 @@ export default function CardDetails(props: CardDetailsProps) {
       ),
     }));
   };
-  
-  
 
 
   const updateTitle = useCallback((value: string) => {
@@ -206,6 +220,18 @@ export default function CardDetails(props: CardDetailsProps) {
       localStorage.setItem(`card-${values.id}`, JSON.stringify(values));
     }
   }, [values, updateCard]);
+
+  useEffect(() => {
+    if (clientes && values.company) {
+      const clienteEncontrado = clientes.find(
+        (cliente: ClienteCategoria) => String(cliente.idcliente) === values.company
+      );
+
+      if (clienteEncontrado) {
+        setClientName(clienteEncontrado.apelido || clienteEncontrado.nome);
+      }
+    }
+  }, [clientes, values.company]);
 
   return (
     <Modal onClose={() => {
@@ -428,20 +454,26 @@ export default function CardDetails(props: CardDetailsProps) {
                 </div>
 
 
-                {/* Empresa */}
                 <h6>Empresa</h6>
-                <select
-                  className="select-field"
-                  value={values.company || ""}
-                  onChange={(e) => setValues({ ...values, company: e.target.value })}
-                >
-                  <option value="" disabled>Selecione uma empresa</option>
-                  {["Empresa A", "Empresa B", "Empresa C", "Empresa D"].map((company) => (
-                    <option key={company} value={company}>
-                      {company}
-                    </option>
-                  ))}
-                </select>
+                {isLoading ? (
+                  <p>Carregando empresas...</p>
+                ) : isError ? (
+                  <p>Erro ao carregar empresas.</p>
+                ) : (
+                  <select
+                    className="select-field"
+                    value={values.company}
+                    onChange={(e) => setValues({ ...values, company: e.target.value })}
+                  >
+                    <option value="" disabled>Selecione uma empresa</option>
+                    {clientes.map((cliente: ClienteCategoria) => (
+                      <option key={cliente.idcliente} value={String(cliente.idcliente)}>
+                        {cliente.apelido || cliente.nome} {/* ✅ Exibe apelido se existir, senão nome */}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
 
                 {labelShow && (
                   <Label
