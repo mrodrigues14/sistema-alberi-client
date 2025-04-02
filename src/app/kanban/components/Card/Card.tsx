@@ -36,6 +36,7 @@ const Card: React.FC<CardProps> = ({
   const [clickStart, setClickStart] = useState({ x: 0, y: 0 });
   const { clientes, isLoading, isError } = useCliente(); 
   const [empresaNome, setEmpresaNome] = useState<string>("Sem empresa");
+  
   useEffect(() => {
     if (clientes.length > 0 && cardData.idCliente) {
       const clienteEncontrado = clientes.find(
@@ -43,10 +44,11 @@ const Card: React.FC<CardProps> = ({
       );
   
       if (clienteEncontrado) {
-        setEmpresaNome(clienteEncontrado.apelido || clienteEncontrado.nome); // 🔹 Define apelido ou nome
+        setEmpresaNome(clienteEncontrado.apelido || clienteEncontrado.nome);
       }
     }
-  }, [clientes]); // 🔹 Atualiza apenas se a lista de clientes mudar
+  }, [clientes, cardData.idCliente]);
+  
   
   useEffect(() => {
     setCardData(card);

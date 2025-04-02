@@ -12,52 +12,45 @@ const Calendario: React.FC<CalendarioProps> = ({ onSelectMonth }) => {
     const [selectedMonth, setSelectedMonth] = useState<string>("");
     const scrollRef = useRef<HTMLDivElement>(null);
 
-    const monthNames = [
-        "Janeiro",
-        "Fevereiro",
-        "Março",
-        "Abril",
-        "Maio",
-        "Junho",
-        "Julho",
-        "Agosto",
-        "Setembro",
-        "Outubro",
-        "Novembro",
-        "Dezembro",
-    ];
+    const monthNames = React.useMemo(() => [
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+    ], []);
+    
 
-    function generateMonths(baseDate: Date, offset = 12): string[] {
+    const generateMonths = React.useCallback((baseDate: Date, offset = 12): string[] => {
         const monthsList: string[] = [];
         const baseYear = baseDate.getFullYear();
         const baseMonth = baseDate.getMonth();
-
+    
         for (let i = -offset; i <= offset; i++) {
             const date = new Date(baseYear, baseMonth + i);
             const monthName = monthNames[date.getMonth()];
             const formattedMonth = `${monthName}/${date.getFullYear()}`; 
             monthsList.push(formattedMonth);
         }
-
+    
         return monthsList;
-    }
+    }, [monthNames]);
+    
 
     useEffect(() => {
         const initialMonths = generateMonths(currentDate, 12); 
         const currentMonthName = `${monthNames[currentDate.getMonth()]}/${currentDate.getFullYear()}`;
         setMonths(initialMonths);
         setSelectedMonth(currentMonthName);
-    
+      
         setTimeout(() => {
-            if (scrollRef.current) {
-                const currentMonthIndex = initialMonths.indexOf(currentMonthName);
-                scrollRef.current.scrollTo({
-                    left: currentMonthIndex * 100, 
-                    behavior: "smooth",
-                });
-            }
+          if (scrollRef.current) {
+            const currentMonthIndex = initialMonths.indexOf(currentMonthName);
+            scrollRef.current.scrollTo({
+              left: currentMonthIndex * 100,
+              behavior: "smooth",
+            });
+          }
         }, 100);
-    }, [currentDate]);
+      }, [currentDate, generateMonths, monthNames]); // ← agora com as dependências
+      
     
     
     

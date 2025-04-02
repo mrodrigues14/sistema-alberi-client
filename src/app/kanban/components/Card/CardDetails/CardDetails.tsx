@@ -323,9 +323,10 @@ export default function CardDetails(props: CardDetailsProps) {
                   {values.task.length !== 0 ? (
                     values.task.map((item: Task) => (
                       <div
+                        key={item.id}
                         className="task__list d-flex align-items-center gap-2"
                         style={{
-                          minHeight: "50px", // 🔹 Mantém altura uniforme
+                          minHeight: "50px",
                           display: "flex",
                           alignItems: "center",
                           width: "100%",

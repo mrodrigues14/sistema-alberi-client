@@ -74,6 +74,7 @@ const Extrato: React.FC = () => {
         }
     };
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (typeof window !== "undefined") {
             const storedBanco = sessionStorage.getItem("bancoSelecionado");
@@ -85,14 +86,13 @@ const Extrato: React.FC = () => {
 
     useEffect(() => {
         if (!idCliente) return;
-
+    
         mutateBancos();
-        setBancoSelecionado((prev) => (prev ? prev : null)); // Mantém se já tiver um selecionado
+        setBancoSelecionado((prev) => (prev ? prev : null));
         setMesSelecionado((prev) => (prev ? prev : ""));
         setAnoSelecionado((prev) => (prev ? prev : ""));
-    }, [idCliente]);
-
-
+    }, [idCliente, mutateBancos]); // ✅ removido bancoSelecionado
+    
 
     useEffect(() => {
         if (extratos) {
@@ -120,9 +120,8 @@ const Extrato: React.FC = () => {
             setMesSelecionado(mesAtual);
             setAnoSelecionado(anoAtual);
         }
-    }, [idCliente, bancoSelecionado]);
-
-
+    }, [idCliente, bancoSelecionado, mesSelecionado, anoSelecionado]);
+    
     return (
         <>
             <div className="fixed top-0 left-0 w-full z-10">

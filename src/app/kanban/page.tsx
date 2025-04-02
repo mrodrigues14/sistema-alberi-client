@@ -81,7 +81,7 @@ const Kanban = () => {
     });
 
     setData(newBoards);
-  }, [tarefas, usuarios]);
+  }, [tarefas, usuarios, data]);
 
   // Função para adicionar um card
   const addCard = useCallback((title: string, bid: string) => {

@@ -1,14 +1,15 @@
 import useSWR, { mutate } from "swr";
 import { fetcher } from "../api";
 
-const BASE_URL = "http://localhost:8080/tarefas";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.albericonsult.com.br";
+const BASE_URL = `${API_URL}/tarefas`;
 
 // 🔹 Hook para buscar todas as tarefas ou filtrar por cliente/usuário
 export function useTarefas(idCliente?: number, idUsuario?: number) {
   let query = "/tarefas";
 
   if (idCliente) query += `?id_cliente=${idCliente}`;
-  if (idUsuario) query += `?id_usuario=${idUsuario}`;
+  if (idUsuario) query += `${idCliente ? "&" : "?"}id_usuario=${idUsuario}`;
 
   const { data, error, isLoading } = useSWR(query, fetcher);
 
@@ -16,7 +17,7 @@ export function useTarefas(idCliente?: number, idUsuario?: number) {
     tarefas: data || [],
     isLoading,
     isError: error,
-    mutateTarefas: () => mutate(query), // Atualiza os dados no SWR
+    mutateTarefas: () => mutate(`${API_URL}${query}`),
   };
 }
 
@@ -42,7 +43,7 @@ export async function createTarefa(novaTarefa: any) {
 
     if (!res.ok) throw new Error("Erro ao criar tarefa");
 
-    await mutate(BASE_URL); // Atualiza a lista de tarefas
+    await mutate(BASE_URL);
     return await res.json();
   } catch (error) {
     console.error("Erro ao criar tarefa:", error);
@@ -50,10 +51,9 @@ export async function createTarefa(novaTarefa: any) {
   }
 }
 
-// 🔹 Atualizar uma tarefa (status ou qualquer outro campo)
+// 🔹 Atualizar uma tarefa
 export async function updateTarefa(id: number, updates: any) {
   try {
-    console.log(id)
     const res = await fetch(`${BASE_URL}/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -66,7 +66,7 @@ export async function updateTarefa(id: number, updates: any) {
       throw new Error(errorData.message || "Erro ao atualizar tarefa");
     }
 
-    await mutate(BASE_URL); // Atualiza os dados no cache SWR
+    await mutate(BASE_URL);
     return await res.json();
   } catch (error) {
     console.error("Erro ao atualizar tarefa:", error);
@@ -83,7 +83,7 @@ export async function deleteTarefa(id: number) {
 
     if (!res.ok) throw new Error("Erro ao deletar tarefa");
 
-    await mutate(BASE_URL); // Atualiza a lista de tarefas no SWR
+    await mutate(BASE_URL);
   } catch (error) {
     console.error("Erro ao deletar tarefa:", error);
     throw error;

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useSession } from "next-auth/react";
 import { useCliente } from "@/lib/hooks/useCliente";
 import { useClienteContext } from "@/context/ClienteContext";
+import Image from 'next/image';
 
 const font = Poppins({
     subsets: ["latin"],
@@ -36,7 +37,7 @@ export default function Navbar() {
     const [searchQuery, setSearchQuery] = useState('');
     const dropdownRef = useRef<HTMLDivElement | null>(null);
     const { idCliente, setIdCliente } = useClienteContext();
-
+    console.log(isError)
     // Estado para armazenar o cliente selecionado
     const [selectedCliente, setSelectedCliente] = useState<{ id: number, nome: string } | null>(null);
 
@@ -60,7 +61,8 @@ export default function Navbar() {
                 setSelectedCliente(JSON.parse(savedCliente));
             }
         }
-    }, [clientes]);
+    }, [clientes, selectedCliente]);
+
 
     // Ordenar clientes alfabeticamente e garantir "Todos Clientes Vinculados ao Perfil!" como primeiro
     const sortedClientes = clientes?.slice().sort((a: Cliente, b: Cliente) => {
@@ -96,7 +98,7 @@ export default function Navbar() {
                 setSelectedCliente({ id: clienteEncontrado.idcliente, nome: clienteEncontrado.apelido || clienteEncontrado.nome });
             }
         }
-    }, [idCliente, clientes]); 
+    }, [idCliente, clientes]);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -115,11 +117,14 @@ export default function Navbar() {
             <div className="w-full flex justify-between items-center px-10">
                 <div className="flex space-x-2 items-center">
                     <a href="/home" className="text-center mr-20 p-0">
-                        <img
+                        <Image
                             src="/icone_imagem.png"
                             alt="Menu inicial"
-                            className="h-20 object-contain"
+                            width={80}
+                            height={80}
+                            className="object-contain"
                         />
+
                     </a>
 
                     <div className="flex space-x-4 items-center">
