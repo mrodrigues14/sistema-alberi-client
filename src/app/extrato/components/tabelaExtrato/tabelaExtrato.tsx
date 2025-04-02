@@ -4,28 +4,48 @@ import React, { useState, useEffect } from "react";
 import { FaDivide, FaEdit, FaHandPointer, FaPaperclip, FaSave, FaTrash, FaTimes } from "react-icons/fa";
 import CustomDropdown from "../dropdown/CustomDropdown";
 
-const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: string, banco?: string }> = ({
+interface Props {
+  dados: any[];
+  saldoInicial?: number;
+  mesAno?: string;
+  banco?: string;
+  selecionados: number[];
+  onToggleSelecionado: (id: number) => void;
+  onSelecionarTodos: () => void;
+  categoriasFormatadas: { label: string; value: number }[];
+  fornecedoresFormatados: { label: string; value: number }[];
+}
+
+
+const TabelaExtrato: React.FC<Props> = ({
   dados,
-  saldoInicial = 0,
+  saldoInicial ,
   mesAno = "03/2024",
-  banco = "Banco X"
+  banco = "Banco X",
+  selecionados,
+  onToggleSelecionado,
+  onSelecionarTodos,
+  categoriasFormatadas,
+  fornecedoresFormatados
 }) => {
+
+
   const [saldoFinal, setSaldoFinal] = useState(saldoInicial);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>({});
 
-  console.log(dados);
   useEffect(() => {
-    let saldoAcumulado = saldoInicial;
+    let saldoAcumulado = saldoInicial ?? 0; // Provide a default value of 0 if saldoInicial is undefined
     dados.forEach((row) => {
       const entrada = parseFloat(row.entrada?.replace(/\./g, "").replace(",", ".") || "0");
       const saida = parseFloat(row.saida?.replace(/\./g, "").replace(",", ".") || "0");
-      saldoAcumulado = saldoAcumulado + entrada - saida;
+      saldoAcumulado += entrada - saida;
     });
-    setSaldoFinal(saldoAcumulado);
+
+    setSaldoFinal(prevSaldo => (prevSaldo !== saldoAcumulado ? saldoAcumulado : prevSaldo));
   }, [dados, saldoInicial]);
 
-  let saldoAcumulado = saldoInicial;
+  let saldoAcumulado = saldoInicial ?? 0;
 
   const handleEdit = (index: number) => {
     setEditIndex(index);
@@ -46,29 +66,33 @@ const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: st
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, field: string) => {
     setEditData({ ...editData, [field]: e.target.value });
   };
+
   const formatarMoeda = (valor: string | number) => {
-
+    let numero: number;
+  
     if (typeof valor === "number") {
-      return valor.toLocaleString("pt-BR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
+      numero = valor;
+    } else if (typeof valor === "string") {
+      const semEspacos = valor.trim();
+      const somenteNumeros = parseFloat(semEspacos);
+  
+      if (!isNaN(somenteNumeros)) {
+        numero = somenteNumeros;
+      } else {
+        const convertido = parseFloat(valor.replace(/\./g, "").replace(",", "."));
+        if (isNaN(convertido)) return "-";
+        numero = convertido;
+      }
+    } else {
+      return "-";
     }
-
-    if (typeof valor === "string") {
-      const numero = parseFloat(valor.replace(/\./g, "").replace(",", "."));
-
-      if (isNaN(numero)) return "-";
-
-      return numero.toLocaleString("pt-BR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      });
-    }
-
-    return "-";
+  
+    return numero.toLocaleString("pt-BR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   };
-
+  
 
   return (
     <div className="flex justify-center items-center mt-8">
@@ -85,7 +109,7 @@ const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: st
                 Saldo Inicial
               </div>
               <div className="border px-4 py-2 rounded-b">
-                {saldoInicial.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {saldoInicial?.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
             <div className="text-center">
@@ -93,7 +117,7 @@ const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: st
                 Saldo Final
               </div>
               <div className="border px-4 py-2 rounded-b">
-                {saldoFinal.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {saldoFinal?.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
           </div>
@@ -118,33 +142,40 @@ const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: st
           </thead>
           <tbody>
             {dados.map((row, index) => {
-              const entrada = parseFloat(row.entrada?.replace(/\./g, "").replace(",", ".") || "0");
-              const saida = parseFloat(row.saida?.replace(/\./g, "").replace(",", ".") || "0");
-
+              const entrada = parseFloat(row.entrada || "0");
+              const saida = parseFloat(row.saida || "0");
+              
               saldoAcumulado = saldoAcumulado + entrada - saida;
-
+              
               return (
-                <tr key={index} className="odd:bg-white even:bg-gray-100">
+                <tr
+                  key={index}
+                  className={`odd:bg-white even:bg-gray-100 transition ${selecionados.includes(row.id) ? "bg-green-100 border-2 border-green-500" : ""
+                    }`}
+                >
                   <td className="border px-2 py-2 whitespace-nowrap">
                     {editIndex === index ? (
                       <input
                         type="text"
                         value={editData.data}
                         onChange={(e) => handleChange(e, "data")}
-                        className="w-full border px-2 py-1"
+                        className="w-28 border px-2 py-1" // largura fixa
                       />
                     ) : (
                       row.data
                     )}
                   </td>
-                  <td className="border px-2 py-2 whitespace-nowrap relative group">
-                    {editIndex === index ? (
-                      <input
-                        type="text"
-                        value={editData.rubricaSelecionada}
-                        onChange={(e) => handleChange(e, "rubricaSelecionada")}
-                        className="w-full border px-2 py-1"
+
+                  <td className={`border px-2 py-2 whitespace-nowrap relative group ${editIndex === index ? "min-w-[250px]" : ""}`}>
+                  {editIndex === index ? (
+                      <CustomDropdown
+                        label="Rubrica"
+                        options={categoriasFormatadas}
+                        selectedValue={editData.rubricaSelecionada}
+                        onSelect={(value) => handleChange({ target: { value } } as any, "rubricaSelecionada")}
+                        type="rubrica"
                       />
+
                     ) : (
                       <span className="group relative cursor-pointer">
                         {row.rubricaSelecionada.length > 30 ? row.rubricaSelecionada.slice(0, 30) + "..." : row.rubricaSelecionada}
@@ -157,14 +188,16 @@ const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: st
                     )}
                   </td>
 
-                  <td className="border px-2 py-2 whitespace-nowrap relative group">
-                    {editIndex === index ? (
-                      <input
-                        type="text"
-                        value={editData.fornecedorSelecionado}
-                        onChange={(e) => handleChange(e, "fornecedorSelecionado")}
-                        className="w-full border px-2 py-1"
+                  <td className={`border px-2 py-2 whitespace-nowrap relative group ${editIndex === index ? "min-w-[250px]" : ""}`}>
+                  {editIndex === index ? (
+                      <CustomDropdown
+                        label="Fornecedor"
+                        options={fornecedoresFormatados}
+                        selectedValue={editData.fornecedorSelecionado}
+                        onSelect={(value) => handleChange({ target: { value } } as any, "fornecedorSelecionado")}
+                        type="fornecedor"
                       />
+
                     ) : (
                       <span className="group relative cursor-pointer">
                         {row.fornecedorSelecionado.length > 30 ? row.fornecedorSelecionado.slice(0, 30) + "..." : row.fornecedorSelecionado}
@@ -201,16 +234,16 @@ const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: st
                     {editIndex === index ? (
                       <input
                         type="text"
-                        value={editData.nomeExtrato}
-                        onChange={(e) => handleChange(e, "nomeExtrato")}
+                        value={editData.nomeNoExtrato}
+                        onChange={(e) => handleChange(e, "nomeNoExtrato")}
                         className="w-full border px-2 py-1"
                       />
                     ) : (
                       <span className="group relative cursor-pointer">
-                        {row.nomeExtrato.length > 30 ? row.nomeExtrato.slice(0, 30) + "..." : row.nomeExtrato}
-                        {row.nomeExtrato.length > 30 && (
+                        {row.nomeNoExtrato.length > 30 ? row.nomeNoExtrato.slice(0, 30) + "..." : row.nomeNoExtrato}
+                        {row.nomeNoExtrato.length > 30 && (
                           <span className="absolute left-1/2 -translate-x-1/2 -top-10 bg-gray-800 text-white text-xs px-3 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            {row.nomeExtrato}
+                            {row.nomeNoExtrato}
                           </span>
                         )}
                       </span>
@@ -299,9 +332,15 @@ const TabelaExtrato: React.FC<{ dados: any[], saldoInicial?: number, mesAno?: st
                             <FaEdit size={20} />
                           </button>
 
-                          <button className="text-green-500 hover:text-green-700">
+                          <button
+                            className={`hover:text-green-700 ${selecionados.includes(row.id) ? "text-green-700" : "text-gray-400"}`}
+                            title="Selecionar linha"
+                            onClick={() => onToggleSelecionado(row.id)}
+                          >
                             <FaHandPointer size={20} />
                           </button>
+
+
                           <button className="text-red-500 hover:text-red-700">
                             <FaTrash size={20} />
                           </button>

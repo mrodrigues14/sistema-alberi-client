@@ -1,31 +1,98 @@
 import React, { useState, FC, FormEvent } from "react";
 import { Plus, X } from "react-feather";
 import "./Editable.css";
+import { useClienteContext } from "@/context/ClienteContext";
+import { useSession } from "next-auth/react";
+import { createTarefa, useTarefas } from "@/lib/hooks/useTarefas";
+import { Tarefa } from "../../../../../types/Tarefa";
 
 interface EditableProps {
   handler?: boolean;
   defaultValue?: string;
-  onSubmit?: (text: string) => void;
   parentClass?: string;
   class?: string;
   placeholder?: string;
   btnName?: string;
   setHandler?: (value: boolean) => void;
   name?: string;
+  status?: string; // Torne opcional se não for usado em todas as situações
+  addCardLocal?: (card: any) => void;
+  updateCardId?: (oldId: string, newCard: any) => void;
+  removeCardLocal?: (id: string) => void;
+  onSubmit?: (value: string) => void; // Nova propriedade para envio de dados
 }
+
 
 const Editable: FC<EditableProps> = (props) => {
   const [show, setShow] = useState<boolean>(props?.handler || false);
   const [text, setText] = useState<string>(props.defaultValue || "");
+  const [loading, setLoading] = useState(false);
 
-  const handleOnSubmit = (e: FormEvent) => {
+  const { idCliente } = useClienteContext();
+  const { data: session } = useSession();
+  const idUsuario = Number(session?.user?.id);
+  const { mutateTarefas } = useTarefas(idCliente ?? undefined, idUsuario ?? undefined);
+
+  const handleOnSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (text.trim() && props.onSubmit) {
+    if (!text.trim()) return;
+  
+    if (props.onSubmit) {
+      props.onSubmit(text); 
       setText("");
-      props.onSubmit(text);
+      setShow(false);
+      return;
     }
-    setShow(false);
+  
+    const tarefaTempId = crypto.randomUUID(); 
+  
+    const novaTarefaLocal = {
+      id: tarefaTempId,
+      title: text,
+      tags: [],
+      task: [],
+      prioridade: 0,
+      idCliente: idCliente ?? null,
+      autor: session?.user?.name || "Desconhecido",
+    };
+  
+    setLoading(true);
+  
+    props.addCardLocal?.(novaTarefaLocal);
+  
+    const novaTarefa: Tarefa = {
+      titulo: text,
+      idCliente: idCliente ?? null,
+      idUsuario: idUsuario ?? null,
+      status: props.status || "A Fazer",
+      dataInicio: new Date().toISOString().split("T")[0],
+    };
+  
+    try {
+      const tarefaCriada = await createTarefa(novaTarefa);
+  
+      props.updateCardId?.(tarefaTempId, {
+        ...novaTarefaLocal,
+        id: tarefaCriada.idtarefa.toString(),
+        title: tarefaCriada.titulo,
+        tags: tarefaCriada.labels || [],
+        task: JSON.parse(tarefaCriada.descricoes || "[]"),
+        prioridade: tarefaCriada.prioridade || 0,
+        idCliente: tarefaCriada.idCliente,
+      });
+  
+      mutateTarefas();
+    } catch (error) {
+      alert("Erro ao criar tarefa.");
+      props.removeCardLocal?.(tarefaTempId);
+    } finally {
+      setText("");
+      setShow(false);
+      setLoading(false);
+    }
   };
+  
+  
 
   return (
     <div className={`editable ${props.parentClass}`}>
@@ -39,8 +106,8 @@ const Editable: FC<EditableProps> = (props) => {
             onChange={(e) => setText(e.target.value)}
           />
           <div className="add-card-buttons">
-            <button className="add-card-button" type="submit">
-              {props.btnName || "Add Card"}
+            <button className="add-card-button" type="submit" disabled={loading}>
+              {loading ? "Adicionando..." : props.btnName || "Adicionar Tarefa"}
             </button>
             <X
               className="cancel-button"
@@ -52,14 +119,9 @@ const Editable: FC<EditableProps> = (props) => {
           </div>
         </form>
       ) : (
-        <p
-          onClick={() => {
-            setShow(true);
-          }}
-          className="add-card-trigger"
-        >
+        <p onClick={() => setShow(true)} className="add-card-trigger">
           <Plus />
-          {props?.name || "Add Card"}
+          {props?.name || "Adicionar"}
         </p>
       )}
     </div>

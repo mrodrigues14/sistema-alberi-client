@@ -106,25 +106,25 @@
 }
 /* Estilização das estrelas de prioridade */
 /* Estilização das estrelas de prioridade */
-.priority-stars {
+.prioridade-stars {
   display: flex;
   gap: 5px;
   margin-bottom: 10px;
 }
 
-.priority-stars .star {
+.prioridade-stars .star {
   cursor: pointer;
   transition: transform 0.2s ease-in-out;
   border: none;
 
 }
 
-.priority-stars .star.selected {
+.prioridade-stars .star.selected {
   color: gold;
   fill: gold !important; /* Apenas a estrela será preenchida */
 }
 
-.priority-stars .star:hover {
+.prioridade-stars .star:hover {
   transform: scale(1.1);
   color: orange;
 }

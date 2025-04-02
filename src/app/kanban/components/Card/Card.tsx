@@ -111,13 +111,13 @@ const Card: React.FC<CardProps> = ({
               <Tag key={index} tagName={item.tagName} color={item.color} />
             ))}
           </div>
-          <div className="priority-stars">
+          <div className="prioridade-stars">
               {[1, 2, 3, 4, 5].map((star) => (
                 <i
                   key={star}
-                  className={`bi bi-star${cardData.priority >= star ? "-fill" : ""}`}
+                  className={`bi bi-star${cardData.prioridade >= star ? "-fill" : ""}`}
                   style={{
-                    color: cardData.priority >= star ? "gold" : "gray",
+                    color: cardData.prioridade >= star ? "gold" : "gray",
                   }}
                 ></i>
               ))}

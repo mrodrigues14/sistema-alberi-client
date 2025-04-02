@@ -20,6 +20,8 @@ import { useUsuarios, Usuario } from "@/lib/hooks/useUsuarios";
 import { useCliente } from "@/lib/hooks/useCliente";
 
 import Card from "../Card";
+import { deleteTarefa, updateTarefa } from "@/lib/hooks/useTarefas";
+import { Tarefa } from "../../../../../../types/Tarefa";
 
 interface Task {
   text: string;
@@ -98,9 +100,6 @@ export default function CardDetails(props: CardDetailsProps) {
   });
 
 
-
-  console.log(values);
-
   const [text, setText] = useState(values.title);
 
   const Input = (props: { title: string }) => {
@@ -123,14 +122,30 @@ export default function CardDetails(props: CardDetailsProps) {
   };
 
 
-  const addTask = (value: string) => {
-    values.task.push({
+  const addTask = async (value: string) => {
+    const novaTask = {
       id: uuidv4(),
-      text: value, // 🔹 Alterado de "task" para "text"
+      text: value,
       completed: false,
-    });
-    setValues({ ...values });
+    };
+  
+    const novasTasks = [...values.task, novaTask];
+  
+    setValues((prev: any) => ({
+      ...prev,
+      task: novasTasks,
+    }));
+  
+    try {
+      await updateTarefa(Number(values.id), {
+        descricoes: JSON.stringify(novasTasks),
+      });
+    } catch (err) {
+      console.error("Erro ao salvar nova task:", err);
+      alert("Erro ao adicionar a task. Tente novamente.");
+    }
   };
+  
 
 
   const removeTask = (id: string) => {
@@ -138,12 +153,6 @@ export default function CardDetails(props: CardDetailsProps) {
     setValues({ ...values, task: remaningTask });
   };
 
-  const deleteAllTask = () => {
-    setValues({
-      ...values,
-      task: [],
-    });
-  };
 
   const updateTask = (id: string) => {
     setValues((prevValues: typeof values) => ({
@@ -155,19 +164,13 @@ export default function CardDetails(props: CardDetailsProps) {
   };
 
 
-  const updateTitle = useCallback((value: string) => {
-    setValues((prevValues: typeof values) => {
-      const updatedValues: typeof values = { ...prevValues, title: value };
-
-      props.updateCard(updatedValues); // Atualiza o card globalmente
-
-      if (typeof window !== "undefined") {
-        localStorage.setItem(`card-${updatedValues.id}`, JSON.stringify(updatedValues));
-      }
-
-      return updatedValues;
+  const updateTitle = useCallback(async (value: string) => {
+    setValues((prevValues: any) => {
+      const updated = { ...prevValues, title: value };
+      atualizarTarefa({ titulo: value }); // ⬅️ Chamada ao backend
+      return updated;
     });
-  }, [props]);
+  }, []);
 
 
   const calculatePercent = () => {
@@ -214,8 +217,6 @@ export default function CardDetails(props: CardDetailsProps) {
   const { updateCard } = props;
 
   useEffect(() => {
-    updateCard(values);
-
     if (typeof window !== "undefined") {
       localStorage.setItem(`card-${values.id}`, JSON.stringify(values));
     }
@@ -232,6 +233,14 @@ export default function CardDetails(props: CardDetailsProps) {
       }
     }
   }, [clientes, values.company]);
+
+  const atualizarTarefa = async (campoAtualizado: Partial<Tarefa>) => {
+    try {
+      await updateTarefa(Number(values.id), campoAtualizado);
+    } catch (error) {
+      console.error("Erro ao atualizar tarefa:", error);
+    }
+  };
 
   return (
     <Modal onClose={() => {
@@ -293,17 +302,6 @@ export default function CardDetails(props: CardDetailsProps) {
                 )}
               </div>
               <div className="check__list mt-2">
-                <div className="d-flex align-items-end  justify-content-between">
-                  <div className="d-flex align-items-center gap-2">
-                    <CheckSquare className="icon__md" />
-                    <h6>Lista de Tarefas</h6>
-                  </div>
-                  <div className="card__action__btn">
-                    <button onClick={() => deleteAllTask()}>
-                      Excluir todas as tarefas
-                    </button>
-                  </div>
-                </div>
                 <div className="progress__bar mt-2 mb-2">
                   <div className="progress flex-1">
                     <div
@@ -395,15 +393,20 @@ export default function CardDetails(props: CardDetailsProps) {
                   Adicionar Etiqueta
                 </button>
                 {/* Prioridade (estrelas) */}
-                <h6>Priority</h6>
-                <div className="priority-stars">
+                <h6>Prioridade</h6>
+                <div className="prioridade-stars">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
                       key={star}
-                      className={values.priority >= star ? "star selected" : "star"}
-                      fill={values.priority >= star ? "gold" : "gray"} // Apenas a estrela será preenchida
+                      className={values.prioridade >= star ? "star selected" : "star"}
+                      fill={values.prioridade >= star ? "gold" : "gray"} // Apenas a estrela será preenchida
                       stroke="none" // Remove o contorno preto
-                      onClick={() => setValues({ ...values, priority: star })}
+                      onClick={() => {
+                        setValues((prev: any) => {
+                          atualizarTarefa({ prioridade: String(star) });
+                          return { ...prev, prioridade: star };
+                        });
+                      }}
                     />
                   ))}
                 </div>
@@ -441,9 +444,13 @@ export default function CardDetails(props: CardDetailsProps) {
                             <li
                               key={user.idusuarios}
                               onClick={() => {
-                                setValues({ ...values, autor: user.nomeDoUsuario }); // Atualiza o responsável no card
-                                setIsDropdownOpen(false); // Fecha o dropdown
+                                setValues((prev: any) => {
+                                  atualizarTarefa({ idUsuario: user.idusuarios });
+                                  return { ...prev, autor: user.nomeDoUsuario };
+                                });
+                                setIsDropdownOpen(false);
                               }}
+
                             >
                               {user.nomeDoUsuario}
                             </li>
@@ -464,7 +471,14 @@ export default function CardDetails(props: CardDetailsProps) {
                   <select
                     className="select-field"
                     value={values.company}
-                    onChange={(e) => setValues({ ...values, company: e.target.value })}
+                    onChange={(e) => {
+                      const empresaId = Number(e.target.value);
+                      setValues((prev: any) => {
+                        atualizarTarefa({ idCliente: empresaId });
+                        return { ...prev, company: e.target.value };
+                      });
+                    }}
+
                   >
                     <option value="" disabled>Selecione uma empresa</option>
                     {clientes.map((cliente: ClienteCategoria) => (
@@ -491,12 +505,40 @@ export default function CardDetails(props: CardDetailsProps) {
                   Data
                 </button>
 
-                <button onClick={() => props.removeCard(props.bid, values.id)}>
+                <button
+                  style={{
+                    backgroundColor: "#dc3545", // vermelho estilo Bootstrap
+                    color: "#fff",
+                    border: "none",
+                    padding: "8px 12px",
+                    borderRadius: "4px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    cursor: "pointer"
+                  }}
+                  onClick={async () => {
+                    const confirmacao = window.confirm("Tem certeza que deseja excluir este cartão?");
+                    if (!confirmacao) return;
+
+                    try {
+                      await deleteTarefa(Number(values.id)); // Deleta no backend
+                      props.removeCard(props.bid, values.id); // Remove da UI
+                      props.onClose(); // Fecha o modal
+                    } catch (err) {
+                      console.error("Erro ao deletar tarefa:", err);
+                      alert("Erro ao excluir o cartão. Tente novamente.");
+                    }
+                  }}
+                >
                   <span className="icon__sm">
                     <Trash />
                   </span>
                   Excluir Cartão
                 </button>
+
+
+
               </div>
             </div>
           </div>

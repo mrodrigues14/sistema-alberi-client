@@ -37,7 +37,6 @@ export function useSaldoInicial(idCliente?: number, idBanco?: number, mes?: stri
     }
   
     const { data, error, isLoading, mutate } = useSWR(query, fetcher);
-    console.log(data)
     return {
       saldoInicial: data ? Number(data.saldo) || 0 : 0, // Garante que o valor seja tratado corretamente
       isLoading,

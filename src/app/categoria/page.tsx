@@ -6,14 +6,17 @@ import { useCategoriasPorCliente, deletarCategoria, atualizarCategoria } from "@
 import { useClienteContext } from "@/context/ClienteContext";
 import type { Categoria } from "@/lib/hooks/useCategoria";
 import AdicionarCategoria from "./components/adicionarCategoria/adicionarCategoria";
+import EditarCategoria from "./components/editarCategoria/editarCategoria";
 
 const Categoria: React.FC = () => {
   const { idCliente } = useClienteContext();
   const { categoriasCliente, isLoading, mutate } = useCategoriasPorCliente(idCliente || undefined);
   const [showModalCategoria, setShowModalCategoria] = useState(false);
   const [showModalSubrubrica, setShowModalSubrubrica] = useState(false);
-  console.log(categoriasCliente);
-  // ✅ Organiza as categorias em Rubricas e Subrubricas
+  const [categoriaSelecionada, setCategoriaSelecionada] = useState<Categoria | null>(null);
+  const [loadingAcoes, setLoadingAcoes] = useState(false);
+
+
   const categoriasOrganizadas = useMemo(() => {
     console.log(categoriasCliente);
     if (!categoriasCliente) return { pais: [], filhas: {} };
@@ -35,6 +38,8 @@ const Categoria: React.FC = () => {
   const handleDelete = async (idCategoria: number) => {
     if (!confirm("Tem certeza que deseja excluir esta categoria?")) return;
 
+    setLoadingAcoes(true);
+
     try {
       await deletarCategoria(idCategoria);
       mutate();
@@ -42,12 +47,17 @@ const Categoria: React.FC = () => {
     } catch (error) {
       console.error("Erro ao excluir categoria:", error);
       alert("Erro ao excluir categoria.");
+    } finally {
+      setLoadingAcoes(false);
     }
   };
 
+
   // ✅ Alternar Rubrica do Mês ou Extra
   const handleToggleGasto = async (idCategoria: number, tipo: "mes" | "extra") => {
-    const categoria: Categoria | undefined = categoriasCliente.find((cat: Categoria) => cat.idcategoria === idCategoria);
+    const categoria: Categoria | undefined = categoriasCliente.find(
+      (cat: Categoria) => cat.idcategoria === idCategoria
+    );
     if (!categoria) return;
 
     const novoEstado = {
@@ -55,12 +65,16 @@ const Categoria: React.FC = () => {
       gastoExtra: tipo === "extra" ? !categoria.gastoExtra : false,
     };
 
+    setLoadingAcoes(true);
+
     try {
       await atualizarCategoria(idCategoria, novoEstado);
       mutate();
     } catch (error) {
       console.error("Erro ao atualizar a categoria:", error);
       alert("Erro ao atualizar a categoria.");
+    } finally {
+      setLoadingAcoes(false);
     }
   };
 
@@ -95,14 +109,14 @@ const Categoria: React.FC = () => {
               <div className="flex justify-between items-center border-b py-2">
                 <span className="font-semibold">{categoria.nome}</span>
                 <div className="flex gap-4">
-                  <button className="text-orange-500">
+                  <button className="text-orange-500" onClick={() => setCategoriaSelecionada(categoria)}>
                     <FaPencilAlt />
                   </button>
+
                   <button className="text-red-500" onClick={() => handleDelete(categoria.idcategoria)}>
                     <FaTrash />
                   </button>
 
-                  {/* Botões de seleção */}
                   <button
                     className={`px-3 py-1 rounded ${categoria.gastoMes ? "bg-blue-500 text-white" : "bg-gray-300"}`}
                     onClick={() => handleToggleGasto(categoria.idcategoria, "mes")}
@@ -154,9 +168,24 @@ const Categoria: React.FC = () => {
         )}
       </div>
 
-      {/* Modais para adicionar categorias */}
       {showModalCategoria && <AdicionarCategoria onClose={() => setShowModalCategoria(false)} mutate={mutate} />}
       {showModalSubrubrica && <AdicionarCategoria onClose={() => setShowModalSubrubrica(false)} mutate={mutate} />}
+      {categoriaSelecionada && (
+        <EditarCategoria
+          categoria={categoriaSelecionada}
+          onClose={() => setCategoriaSelecionada(null)}
+          mutate={mutate}
+        />
+      )}
+      {loadingAcoes && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white px-6 py-4 rounded shadow text-center">
+            <p className="text-lg font-semibold mb-2">Processando...</p>
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500 mx-auto" />
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
