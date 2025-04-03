@@ -1,5 +1,6 @@
 import useSWR from "swr";
 import axios from "axios";
+import { useMemo } from "react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -17,28 +18,31 @@ export interface Fornecedor {
 const fetcher = (url: string) => axios.get(url).then(res => res.data);
 
 export function useFornecedoresPorCliente() {
-    const idCliente =94
-    const { data: fornecedores, error, mutate } = useSWR<Fornecedor[]>(
-        idCliente ? `${process.env.NEXT_PUBLIC_API_URL}/relacoes-cliente-fornecedor/cliente/${idCliente}` : null,
-        fetcher
-      );
-      
-      return {
-        fornecedores,
-        isLoading: !fornecedores && !error,
-        isError: !!error,
-        mutate
-      };
-  }
+  const idCliente = 94;
 
-// 🔹 Criar um novo fornecedor e associá-lo a um cliente
+  const { data, error, mutate } = useSWR<Fornecedor[]>(
+    idCliente ? `${API_URL}/relacoes-cliente-fornecedor/cliente/${idCliente}` : null,
+    fetcher
+  );
+
+  const fornecedores = useMemo(() => {
+    if (!data) return [];
+    return [...data].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
+  }, [data]);
+
+  return {
+    fornecedores,
+    isLoading: !data && !error,
+    isError: !!error,
+    mutate,
+  };
+}
+
 export async function criarFornecedor(fornecedorData: Partial<Fornecedor>, idCliente: number) {
   try {
-    // Primeiro, cria o fornecedor
     const fornecedorResponse = await axios.post(`${API_URL}/fornecedor`, fornecedorData);
     const novoFornecedor = fornecedorResponse.data;
 
-    // Em seguida, cria a relação entre cliente e fornecedor
     await axios.post(`${API_URL}/relacoes-cliente-fornecedor/${idCliente}/${novoFornecedor.idfornecedor}`);
 
     return novoFornecedor;

@@ -1,7 +1,7 @@
 "use client";
 
 import Navbar from '@/components/Navbar';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FaFilePdf, FaFileExcel } from 'react-icons/fa'; // Ícones de PDF e Excel
 import InsercaoManual from './components/insercaoManual/insercaoManual';
 import Calendario from './components/calendario/calendario';
@@ -10,11 +10,15 @@ import { useBanco, Banco } from '@/lib/hooks/userBanco';
 import { useExtratos } from '@/lib/hooks/useExtrato';
 import { useClienteContext } from '@/context/ClienteContext';
 import { useSaldoInicial } from '@/lib/hooks/useSaldoInicial';
+import { Categoria, useCategoriasPorCliente } from '@/lib/hooks/useCategoria';
+import { useFornecedoresPorCliente } from '@/lib/hooks/useFornecedor';
 
 const Extrato: React.FC = () => {
     const { idCliente } = useClienteContext();
     const [showModalRubrica, setShowModalRubrica] = useState(false);
     const [showModalBanco, setShowModalBanco] = useState(false);
+    const [showModalFornecedor, setShowModalFornecedor] = useState(false);
+
     const { bancos, isLoading: loadingBancos, isError: errorBancos, mutate: mutateBancos } = useBanco(
         idCliente ? idCliente : undefined
     );
@@ -40,16 +44,65 @@ const Extrato: React.FC = () => {
         shouldFetchData ? anoSelecionado : undefined
     );
 
+    const { categoriasCliente } = useCategoriasPorCliente(idCliente || undefined);
+    const { fornecedores } = useFornecedoresPorCliente();
+    const [selecionados, setSelecionados] = useState<number[]>([]);
+
+    const categoriasFormatadas = useMemo(() => {
+        if (!categoriasCliente || categoriasCliente.length === 0) return [];
+
+        const categoriasPai: Categoria[] = categoriasCliente.filter((cat: Categoria) => !cat.idCategoriaPai);
+        const categoriasFilhas: Categoria[] = categoriasCliente.filter((cat: Categoria) => cat.idCategoriaPai);
+
+        return categoriasPai
+            .sort((a, b) => a.nome.localeCompare(b.nome)) // 🔹 Ordenando pais em ordem alfabética
+            .flatMap((pai) => {
+                const subrubricas = categoriasFilhas
+                    .filter((filha) => filha.idCategoriaPai === pai.idcategoria)
+                    .sort((a, b) => a.nome.localeCompare(b.nome)) // 🔹 Ordenando filhos em ordem alfabética
+                    .map((filha) => ({
+                        label: `   └ ${filha.nome}`,
+                        value: filha.idcategoria,
+                        disabled: false,
+                    }));
+
+                return [
+                    { label: pai.nome, value: pai.idcategoria, disabled: subrubricas.length > 0 }, // 🔹 Pai aparece antes dos filhos
+                    ...subrubricas,
+                ];
+            });
+    }, [categoriasCliente]);
+
+    const fornecedoresFormatados = useMemo(() => {
+        if (!fornecedores?.length) return [];
+
+        return fornecedores
+            .sort((a, b) => a.nome.localeCompare(b.nome)) // 🔹 Ordena os fornecedores por nome
+            .map((fornecedor) => ({
+                label: fornecedor?.nome,
+                value: fornecedor?.idfornecedor,
+            }));
+    }, [fornecedores]);
+
+
+    const handleToggleSelecionado = (id: number) => {
+        setSelecionados((prev) =>
+            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+        );
+    };
+
+    const handleSelecionarTodos = () => {
+        if (selecionados.length === dadosTabela.length) {
+            setSelecionados([]);
+        } else {
+            setSelecionados(dadosTabela.map((row) => row.id));
+        }
+    };
 
     const formatarData = (data: string): string => {
         const [ano, mes, dia] = data.split("-");
         return `${dia}/${mes}/${ano}`;
     };
-
-    console.log("Extratos:", extratos);
-    console.log("Cliente/Banco/Data:", idCliente, bancoSelecionado, mesSelecionado, anoSelecionado);
-    console.log("Saldo Inicial:", saldoInicial);
-
     /** ✅ Atualiza o banco selecionado e salva no sessionStorage **/
     const handleBancoChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedBanco = Number(event.target.value);
@@ -85,43 +138,47 @@ const Extrato: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        if (!idCliente) return;
-    
-        mutateBancos();
-        setBancoSelecionado((prev) => (prev ? prev : null));
-        setMesSelecionado((prev) => (prev ? prev : ""));
-        setAnoSelecionado((prev) => (prev ? prev : ""));
-    }, [idCliente, mutateBancos]); // ✅ removido bancoSelecionado
-    
-
-    useEffect(() => {
+        console.log(extratos)
         if (extratos) {
-            setDadosTabela(
-                extratos.map((extrato: any) => ({
-                    id: extrato.idextrato,
-                    data: formatarData(extrato.data),
-                    rubricaSelecionada: extrato.categoria || "Sem categoria",
-                    fornecedorSelecionado: extrato.fornecedor || "Não informado",
-                    observacao: extrato.descricao || "Sem descrição",
-                    nomeExtrato: extrato.nomeNoExtrato || "Sem nome",
-                    rubricaContabil: extrato.rubricaContabil || "Não definida",
-                    entrada: extrato.tipoDeTransacao === "ENTRADA" ? extrato.valor.toFixed(2) : "",
-                    saida: extrato.tipoDeTransacao === "SAIDA" ? extrato.valor.toFixed(2) : "",
-                }))
-            );
+            const novosDados = extratos.map((extrato: any) => ({
+                id: extrato.idextrato,
+                data: formatarData(extrato.data),
+                rubricaSelecionada: extrato.categoria || "Sem categoria",
+                fornecedorSelecionado: extrato.fornecedor || "Não informado",
+                observacao: extrato.descricao || "Sem descrição",
+                nomeNoExtrato: extrato.nomeNoExtrato || "Sem nome",
+                rubricaContabil: extrato.rubricaContabil || "Não definida",
+                entrada: extrato.tipoDeTransacao === "ENTRADA" ? extrato.valor.toFixed(2) : "",
+                saida: extrato.tipoDeTransacao === "SAIDA" ? extrato.valor.toFixed(2) : "",
+            }));
+
+            // Só atualiza se os dados realmente mudaram
+            if (JSON.stringify(novosDados) !== JSON.stringify(dadosTabela)) {
+                setDadosTabela(novosDados);
+            }
         }
     }, [extratos]);
 
+
     useEffect(() => {
-        if ((idCliente || bancoSelecionado) && (!mesSelecionado || !anoSelecionado)) {
+        if (!mesSelecionado || !anoSelecionado) {
             const dataAtual = new Date();
-            const mesAtual = (dataAtual.getMonth() + 1).toString().padStart(2, "0");
+            const nomesMeses = [
+                "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+            ];
+    
+            const mesAtual = nomesMeses[dataAtual.getMonth()]; 
             const anoAtual = dataAtual.getFullYear().toString();
+    
             setMesSelecionado(mesAtual);
             setAnoSelecionado(anoAtual);
         }
-    }, [idCliente, bancoSelecionado, mesSelecionado, anoSelecionado]);
+    }, []);
     
+
+    
+
     return (
         <>
             <div className="fixed top-0 left-0 w-full z-10">
@@ -192,7 +249,9 @@ const Extrato: React.FC = () => {
                         Adicionar Rubricas
                     </button>
 
-                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
+                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition"
+                        onClick={() => setShowModalFornecedor(true)}
+                    >
                         Adicionar Fornecedor
                     </button>
                     <button
@@ -205,9 +264,13 @@ const Extrato: React.FC = () => {
                 </div>
 
                 <div className="flex space-x-4">
-                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
-                        Selecionar Todos
+                    <button
+                        className="px-4 py-2 border rounded hover:bg-gray-100 transition"
+                        onClick={handleSelecionarTodos}
+                    >
+                        {selecionados.length === dadosTabela.length ? "Desmarcar Todos" : "Selecionar Todos"}
                     </button>
+
                     <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
                         Deletar Selecionados
                     </button>
@@ -221,7 +284,16 @@ const Extrato: React.FC = () => {
             </div>
 
             <div className="mt-8 w-full px-10">
-                <TabelaExtrato dados={dadosTabela} saldoInicial={saldoInicial} />
+                <TabelaExtrato
+                    dados={dadosTabela}
+                    saldoInicial={saldoInicial}
+                    selecionados={selecionados}
+                    onToggleSelecionado={handleToggleSelecionado}
+                    onSelecionarTodos={handleSelecionarTodos}
+                    categoriasFormatadas={categoriasFormatadas}
+                    fornecedoresFormatados={fornecedoresFormatados}
+                />
+
             </div>
 
             {showModalBanco && (
@@ -247,6 +319,21 @@ const Extrato: React.FC = () => {
                         <button
                             className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
                             onClick={() => setShowModalRubrica(false)}
+                        >
+                            Fechar
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {showModalFornecedor && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-6 rounded shadow-lg w-[800px]">
+                        <h2 className="text-xl font-bold mb-4">Adicionar Rubrica</h2>
+                        <iframe src="/fornecedor" className="w-full h-[600px] border-none"></iframe>
+                        <button
+                            className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                            onClick={() => setShowModalFornecedor(false)}
                         >
                             Fechar
                         </button>

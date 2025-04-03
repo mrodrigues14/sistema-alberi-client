@@ -7,7 +7,7 @@ export interface Extrato {
   idextrato: number;
   idCliente: number;
   data: string;
-  descricao: string;
+  nomeNoExtrato: string;
   valor: number;
   tipoDeTransacao: "ENTRADA" | "SAIDA";
   idFornecedor?: number | null;
@@ -17,7 +17,7 @@ export interface Extrato {
 
 export function useExtratos(idCliente?: number, idBanco?: number, mes?: string, ano?: string) {
   let query = null;
-
+  console.log(mes, ano);
   // Função auxiliar para converter nome do mês para número
   const monthToNumber = (monthName: string): string | null => {
     const monthNames: { [key: string]: number } = {
@@ -37,8 +37,6 @@ export function useExtratos(idCliente?: number, idBanco?: number, mes?: string, 
     }
   }
 
-  console.log(query);
-
   const { data, error, isLoading, mutate } = useSWR(query, fetcher);
 
   return {
@@ -50,8 +48,8 @@ export function useExtratos(idCliente?: number, idBanco?: number, mes?: string, 
 }
 
 
-
 export async function createExtrato(novoExtrato: Omit<Extrato, "idextrato">) {
+
   const response = await fetch(`${API_URL}/extratos`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

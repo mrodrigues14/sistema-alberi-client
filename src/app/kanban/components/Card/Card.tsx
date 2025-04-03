@@ -36,7 +36,6 @@ const Card: React.FC<CardProps> = ({
   const [clickStart, setClickStart] = useState({ x: 0, y: 0 });
   const { clientes, isLoading, isError } = useCliente(); 
   const [empresaNome, setEmpresaNome] = useState<string>("Sem empresa");
-  
   useEffect(() => {
     if (clientes.length > 0 && cardData.idCliente) {
       const clienteEncontrado = clientes.find(
@@ -111,13 +110,13 @@ const Card: React.FC<CardProps> = ({
               <Tag key={index} tagName={item.tagName} color={item.color} />
             ))}
           </div>
-          <div className="priority-stars">
+          <div className="prioridade-stars">
               {[1, 2, 3, 4, 5].map((star) => (
                 <i
                   key={star}
-                  className={`bi bi-star${cardData.priority >= star ? "-fill" : ""}`}
+                  className={`bi bi-star${cardData.prioridade >= star ? "-fill" : ""}`}
                   style={{
-                    color: cardData.priority >= star ? "gold" : "gray",
+                    color: cardData.prioridade >= star ? "gold" : "gray",
                   }}
                 ></i>
               ))}

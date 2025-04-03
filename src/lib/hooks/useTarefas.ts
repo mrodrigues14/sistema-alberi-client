@@ -5,19 +5,18 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.albericonsult.co
 const BASE_URL = `${API_URL}/tarefas`;
 
 // 🔹 Hook para buscar todas as tarefas ou filtrar por cliente/usuário
+// useTarefas.ts
 export function useTarefas(idCliente?: number, idUsuario?: number) {
   let query = "/tarefas";
-
   if (idCliente) query += `?id_cliente=${idCliente}`;
   if (idUsuario) query += `${idCliente ? "&" : "?"}id_usuario=${idUsuario}`;
 
-  const { data, error, isLoading } = useSWR(query, fetcher);
-
+  const { data, error, isLoading, mutate: swrMutate } = useSWR(query, fetcher);
   return {
     tarefas: data || [],
     isLoading,
     isError: error,
-    mutateTarefas: () => mutate(`${API_URL}${query}`),
+    mutateTarefas: swrMutate, // ⬅️ usamos a própria função mutate do SWR
   };
 }
 
@@ -53,6 +52,7 @@ export async function createTarefa(novaTarefa: any) {
 
 // 🔹 Atualizar uma tarefa
 export async function updateTarefa(id: number, updates: any) {
+  console.log(id, updates);
   try {
     const res = await fetch(`${BASE_URL}/${id}`, {
       method: "PATCH",

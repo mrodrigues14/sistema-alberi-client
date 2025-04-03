@@ -20,7 +20,6 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
-  // Validação de CPF
   const isValidCPF = (cpf: string) => {
     cpf = cpf.replace(/[^\d]+/g, "");
     return cpf.length === 11;
@@ -52,9 +51,7 @@ export default function Login() {
         cpf,
         senha,
       });
-      console.log(result)
       if (result?.error) {
-        // Exibir a mensagem de erro do servidor diretamente
         setLoginError(result.error);
       } else {
         router.push("/home");

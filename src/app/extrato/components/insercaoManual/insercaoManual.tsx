@@ -58,16 +58,13 @@ const InsercaoManual: React.FC<{
             }));
     }, [fornecedores]);
     
-    
-    console.log(fornecedoresFormatados);
-
     const [entrada, setEntrada] = useState({
         id: Date.now(),
         data: "",
         rubricaSelecionada: "",
         fornecedorSelecionado: "",
         observacao: "",
-        nomeExtrato: "",
+        nomeNoExtrato: "",
         rubricaContabil: "",
         entrada: "",
         saida: "",
@@ -82,8 +79,6 @@ const InsercaoManual: React.FC<{
         }));
     };
 
-
-    console.log(fornecedores);
     const handleCategoriaChange = (idCategoria: number) => {
         const categoriaFilha: Categoria | undefined = categoriasCliente?.find((cat: Categoria) => cat.idcategoria === idCategoria);
         const categoriaPai: Categoria | null = categoriaFilha ? categoriasCliente?.find((cat: Categoria) => cat.idcategoria === categoriaFilha.idCategoriaPai) || null : null;
@@ -123,18 +118,18 @@ const InsercaoManual: React.FC<{
             idBanco: bancoSelecionado,
             idCategoria: categoriaSelecionada.id, // 🔹 Envia apenas o ID da categoria filha para o banco
             data: entrada.data.split("/").reverse().join("-"),
-            nomeExtrato: entrada.nomeExtrato,
-            descricao: entrada.nomeExtrato,
+            nomeNoExtrato: entrada.nomeNoExtrato,
+            descricao: entrada.observacao,
             valor: entrada.entrada
                 ? Number(entrada.entrada.replace(/\D/g, "")) / 100
                 : Number(entrada.saida.replace(/\D/g, "")) / 100,
             tipoDeTransacao: entrada.entrada ? "ENTRADA" as "ENTRADA" : "SAIDA" as "SAIDA",
             idFornecedor: null,
             rubricaContabil: entrada.rubricaContabil || null,
-            observacao: entrada.observacao || null,
         };
 
         try {
+            console.log("Novo extrato:", novoExtrato);
             await createExtrato(novoExtrato);
             alert("Extrato inserido com sucesso!");
 
@@ -144,7 +139,7 @@ const InsercaoManual: React.FC<{
                 rubricaSelecionada: "",
                 fornecedorSelecionado: "",
                 observacao: "",
-                nomeExtrato: "",
+                nomeNoExtrato: "",
                 rubricaContabil: "",
                 entrada: "",
                 saida: "",
@@ -159,13 +154,15 @@ const InsercaoManual: React.FC<{
     const formatarMoeda = (valor: string) => {
         const numeroLimpo = valor.replace(/\D/g, "");
         if (!numeroLimpo) return "";
-
+    
         const numero = parseFloat(numeroLimpo) / 100;
         return numero.toLocaleString("pt-BR", {
             style: "currency",
+            currency: "BRL", // ✅ Aqui estava faltando
             minimumFractionDigits: 2,
         });
     };
+    
     return (
         <div className="w-full p-4">
             <table className="w-full border-collapse border">
@@ -208,7 +205,7 @@ const InsercaoManual: React.FC<{
                                 options={fornecedoresFormatados}
                                 selectedValue={entrada.fornecedorSelecionado}
                                 onSelect={(value) => handleInputChange("fornecedorSelecionado", value)}
-                                type="rubrica"
+                                type="fornecedor"
 
                             />
                         </td>
@@ -226,8 +223,8 @@ const InsercaoManual: React.FC<{
                                 type="text"
                                 className="border rounded w-full px-2"
                                 placeholder="Nome no Extrato"
-                                value={entrada.nomeExtrato}
-                                onChange={(e) => handleInputChange("nomeExtrato", e.target.value)}
+                                value={entrada.nomeNoExtrato}
+                                onChange={(e) => handleInputChange("nomeNoExtrato", e.target.value)}
                             />
                         </td>
                         <td className="border px-4 py-2">

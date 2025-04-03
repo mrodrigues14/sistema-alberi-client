@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { useCliente } from "@/lib/hooks/useCliente";
 import { useClienteContext } from "@/context/ClienteContext";
 import Image from 'next/image';
+import { signOut } from "next-auth/react";
 
 const font = Poppins({
     subsets: ["latin"],
@@ -35,9 +36,9 @@ export default function Navbar() {
     const [usuario, setUsuario] = useState('Carregando...');
     const [showDropdown, setShowDropdownCliente] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const dropdownRef = useRef<HTMLDivElement | null>(null);
+    const clienteDropdownRef = useRef<HTMLDivElement | null>(null);
+    const usuarioDropdownRef = useRef<HTMLDivElement | null>(null);
     const { idCliente, setIdCliente } = useClienteContext();
-    console.log(isError)
     // Estado para armazenar o cliente selecionado
     const [selectedCliente, setSelectedCliente] = useState<{ id: number, nome: string } | null>(null);
 
@@ -55,13 +56,12 @@ export default function Navbar() {
     }, [session]);
 
     useEffect(() => {
-        if (clientes?.length > 0 && !selectedCliente) {
-            const savedCliente = sessionStorage.getItem("selectedCliente");
-            if (savedCliente) {
-                setSelectedCliente(JSON.parse(savedCliente));
-            }
+        const savedCliente = sessionStorage.getItem("selectedCliente");
+        if (clientes?.length > 0 && savedCliente && !selectedCliente) {
+            setSelectedCliente(JSON.parse(savedCliente));
         }
-    }, [clientes, selectedCliente]);
+    }, [clientes]);
+
 
 
     // Ordenar clientes alfabeticamente e garantir "Todos Clientes Vinculados ao Perfil!" como primeiro
@@ -93,16 +93,25 @@ export default function Navbar() {
 
     useEffect(() => {
         if (idCliente && clientes?.length > 0) {
-            const clienteEncontrado: Cliente | undefined = clientes.find((cliente: Cliente) => cliente.idcliente === idCliente);
-            if (clienteEncontrado) {
-                setSelectedCliente({ id: clienteEncontrado.idcliente, nome: clienteEncontrado.apelido || clienteEncontrado.nome });
+            const clienteEncontrado = clientes.find((c: { idcliente: number; }) => c.idcliente === idCliente);
+            const novoNome = clienteEncontrado?.apelido || clienteEncontrado?.nome;
+            if (clienteEncontrado && (selectedCliente?.id !== idCliente || selectedCliente?.nome !== novoNome)) {
+                setSelectedCliente({ id: idCliente, nome: novoNome });
             }
         }
     }, [idCliente, clientes]);
 
     useEffect(() => {
+        console.log("idCliente ou clientes mudou");
+    }, [idCliente, clientes]);
+
+    useEffect(() => {
+        console.log("selectedCliente mudou", selectedCliente);
+    }, [selectedCliente]);
+
+    useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+            if (clienteDropdownRef.current && !clienteDropdownRef.current.contains(event.target as Node)) {
                 setShowDropdownCliente(null);
             }
         }
@@ -194,14 +203,14 @@ export default function Navbar() {
                         </div>
 
                         <a
-                            href="/reportar-falha"
+                            href="/chamados"
                             className="px-4 py-2 border border-gray-300 rounded  hover:bg-[#2d3692] hover:text-white transition shadow-md text-center"
                         >
                             Reportar Falha ou Melhoria
                         </a>
 
                         {/* Seletor de Cliente */}
-                        <div className="relative" ref={dropdownRef}>
+                        <div className="relative" ref={clienteDropdownRef}>
                             <button
                                 onClick={() => toggleDropdown('cliente')}
                                 className="px-4 py-2 border border-gray-300 rounded hover:bg-[#8BACAF] transition shadow-md text-center w-[250px]"
@@ -243,14 +252,35 @@ export default function Navbar() {
             </div>
 
             {/* Perfil do usuário */}
-            <div className="flex items-center justify-center px-8" style={{ backgroundColor: '#2d3692' }}>
-                <a
-                    href="/perfil"
-                    className="px-4 py-2 border border-gray-300 rounded bg-white hover:bg-[#8BACAF] transition shadow-md text-center"
+            <div className="relative px-8" style={{ backgroundColor: '#2d3692' }} ref={usuarioDropdownRef}>
+                <button
+                    onClick={() => toggleDropdown("usuario")}
+                    className="px-4 py-2 border border-gray-300 rounded bg-white hover:bg-[#8BACAF] transition shadow-md text-center w-48"
                 >
                     {usuario}
-                </a>
+                </button>
+
+                {showDropdown === "usuario" && (
+                    <div className="absolute w-48 bg-white border rounded shadow-lg z-20">
+                        <button
+                            className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                            onMouseDown={async (e) => {
+                                // Impede que o clique feche o dropdown antes do logout
+                                e.preventDefault();
+                                sessionStorage.removeItem("selectedCliente");
+                                localStorage.clear();
+                                setIdCliente(null);
+                                await signOut({ callbackUrl: "/" });
+                            }}
+                        >
+                            Sair
+                        </button>
+
+
+                    </div>
+                )}
             </div>
+
         </nav>
     );
 }

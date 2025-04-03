@@ -4,7 +4,6 @@ import "./Board.css";
 import { useDroppable } from "@dnd-kit/core";
 import Editable from "../Editable/Editable";
 
-// Definição das cores dos títulos dos boards
 const boardColors: { [key: string]: string } = {
   "Pendente de Dados": "#4C4C8A",
   "A Fazer": "#A05A2C",
@@ -17,15 +16,25 @@ const boardColors: { [key: string]: string } = {
 interface BoardProps {
   id: string;
   name: string;
-  card: { id: string; title: string; tags: { tagName: string; color: string }[]; task: any[] }[];
+  card: {
+    id: string;
+    title: string;
+    tags: { tagName: string; color: string }[];
+    task: any[];
+    prioridade?: number;
+    idCliente?: number;
+    autor: string;
+    dataLimite?: string;
+  }[];
+  isLoading: boolean; // 👈 NOVO
   addCard: (title: string, bid: string) => void;
   removeCard: (boardId: string, cardId: string) => void;
   updateCard: (bid: string, cid: string, card: any) => void;
 }
 
-const Board: React.FC<BoardProps> = ({ id, name, card, addCard, removeCard, updateCard }) => {
-  const { setNodeRef, isOver } = useDroppable({ id });
 
+const Board: React.FC<BoardProps> = ({ id, name, card, isLoading, removeCard, updateCard }) => {
+  const { setNodeRef, isOver } = useDroppable({ id });
   return (
     <div className="board">
       <div
@@ -35,8 +44,6 @@ const Board: React.FC<BoardProps> = ({ id, name, card, addCard, removeCard, upda
         <p className="board__title">{name || "Board"}</p>
         <span className="total__cards">{card.length}</span>
       </div>
-
-      {/* Área "dropável" do Board com efeito visual ao arrastar */}
       <div
         className="board__cards"
         ref={setNodeRef}
@@ -46,28 +53,46 @@ const Board: React.FC<BoardProps> = ({ id, name, card, addCard, removeCard, upda
           border: isOver ? "2px dashed green" : "2px solid transparent",
         }}
       >
-        {card.map((item, index) => (
-          <Card
-            bid={id}
-            id={item.id}
-            index={index}
-            key={item.id}
-            title={item.title}
-            tags={item.tags}
-            updateCard={updateCard}
-            removeCard={removeCard}
-            card={item}
-          />
-        ))}
+        {isLoading ? (
+          <p className="text-center text-sm text-gray-500">Carregando tarefas...</p>
+        ) : (
+          card.map((item, index) => (
+            
+            <Card
+              bid={id}
+              id={item.id}
+              index={index}
+              key={item.id}
+              title={item.title}
+              tags={item.tags}
+              updateCard={updateCard}
+              removeCard={removeCard}
+              card={item}
+            />
+          ))
+        )}
       </div>
+
 
       <div className="board__footer">
         <Editable
-          name={"Add Card"}
-          btnName={"Add Card"}
-          placeholder={"Enter Card Title"}
-          onSubmit={(value: string) => addCard(value, id)}
+          name="Adicionar Tarefa"
+          btnName="Adicionar Tarefa"
+          placeholder="Digite o título da tarefa..."
+          status={name}
+          addCardLocal={(card) => {
+            updateCard(id, card.id.toString(), card);
+          }}
+          updateCardId={(oldId, newCard) => {
+            removeCard(id, oldId); // remove o fake
+            updateCard(id, newCard.id, newCard); // insere o real
+          }}
+          removeCardLocal={(idTemp) => {
+            removeCard(id, idTemp); // remove se falhar
+          }}
         />
+
+
       </div>
     </div>
   );
