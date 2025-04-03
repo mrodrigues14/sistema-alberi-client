@@ -12,7 +12,6 @@ export function useTarefas(idCliente?: number, idUsuario?: number) {
   if (idUsuario) query += `${idCliente ? "&" : "?"}id_usuario=${idUsuario}`;
 
   const { data, error, isLoading, mutate: swrMutate } = useSWR(query, fetcher);
-
   return {
     tarefas: data || [],
     isLoading,

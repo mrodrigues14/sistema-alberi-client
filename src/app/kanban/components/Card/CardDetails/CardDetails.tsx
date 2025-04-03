@@ -46,6 +46,7 @@ interface CardDetailsProps {
     autor: string;
     company?: string;
     idCliente?: number;
+    dataLimite?: string;
   };
   bid: string;
   updateCard: (updatedCard: any) => void;
@@ -60,7 +61,6 @@ interface ClienteCategoria {
 }
 
 export default function CardDetails(props: CardDetailsProps) {
-  console.log(props.card);
   const colors = ["#61bd4f", "#f2d600", "#ff9f1a", "#eb5a46", "#c377e0"];
 
   const [input, setInput] = useState(false);
@@ -70,35 +70,48 @@ export default function CardDetails(props: CardDetailsProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Controla a abertura do dropdown
   const { clientes, isLoading, isError } = useCliente(); // 🔹 Obtendo a lista de empresas
   const [clientName, setClientName] = useState<string>("");
-
+  console.log(props.card)
   const [values, setValues] = useState(() => {
     if (typeof window !== "undefined") {
       const savedCard = localStorage.getItem(`card-${props.card.id}`);
-      return savedCard
-        ? JSON.parse(savedCard)
-        : {
-          ...props.card,
-          autor: props.card.autor || "",
-          company: String(props.card.idCliente) || "", // ✅ Define a empresa com base no idCliente
-          task: props.card.task.map((t, index) => ({
-            id: index + 1,
-            text: t.text,
-            completed: t.completed,
-          })),
-        };
+      if (savedCard) {
+        const parsed = JSON.parse(savedCard);
+        return {
+          ...parsed,
+          dataLimite: 
+          parsed.dataLimite && parsed.dataLimite !== "0000-00-00"
+            ? parsed.dataLimite
+            : props.card.dataLimite,
+                };
+      }
+  
+      return {
+        ...props.card,
+        autor: props.card.autor || "",
+        company: String(props.card.idCliente) || "",
+        task: props.card.task.map((t, index) => ({
+          id: index + 1,
+          text: t.text,
+          completed: t.completed,
+        })),
+        dataLimite: props.card.dataLimite ,
+      };
     }
+  
     return {
       ...props.card,
       autor: props.card.autor || "",
-      company: String(props.card.idCliente) || "", // ✅ Mesmo ajuste para SSR
+      company: String(props.card.idCliente) || "",
       task: props.card.task.map((t, index) => ({
         id: index + 1,
         text: t.text,
         completed: t.completed,
       })),
+      dataLimite: props.card.dataLimite ,
     };
   });
-
+  
+console.log(values)
 
   const [text, setText] = useState(values.title);
 
@@ -128,14 +141,14 @@ export default function CardDetails(props: CardDetailsProps) {
       text: value,
       completed: false,
     };
-  
+
     const novasTasks = [...values.task, novaTask];
-  
+
     setValues((prev: any) => ({
       ...prev,
       task: novasTasks,
     }));
-  
+
     try {
       await updateTarefa(Number(values.id), {
         descricoes: JSON.stringify(novasTasks),
@@ -145,7 +158,7 @@ export default function CardDetails(props: CardDetailsProps) {
       alert("Erro ao adicionar a task. Tente novamente.");
     }
   };
-  
+
 
 
   const removeTask = (id: string) => {
@@ -241,7 +254,6 @@ export default function CardDetails(props: CardDetailsProps) {
       console.error("Erro ao atualizar tarefa:", error);
     }
   };
-
   return (
     <Modal onClose={() => {
       props.updateCard(values);
@@ -498,12 +510,46 @@ export default function CardDetails(props: CardDetailsProps) {
                     onClose={setLabelShow}
                   />
                 )}
-                <button>
-                  <span className="icon__sm">
-                    <Clock />
-                  </span>
-                  Data
-                </button>
+                <h6>Data Limite</h6>
+                <div className="d-flex flex-column gap-1">
+                  <div className="d-flex align-items-center gap-2">
+                    <Clock className="icon__sm" />
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="dd-mm-aaaa"
+                      value={
+                        values.dataLimite && values.dataLimite !== "1899-11-30"
+                          ? values.dataLimite.split("-").reverse().join("-")
+                          : ""
+                      }
+                      onChange={(e) => {
+                        const raw = e.target.value;
+                        const [dd, mm, yyyy] = raw.split("-");
+
+                        const isValid =
+                          dd && mm && yyyy &&
+                          dd.length === 2 &&
+                          mm.length === 2 &&
+                          yyyy.length === 4;
+
+                        if (isValid) {
+                          const formatToDB = `${yyyy}-${mm}-${dd}`;
+                          setValues((prev: any) => {
+                            atualizarTarefa({ dataLimite: formatToDB });
+                            return { ...prev, dataLimite: formatToDB };
+                          });
+                        } else if (raw === "") {
+                          setValues((prev: any) => {
+                            atualizarTarefa({ dataLimite: "1899-11-30" });
+                            return { ...prev, dataLimite: "1899-11-30" };
+                          });
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
+
 
                 <button
                   style={{
@@ -536,8 +582,6 @@ export default function CardDetails(props: CardDetailsProps) {
                   </span>
                   Excluir Cartão
                 </button>
-
-
 
               </div>
             </div>

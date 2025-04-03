@@ -21,6 +21,10 @@ interface BoardProps {
     title: string;
     tags: { tagName: string; color: string }[];
     task: any[];
+    prioridade?: number;
+    idCliente?: number;
+    autor: string;
+    dataLimite?: string;
   }[];
   isLoading: boolean; // 👈 NOVO
   addCard: (title: string, bid: string) => void;
@@ -53,6 +57,7 @@ const Board: React.FC<BoardProps> = ({ id, name, card, isLoading, removeCard, up
           <p className="text-center text-sm text-gray-500">Carregando tarefas...</p>
         ) : (
           card.map((item, index) => (
+            
             <Card
               bid={id}
               id={item.id}
@@ -70,22 +75,22 @@ const Board: React.FC<BoardProps> = ({ id, name, card, isLoading, removeCard, up
 
 
       <div className="board__footer">
-      <Editable
-  name="Adicionar Tarefa"
-  btnName="Adicionar Tarefa"
-  placeholder="Digite o título da tarefa..."
-  status={name}
-  addCardLocal={(card) => {
-    updateCard(id, card.id.toString(), card);
-  }}
-  updateCardId={(oldId, newCard) => {
-    removeCard(id, oldId); // remove o fake
-    updateCard(id, newCard.id, newCard); // insere o real
-  }}
-  removeCardLocal={(idTemp) => {
-    removeCard(id, idTemp); // remove se falhar
-  }}
-/>
+        <Editable
+          name="Adicionar Tarefa"
+          btnName="Adicionar Tarefa"
+          placeholder="Digite o título da tarefa..."
+          status={name}
+          addCardLocal={(card) => {
+            updateCard(id, card.id.toString(), card);
+          }}
+          updateCardId={(oldId, newCard) => {
+            removeCard(id, oldId); // remove o fake
+            updateCard(id, newCard.id, newCard); // insere o real
+          }}
+          removeCardLocal={(idTemp) => {
+            removeCard(id, idTemp); // remove se falhar
+          }}
+        />
 
 
       </div>

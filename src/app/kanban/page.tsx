@@ -21,6 +21,7 @@ interface Card {
   prioridade?: number;
   idCliente?: number;
   autor: string;
+  dataLimite?: string;
 }
 
 // Estrutura de cada board
@@ -47,7 +48,6 @@ const Kanban = () => {
   const { usuarios } = useUsuarios();
 
   const { tarefas, isLoading } = useTarefas();
-
   // Função para adicionar um card
   const addCard = useCallback((title: string, bid: string) => {
     setData(prevData => {
@@ -162,6 +162,7 @@ const Kanban = () => {
         prioridade: tarefa.prioridade || 0,
         idCliente: tarefa.idCliente,
         autor: nomeAutor,
+        dataLimite: tarefa.dataLimite,
       };
   
       const boardIndex = boardsAtualizados.findIndex(
@@ -178,7 +179,6 @@ const Kanban = () => {
     setData(boardsAtualizados);
   }, [tarefas, usuarios]);
 
-  
   return (
     <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <div className="App">

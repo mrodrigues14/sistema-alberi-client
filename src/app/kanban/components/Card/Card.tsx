@@ -36,7 +36,6 @@ const Card: React.FC<CardProps> = ({
   const [clickStart, setClickStart] = useState({ x: 0, y: 0 });
   const { clientes, isLoading, isError } = useCliente(); 
   const [empresaNome, setEmpresaNome] = useState<string>("Sem empresa");
-  
   useEffect(() => {
     if (clientes.length > 0 && cardData.idCliente) {
       const clienteEncontrado = clientes.find(

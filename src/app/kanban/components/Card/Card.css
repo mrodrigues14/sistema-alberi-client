@@ -78,7 +78,6 @@
 }.prioridade-stars {
   display: flex;
   gap: 2px;
-  margin-left: auto; /* Move para a direita */
 }
 
 .prioridade-stars i {

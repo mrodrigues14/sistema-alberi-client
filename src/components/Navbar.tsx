@@ -38,7 +38,7 @@ export default function Navbar() {
     const [searchQuery, setSearchQuery] = useState('');
     const clienteDropdownRef = useRef<HTMLDivElement | null>(null);
     const usuarioDropdownRef = useRef<HTMLDivElement | null>(null);
-        const { idCliente, setIdCliente } = useClienteContext();
+    const { idCliente, setIdCliente } = useClienteContext();
     // Estado para armazenar o cliente selecionado
     const [selectedCliente, setSelectedCliente] = useState<{ id: number, nome: string } | null>(null);
 
@@ -203,7 +203,7 @@ export default function Navbar() {
                         </div>
 
                         <a
-                            href="/reportar-falha"
+                            href="/chamados"
                             className="px-4 py-2 border border-gray-300 rounded  hover:bg-[#2d3692] hover:text-white transition shadow-md text-center"
                         >
                             Reportar Falha ou Melhoria
@@ -264,15 +264,18 @@ export default function Navbar() {
                     <div className="absolute w-48 bg-white border rounded shadow-lg z-20">
                         <button
                             className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                            onClick={() => {
+                            onMouseDown={async (e) => {
+                                // Impede que o clique feche o dropdown antes do logout
+                                e.preventDefault();
                                 sessionStorage.removeItem("selectedCliente");
-                                localStorage.clear(); 
-                                setIdCliente(null);  
-                                signOut({ callbackUrl: "/" });
+                                localStorage.clear();
+                                setIdCliente(null);
+                                await signOut({ callbackUrl: "/" });
                             }}
                         >
                             Sair
                         </button>
+
 
                     </div>
                 )}

@@ -62,7 +62,7 @@
   background-color: #61bd4f !important;
 }
 .task__editable {
-  width: 30%;
+  width: 70%;
 }
 .task__list {
   min-height: 50px; /* 🔹 Altura mínima uniforme */
