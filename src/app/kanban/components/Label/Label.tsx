@@ -22,22 +22,22 @@ const Label: React.FC<LabelProps> = (props) => {
     <div className="label-modal">
       <div className="label-container">
         <div className="label-header">
-          <h3>Label</h3>
+          <h3>Etiqueta</h3>
           <X className="close-icon" onClick={() => props.onClose(false)} />
         </div>
 
         <div className="label-body">
-          <label className="label-text">Name</label>
+          <label className="label-text">Nome</label>
           <input
             type="text"
             ref={input}
             value={label}
-            placeholder="Enter label name"
+            placeholder="Selecione um nome para a etiqueta"
             className="label-input"
             onChange={(e) => setLabel(e.target.value)}
           />
 
-          <label className="label-text">Select Color</label>
+          <label className="label-text">Selecione a cor</label>
           <div className="color-palette">
             {props.color.map((item, index) => (
               <span
@@ -60,11 +60,11 @@ const Label: React.FC<LabelProps> = (props) => {
                 setSelectedColor("");
                 if (input.current) input.current.value = "";
               } else {
-                alert("Please enter a label name and select a color.");
+                alert("Por favor selecione uma cor");
               }
             }}
           >
-            Create
+            Criar nova etiqueta
           </button>
         </div>
       </div>

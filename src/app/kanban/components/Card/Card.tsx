@@ -34,21 +34,22 @@ const Card: React.FC<CardProps> = ({
   const [modalShow, setModalShow] = useState(false);
   const [cardData, setCardData] = useState(card);
   const [clickStart, setClickStart] = useState({ x: 0, y: 0 });
-  const { clientes, isLoading, isError } = useCliente(); 
+  const { clientes, isLoading, isError } = useCliente();
   const [empresaNome, setEmpresaNome] = useState<string>("Sem empresa");
+
   useEffect(() => {
     if (clientes.length > 0 && cardData.idCliente) {
       const clienteEncontrado = clientes.find(
         (cliente: { idcliente: number }) => cliente.idcliente === cardData.idCliente
       );
-  
+
       if (clienteEncontrado) {
         setEmpresaNome(clienteEncontrado.apelido || clienteEncontrado.nome);
       }
     }
   }, [clientes, cardData.idCliente]);
-  
-  
+
+
   useEffect(() => {
     setCardData(card);
   }, [card]);
@@ -86,13 +87,20 @@ const Card: React.FC<CardProps> = ({
     <>
       {modalShow && (
         <CardDetails
-        updateCard={handleUpdateCard}
-        onClose={() => setModalShow(false)}
-        card={{ ...cardData, autor: cardData.autor || "" }} // 🔹 Garante que o autor seja passado
-        bid={bid}
-        removeCard={removeCard}
-      />
-      
+          updateCard={handleUpdateCard}
+          onClose={() => setModalShow(false)}
+          card={{
+            ...cardData,
+            tags: Array.isArray(cardData.labels)
+              ? cardData.labels
+              : JSON.parse(cardData.labels || "[]"), // 👈 parse seguro
+            autor: cardData.autor || "",
+          }}
+          bid={bid}
+          removeCard={removeCard}
+        />
+
+
       )}
 
       <div className="custom__card" ref={setNodeRef} style={style} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
@@ -102,7 +110,7 @@ const Card: React.FC<CardProps> = ({
             <div className="drag-handle" {...listeners} {...attributes}>
               <i className="bi bi-grip-vertical"></i> {/* Ícone de arraste */}
             </div>
-            <p>{cardData.title}</p>            
+            <p>{cardData.title}</p>
 
           </div>
           <div className="card__tags">
@@ -111,16 +119,16 @@ const Card: React.FC<CardProps> = ({
             ))}
           </div>
           <div className="prioridade-stars">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <i
-                  key={star}
-                  className={`bi bi-star${cardData.prioridade >= star ? "-fill" : ""}`}
-                  style={{
-                    color: cardData.prioridade >= star ? "gold" : "gray",
-                  }}
-                ></i>
-              ))}
-            </div>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <i
+                key={star}
+                className={`bi bi-star${cardData.prioridade >= star ? "-fill" : ""}`}
+                style={{
+                  color: cardData.prioridade >= star ? "gold" : "gray",
+                }}
+              ></i>
+            ))}
+          </div>
           <div className="card__footer">
             {cardData.task.length !== 0 && (
               <div className="task">

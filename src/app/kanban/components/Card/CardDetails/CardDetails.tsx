@@ -70,7 +70,7 @@ export default function CardDetails(props: CardDetailsProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Controla a abertura do dropdown
   const { clientes, isLoading, isError } = useCliente(); // 🔹 Obtendo a lista de empresas
   const [clientName, setClientName] = useState<string>("");
-  console.log(props.card)
+
   const [values, setValues] = useState(() => {
     if (typeof window !== "undefined") {
       const savedCard = localStorage.getItem(`card-${props.card.id}`);
@@ -111,7 +111,6 @@ export default function CardDetails(props: CardDetailsProps) {
     };
   });
   
-console.log(values)
 
   const [text, setText] = useState(values.title);
 
@@ -196,22 +195,30 @@ console.log(values)
   };
 
   const removeTag = (id: string) => {
-    const tempTag = values.tags.filter((item: Tag) => item.id !== id);
-    setValues({
-      ...values,
-      tags: tempTag,
-    });
+    const tagsFiltradas = values.tags.filter((item: Tag) => item.id !== id);
+  
+    setValues({ ...values, tags: tagsFiltradas });
+  
+    atualizarTarefa({ labels: tagsFiltradas }); // ✅ Aqui também
   };
+  
+  
 
   const addTag = (value: string, color: string) => {
-    values.tags.push({
+    const novaTag = {
       id: uuidv4(),
       tagName: value,
       color: color,
-    });
-
-    setValues({ ...values });
+    };
+  
+    const tagsAtualizadas = [...values.tags, novaTag];
+  
+    setValues((prev: any) => ({ ...prev, tags: tagsAtualizadas }));
+  
+    atualizarTarefa({ labels: tagsAtualizadas }); // ✅ Aqui
   };
+  
+  
 
   const handelClickListner = useCallback((e: KeyboardEvent) => {
     if (e.code === "Enter") {
@@ -248,12 +255,21 @@ console.log(values)
   }, [clientes, values.company]);
 
   const atualizarTarefa = async (campoAtualizado: Partial<Tarefa>) => {
+    const payload = {
+      ...campoAtualizado,
+      labels: campoAtualizado.labels
+        ? JSON.stringify(campoAtualizado.labels)
+        : undefined,
+    };
+  
     try {
-      await updateTarefa(Number(values.id), campoAtualizado);
+      await updateTarefa(Number(values.id), payload);
     } catch (error) {
       console.error("Erro ao atualizar tarefa:", error);
     }
   };
+  
+  
   return (
     <Modal onClose={() => {
       props.updateCard(values);
