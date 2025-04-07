@@ -8,8 +8,9 @@ export interface SaldoInicial {
   idCliente: number;
   idBanco: number;
   mesAno: string;
-  valor: number;
+  saldo: number;
 }
+
 
 export function useSaldoInicial(idCliente?: number, idBanco?: number, mes?: string, ano?: string) {
     let query = null;
@@ -49,16 +50,31 @@ export function useSaldoInicial(idCliente?: number, idBanco?: number, mes?: stri
 
 // 🔹 Criar um novo saldo inicial
 export async function createSaldoInicial(novoSaldo: Omit<SaldoInicial, "id">) {
+  const { idBanco, idCliente, mesAno, saldo } = novoSaldo;
+
+  if (!idBanco || !idCliente || !mesAno || saldo == null) {
+    throw new Error("Todos os campos obrigatórios devem ser preenchidos");
+  }
+
+  const data = `${mesAno}-01`; // exemplo: "2025-04-01"
+
+  const payload = {
+    ...novoSaldo,
+    data, 
+  };
+
   const response = await fetch(`${API_URL}/saldo-inicial`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(novoSaldo),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) throw new Error("Erro ao criar saldo inicial");
 
   return response.json();
 }
+
+
 
 // 🔹 Atualizar um saldo inicial pelo ID
 export async function updateSaldoInicial(id: number, updates: Partial<SaldoInicial>) {

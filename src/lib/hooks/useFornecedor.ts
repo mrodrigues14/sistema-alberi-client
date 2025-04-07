@@ -17,8 +17,7 @@ export interface Fornecedor {
 
 const fetcher = (url: string) => axios.get(url).then(res => res.data);
 
-export function useFornecedoresPorCliente() {
-  const idCliente = 94;
+export function useFornecedoresPorCliente(idCliente: number | null) {
 
   const { data, error, mutate } = useSWR<Fornecedor[]>(
     idCliente ? `${API_URL}/relacoes-cliente-fornecedor/cliente/${idCliente}` : null,

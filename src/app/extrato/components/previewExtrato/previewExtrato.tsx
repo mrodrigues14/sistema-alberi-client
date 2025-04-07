@@ -16,7 +16,7 @@ const PreviewExtrato: React.FC<Props> = ({ dados, idCliente, idBanco, onImportar
     const [linhas, setLinhas] = useState<LinhaExtrato[]>(dados);
 
     const { categoriasCliente } = useCategoriasPorCliente(idCliente);
-    const { fornecedores } = useFornecedoresPorCliente();
+    const { fornecedores } = useFornecedoresPorCliente(idCliente);
 
     const categoriasFormatadas = useMemo(() => {
         if (!categoriasCliente) return [];

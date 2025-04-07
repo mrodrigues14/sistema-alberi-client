@@ -21,6 +21,7 @@ const Extrato: React.FC = () => {
     const [showModalRubrica, setShowModalRubrica] = useState(false);
     const [showModalBanco, setShowModalBanco] = useState(false);
     const [showModalFornecedor, setShowModalFornecedor] = useState(false);
+    const [showModalSaldoInicial, setShowModalSaldoInicial] = useState(false);
     const [dropdownAberto, setDropdownAberto] = useState(false);
     const [dropdownAdicionarAberto, setDropdownAdicionarAberto] = useState(false);
     const [dropdownAcoesAberto, setDropdownAcoesAberto] = useState(false);
@@ -28,6 +29,7 @@ const Extrato: React.FC = () => {
         idCliente ? idCliente : undefined
     );
     const [bancoSelecionado, setBancoSelecionado] = useState<number | null>(null);
+    const [nomeBancoSelecionado, setNomeBancoSelecionado] = useState<string | null>(null);
     const [metodoInsercao, setMetodoInsercao] = useState<string>("");
     const [mesSelecionado, setMesSelecionado] = useState<string>("");
     const [anoSelecionado, setAnoSelecionado] = useState<string>("");
@@ -59,7 +61,7 @@ const Extrato: React.FC = () => {
     );
 
     const { categoriasCliente } = useCategoriasPorCliente(idCliente || undefined);
-    const { fornecedores } = useFornecedoresPorCliente();
+    const { fornecedores } = useFornecedoresPorCliente(idCliente);
     const [selecionados, setSelecionados] = useState<number[]>([]);
 
     const categoriasFormatadas = useMemo(() => {
@@ -189,14 +191,20 @@ const Extrato: React.FC = () => {
     };
     /** ✅ Atualiza o banco selecionado e salva no sessionStorage **/
     const handleBancoChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedBanco = Number(event.target.value);
-        if (bancoSelecionado !== selectedBanco) {
-            setBancoSelecionado(selectedBanco);
+        const selectedBancoId = Number(event.target.value);
+        const banco = bancos?.find(b => b.idbanco === selectedBancoId);
+
+        if (bancoSelecionado !== selectedBancoId) {
+            setBancoSelecionado(selectedBancoId);
+            setNomeBancoSelecionado(banco?.nome || null);
+
             if (typeof window !== "undefined") {
-                sessionStorage.setItem("bancoSelecionado", String(selectedBanco));
+                sessionStorage.setItem("bancoSelecionado", String(selectedBancoId));
+                sessionStorage.setItem("nomeBancoSelecionado", banco?.nome || "");
             }
         }
     };
+
 
     /** ✅ Atualiza o método de inserção **/
     const handleInsercaoChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -220,6 +228,18 @@ const Extrato: React.FC = () => {
             }
         }
     }, []);
+
+    useEffect(() => {
+        if (bancoSelecionado !== null && bancos.length > 0) {
+            const banco = bancos.find(b => b.idbanco === bancoSelecionado);
+            if (banco) {
+                setNomeBancoSelecionado(banco.nome);
+                sessionStorage.setItem("nomeBancoSelecionado", banco.nome);
+            }
+        }
+    }, [bancoSelecionado, bancos]);
+
+
 
     useEffect(() => {
         console.log(extratos)
@@ -354,6 +374,15 @@ const Extrato: React.FC = () => {
                                     >
                                         Adicionar Banco
                                     </button>
+                                    <button
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
+                                        onClick={() => {
+                                            setShowModalSaldoInicial(true);
+                                            setDropdownAdicionarAberto(false);
+                                        }}
+                                    >
+                                        Adicionar Saldo Inicial
+                                    </button>
                                 </div>
                             )}
                         </div>
@@ -456,7 +485,11 @@ const Extrato: React.FC = () => {
                         onSelecionarTodos={handleSelecionarTodos}
                         categoriasFormatadas={categoriasFormatadas}
                         fornecedoresFormatados={fornecedoresFormatados}
+                        banco={nomeBancoSelecionado ?? undefined}
+                        mesSelecionado={mesSelecionado}
+                        anoSelecionado={anoSelecionado}
                     />
+
 
                 </div>
 
@@ -504,31 +537,50 @@ const Extrato: React.FC = () => {
                         </div>
                     </div>
                 )}
+                {showModalSaldoInicial && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white p-6 rounded shadow-lg w-[800px]">
+                            <h2 className="text-xl font-bold mb-4">Adicionar Saldo Inicial</h2>
+                            <iframe
+                                src={`/saldoInicial?idBanco=${bancoSelecionado}&idCliente=${idCliente}`}
+                                className="w-full h-[600px] border-none"
+                            />
+
+
+                            <button
+                                className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                                onClick={() => setShowModalSaldoInicial(false)}
+                            >
+                                Fechar
+                            </button>
+                        </div>
+                    </div>
+                )}
 
             </div>
             {mostrarPreview && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white p-6 rounded-lg shadow-lg w-[95%] max-w-5xl h-[90%] overflow-y-auto">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">Pré-visualização do Extrato</h2>
-        <button
-          onClick={() => setMostrarPreview(false)}
-          className="text-gray-600 hover:text-red-600 text-xl font-bold"
-        >
-          ×
-        </button>
-      </div>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg shadow-lg w-[95%] max-w-5xl h-[90%] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold">Pré-visualização do Extrato</h2>
+                            <button
+                                onClick={() => setMostrarPreview(false)}
+                                className="text-gray-600 hover:text-red-600 text-xl font-bold"
+                            >
+                                ×
+                            </button>
+                        </div>
 
-      {/* Passa props obrigatórios: idCliente, idBanco e função de fechamento */}
-      <PreviewExtrato
-        dados={dados}
-        idCliente={idCliente!}
-        idBanco={bancoSelecionado!}
-        onImportarFinalizado={() => setMostrarPreview(false)}
-      />
-    </div>
-  </div>
-)}
+                        {/* Passa props obrigatórios: idCliente, idBanco e função de fechamento */}
+                        <PreviewExtrato
+                            dados={dados}
+                            idCliente={idCliente!}
+                            idBanco={bancoSelecionado!}
+                            onImportarFinalizado={() => setMostrarPreview(false)}
+                        />
+                    </div>
+                </div>
+            )}
 
         </>
     );

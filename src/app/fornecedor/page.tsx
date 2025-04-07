@@ -15,7 +15,7 @@ import EditarFornecedor from "./components/editarFornecedor/editarFornecedor";
 
 const FornecedorPage: React.FC = () => {
   const { idCliente } = useClienteContext();
-  const { fornecedores, isLoading, mutate } = useFornecedoresPorCliente();
+  const { fornecedores, isLoading, mutate } = useFornecedoresPorCliente(idCliente);
   const [showModal, setShowModal] = useState(false);
   const [fornecedorSelecionado, setFornecedorSelecionado] = useState<Fornecedor | null>(null);
   const [deletando, setDeletando] = useState(false);
