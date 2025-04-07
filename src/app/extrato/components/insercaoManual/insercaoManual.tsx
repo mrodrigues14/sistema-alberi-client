@@ -45,7 +45,7 @@ const InsercaoManual: React.FC<{
             });
     }, [categoriasCliente]);
     
-    const { fornecedores } = useFornecedoresPorCliente();
+    const { fornecedores } = useFornecedoresPorCliente(idCliente);
     
     const fornecedoresFormatados = useMemo(() => {
         if (!fornecedores?.length) return [];
