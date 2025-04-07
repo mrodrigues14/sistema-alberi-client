@@ -193,8 +193,8 @@ const InsercaoManual: React.FC<{
                             <CustomDropdown
                                 label="Selecione uma rubrica"
                                 options={categoriasFormatadas} // ✅ Já estruturado corretamente { label, value }
-                                selectedValue={categoriaSelecionada?.id || null} // ✅ Usa o ID para garantir correspondência
-                                onSelect={(value) => handleCategoriaChange(value)}
+                                selectedValue={categoriaSelecionada?.id ?? ""} // ✅ Usa o ID ou uma string vazia para evitar null
+                                onSelect={(value) => handleCategoriaChange(Number(value))}
                                 type="rubrica"
                             />
                         </td>
@@ -204,7 +204,7 @@ const InsercaoManual: React.FC<{
                                 label="Selecione um fornecedor"
                                 options={fornecedoresFormatados}
                                 selectedValue={entrada.fornecedorSelecionado}
-                                onSelect={(value) => handleInputChange("fornecedorSelecionado", value)}
+                                onSelect={(value) => handleInputChange("fornecedorSelecionado", String(value))}
                                 type="fornecedor"
 
                             />

@@ -144,73 +144,82 @@ const Kanban = () => {
       { id: "6", boardName: "Finalizado", card: [] },
     ];
   
-    if (!tarefas || tarefas.length === 0 || !usuarios || usuarios.length === 0) {
-      setData(boardsIniciais);
+    // 🔒 Verificação defensiva para evitar loop infinito
+    if (!tarefas || !usuarios) return;
+  
+    if (tarefas.length === 0 || usuarios.length === 0) {
+      setData((prev) => {
+        const isEmpty = prev.every(b => b.card.length === 0);
+        if (!isEmpty) return boardsIniciais;
+        return prev;
+      });
       return;
     }
-
+  
     const boardsAtualizados: BoardData[] = boardsIniciais.map(board => ({
       ...board,
       card: [],
     }));
-
+  
     tarefas.forEach((tarefa: any) => {
       const usuarioAutor = usuarios.find(
         (user: { idusuarios: number }) => user.idusuarios === tarefa.idUsuario
       );
       const nomeAutor = usuarioAutor ? usuarioAutor.nomeDoUsuario : "Desconhecido";
-
+  
       const card: Card = {
         id: tarefa.idtarefa.toString(),
         title: tarefa.titulo,
         tags: typeof tarefa.labels === "string"
           ? JSON.parse(tarefa.labels || "[]")
-          : tarefa.labels || [], 
+          : tarefa.labels || [],
         task: JSON.parse(tarefa.descricoes || "[]"),
         prioridade: tarefa.prioridade || 0,
         idCliente: tarefa.idCliente,
         autor: nomeAutor,
         dataLimite: tarefa.dataLimite,
       };
-      
-
+  
       const boardIndex = boardsAtualizados.findIndex(
         board => board.boardName === tarefa.status
       );
-
+  
       if (boardIndex !== -1) {
         boardsAtualizados[boardIndex].card.push(card);
       } else {
         boardsAtualizados[1].card.push(card);
       }
     });
-
+  
     setData(boardsAtualizados);
   }, [tarefas, usuarios]);
+  
 
   return (
     <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
       <div className="App">
         <Navbar />
-        <div className="app_outer">
-          <div className="app_boards">
+        <div className="overflow-x-auto w-full xl:flex xl:justify-center lg:h-screen lg:p-5">
+        <div className="flex flex-nowrap space-x-4 px-4 py-2 w-fit" style={{ gap: "2rem", justifyContent: "center" }}>
             {data.map((item) => (
-              <SortableContext key={item.id} items={item.card.map(c => c.id)}>
-                <Board
-                  id={item.id}
-                  name={item.boardName}
-                  card={item.card}
-                  addCard={addCard}
-                  removeCard={removeCard}
-                  updateCard={updateCard}
-                  isLoading={isLoading}
-                />
-
-
+              <SortableContext key={item.id} items={item.card.map((c) => c.id)}>
+                <div className="w-[250px] shrink-0 px-2">
+                  <Board
+                    id={item.id}
+                    name={item.boardName}
+                    card={item.card}
+                    addCard={addCard}
+                    removeCard={removeCard}
+                    updateCard={updateCard}
+                    isLoading={isLoading}
+                  />
+                </div>
               </SortableContext>
             ))}
           </div>
         </div>
+
+
       </div>
 
       <DragOverlay>

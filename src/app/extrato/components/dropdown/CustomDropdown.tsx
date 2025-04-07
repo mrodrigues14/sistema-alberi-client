@@ -2,14 +2,21 @@
 
 import React, { useState, useRef, useEffect } from "react";
 
-interface CustomDropdownProps {
+interface Option {
   label: string;
-  options: { label: string; value: any; disabled?: boolean }[];
-  selectedValue: any;
-  onSelect: (value: any) => void;
-  allowSearch?: boolean;
-  type?: "rubrica" | "fornecedor"; // 🔹 Define se é um dropdown de rubrica ou fornecedor
+  value: string | number;
+  disabled?: boolean;
 }
+
+interface CustomDropdownProps<T = string | number> {
+  label: string;
+  options: Option[];
+  selectedValue: T;
+  onSelect: (value: T) => void;
+  allowSearch?: boolean;
+  type?: "rubrica" | "fornecedor";
+}
+
 
 const CustomDropdown: React.FC<CustomDropdownProps> = ({
   label,

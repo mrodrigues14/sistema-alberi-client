@@ -101,16 +101,16 @@ const Extrato: React.FC = () => {
 
     const excelDateToJSDate = (serial: any) => {
         if (typeof serial !== "number" || isNaN(serial)) return "";
-      
+
         const utc_days = Math.floor(serial - 25569);
         const utc_value = utc_days * 86400;
         const date_info = new Date(utc_value * 1000);
-      
+
         if (isNaN(date_info.getTime())) return "";
-      
+
         return date_info.toISOString().split("T")[0].split("-").reverse().join("/");
-      };
-      
+    };
+
 
     const formatarValorFinanceiro = (valor: number | string) => {
         if (typeof valor === "string") valor = parseFloat(valor.replace(",", "."));
@@ -119,55 +119,55 @@ const Extrato: React.FC = () => {
 
     const handleFile = async (file: File) => {
         try {
-          const data = await file.arrayBuffer();
-          const workbook = XLSX.read(data, { type: "array" });
-          const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-      
-          const processado = jsonData.slice(1).map((row) => {
-            if (row.every((cell) => cell === undefined || cell === null || cell === "")) return null;
-      
-            const extrair = (cell: any) => (typeof cell === "object" && cell?.v !== undefined ? cell.v : cell || "");
-      
-            const valorData = extrair(row[0]);
-            const data = typeof valorData === "number" ? excelDateToJSDate(valorData) : "";
-            const categoria = extrair(row[1]);
-            const fornecedor = extrair(row[2]);
-            const descricao = extrair(row[3]);
-            const nome = extrair(row[4]);
-            const rubricaContabil = extrair(row[5]);
-            const valorEntrada = row[6] ? formatarValorFinanceiro(row[6]) : "";
-            const valorSaida = row[7] ? formatarValorFinanceiro(row[7]) : "";
-            const tipo = valorEntrada ? "entrada" : valorSaida ? "saida" : "";
-      
-            return {
-              data,
-              categoria,
-              fornecedor,
-              descricao,
-              nome,
-              rubricaContabil,
-              tipo,
-              valor: valorEntrada || valorSaida || "",
-            };
-          }).filter(Boolean);
-      
-          setDados(processado.filter((item): item is {
-            data: string;
-            categoria: any;
-            fornecedor: any;
-            descricao: any;
-            nome: any;
-            rubricaContabil: any;
-            tipo: string;
-            valor: string;
-          } => item !== null));
-          setMostrarPreview(true); // <- aqui mostra o modal
+            const data = await file.arrayBuffer();
+            const workbook = XLSX.read(data, { type: "array" });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+            const processado = jsonData.slice(1).map((row) => {
+                if (row.every((cell) => cell === undefined || cell === null || cell === "")) return null;
+
+                const extrair = (cell: any) => (typeof cell === "object" && cell?.v !== undefined ? cell.v : cell || "");
+
+                const valorData = extrair(row[0]);
+                const data = typeof valorData === "number" ? excelDateToJSDate(valorData) : "";
+                const categoria = extrair(row[1]);
+                const fornecedor = extrair(row[2]);
+                const descricao = extrair(row[3]);
+                const nome = extrair(row[4]);
+                const rubricaContabil = extrair(row[5]);
+                const valorEntrada = row[6] ? formatarValorFinanceiro(row[6]) : "";
+                const valorSaida = row[7] ? formatarValorFinanceiro(row[7]) : "";
+                const tipo = valorEntrada ? "entrada" : valorSaida ? "saida" : "";
+
+                return {
+                    data,
+                    categoria,
+                    fornecedor,
+                    descricao,
+                    nome,
+                    rubricaContabil,
+                    tipo,
+                    valor: valorEntrada || valorSaida || "",
+                };
+            }).filter(Boolean);
+
+            setDados(processado.filter((item): item is {
+                data: string;
+                categoria: any;
+                fornecedor: any;
+                descricao: any;
+                nome: any;
+                rubricaContabil: any;
+                tipo: string;
+                valor: string;
+            } => item !== null));
+            setMostrarPreview(true); // <- aqui mostra o modal
         } catch (error) {
-          console.error("Erro ao processar o arquivo:", error);
+            console.error("Erro ao processar o arquivo:", error);
         }
-      };
-      
+    };
+
 
     const handleToggleSelecionado = (id: number) => {
         setSelecionados((prev) =>
@@ -393,25 +393,27 @@ const Extrato: React.FC = () => {
                     </div>
                 </div>
                 {metodoInsercao === "importar" && (
-                    <div className="flex flex-col gap-3 mt-2">
-                        {/* Botão de Download */}
-                        <button
-                            className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-800 rounded-md transition shadow-sm"
-                            onClick={() => {
-                                console.log("Baixar template");
-                            }}
-                        >
-                            <FaDownload className="text-gray-500" />
-                            Download Template
-                        </button>
+                    <div className="flex flex-col gap-4 mt-4">
 
-                        {/* Upload de Arquivo */}
+                        {/* Botão de Download */}
+                        {/* Botão de Download */}
+                        <a
+                            href="/template.xlsx"
+                            download
+                            className="flex items-center justify-center gap-3 w-full px-5 py-3 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100 transition-all"
+                        >
+                            <FaDownload className="text-gray-500 text-lg" />
+                            <span className="text-gray-700 font-medium">Baixar Template</span>
+                        </a>
+
+
+                        {/* Botão de Upload de Arquivo */}
                         <label
                             htmlFor="upload-arquivo"
-                            className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-100 hover:bg-blue-200 border border-blue-300 text-blue-800 rounded-md transition shadow-sm cursor-pointer"
+                            className="flex items-center justify-center gap-3 w-full px-5 py-3 bg-blue-50 border border-blue-300 text-blue-800 rounded-lg shadow-sm hover:bg-blue-100 transition-all cursor-pointer"
                         >
-                            <FaUpload className="text-blue-600" />
-                            Upload Arquivo
+                            <FaUpload className="text-blue-600 text-lg" />
+                            <span className="font-medium">Selecionar Arquivo</span>
                             <input
                                 id="upload-arquivo"
                                 type="file"
@@ -423,11 +425,10 @@ const Extrato: React.FC = () => {
                                 className="hidden"
                             />
                         </label>
-                        
-
 
                     </div>
                 )}
+
 
                 {metodoInsercao === "manual" && (
                     <div className="p-6 border rounded shadow-md mt-6">
@@ -517,10 +518,18 @@ const Extrato: React.FC = () => {
           ×
         </button>
       </div>
-      <PreviewExtrato dados={dados} />
+
+      {/* Passa props obrigatórios: idCliente, idBanco e função de fechamento */}
+      <PreviewExtrato
+        dados={dados}
+        idCliente={idCliente!}
+        idBanco={bancoSelecionado!}
+        onImportarFinalizado={() => setMostrarPreview(false)}
+      />
     </div>
   </div>
 )}
+
         </>
     );
 };

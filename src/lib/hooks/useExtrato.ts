@@ -60,6 +60,18 @@ export async function createExtrato(novoExtrato: Omit<Extrato, "idextrato">) {
 
   return response.json();
 }
+// 🔹 Inserir extratos em lote
+export async function createExtratosLote(novosExtratos: Omit<Extrato, "idextrato">[]) {
+  const response = await fetch(`${API_URL}/extratos/lote`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(novosExtratos),
+  });
+
+  if (!response.ok) throw new Error("Erro ao inserir extratos em lote");
+
+  return response.json(); // Retorna os extratos criados
+}
 
 // 🔹 Atualizar um extrato pelo ID
 export async function updateExtrato(
