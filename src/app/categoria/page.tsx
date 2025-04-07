@@ -139,9 +139,10 @@ const Categoria: React.FC = () => {
                   <span className="font-semibold text-gray-600">↳ {subrubrica.nome}</span>
 
                   <div className="flex gap-4">
-                    <button className="text-orange-500">
+                    <button className="text-orange-500" onClick={() => setCategoriaSelecionada(subrubrica)}>
                       <FaPencilAlt />
                     </button>
+
                     <button className="text-red-500" onClick={() => handleDelete(subrubrica.idcategoria)}>
                       <FaTrash />
                     </button>
