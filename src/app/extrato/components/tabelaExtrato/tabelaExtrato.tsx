@@ -10,28 +10,33 @@ import "react-date-range/dist/theme/default.css";
 
 interface Props {
   dados: any[];
-  saldoInicial?: number;
+  saldoInicial: number;
   mesAno?: string;
   banco?: string;
   selecionados: number[];
   onToggleSelecionado: (id: number) => void;
   onSelecionarTodos: () => void;
-  categoriasFormatadas: { label: string; value: number }[];
-  fornecedoresFormatados: { label: string; value: number }[];
+  categoriasFormatadas: any[];
+  fornecedoresFormatados: any[];
+  mesSelecionado: string;
+  anoSelecionado: string;
 }
+
 
 
 const TabelaExtrato: React.FC<Props> = ({
   dados,
   saldoInicial,
-  mesAno = "03/2024",
-  banco = "Banco X",
+  banco,
   selecionados,
   onToggleSelecionado,
   onSelecionarTodos,
   categoriasFormatadas,
-  fornecedoresFormatados
+  fornecedoresFormatados,
+  mesSelecionado,
+  anoSelecionado
 }) => {
+
 
 
   const [saldoFinal, setSaldoFinal] = useState(saldoInicial);
@@ -46,7 +51,7 @@ const TabelaExtrato: React.FC<Props> = ({
   const hoje = new Date();
   const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
   const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
-  
+  console.log(banco)
   const [rangeSelecionado, setRangeSelecionado] = useState([
     {
       startDate: primeiroDia,
@@ -196,7 +201,8 @@ const TabelaExtrato: React.FC<Props> = ({
         {/* Linha de Saldos e Título */}
         <div className="flex justify-center items-center mt-4">
           <div className="text-center flex-1">
-            <h2 className="text-lg font-bold">Extrato {mesAno} - {banco}</h2>
+            <h2 className="text-lg font-bold">  Extrato de {mesSelecionado} / {anoSelecionado} - Banco: {banco || "Não informado"}
+            </h2>
           </div>
           <div className="flex space-x-4">
             <div className="text-center mb-4">
