@@ -11,6 +11,7 @@ import "./page.css";
 import { updateTarefa, useTarefas } from "@/lib/hooks/useTarefas";
 import Card from "./components/Card/Card";
 import { useUsuarios } from "@/lib/hooks/useUsuarios";
+import { useClienteContext } from "@/context/ClienteContext";
 
 // Estrutura de cada card (tarefa)
 interface Card {
@@ -46,9 +47,11 @@ const Kanban = () => {
 
   // Hook para buscar as tarefas do banco
   const { usuarios } = useUsuarios();
+  const { idCliente } = useClienteContext();
 
-  const { tarefas, isLoading } = useTarefas();
-  // Função para adicionar um card
+  const { tarefas, isLoading } = useTarefas(idCliente === 68 ? undefined : idCliente ?? undefined);
+
+  console.log(tarefas, "tarefas");
   const addCard = useCallback((title: string, bid: string) => {
     setData(prevData => {
       return prevData.map(board =>
@@ -67,7 +70,7 @@ const Kanban = () => {
       );
     });
   }, []);
-  
+
 
   const onDragStart = useCallback((event: any) => {
     const { active } = event;
@@ -132,8 +135,6 @@ const Kanban = () => {
   };
 
   useEffect(() => {
-    if (!tarefas || tarefas.length === 0 || !usuarios || usuarios.length === 0) return;
-  
     const boardsIniciais: BoardData[] = [
       { id: "1", boardName: "Pendente de Dados", card: [] },
       { id: "2", boardName: "A Fazer", card: [] },
@@ -143,39 +144,47 @@ const Kanban = () => {
       { id: "6", boardName: "Finalizado", card: [] },
     ];
   
+    if (!tarefas || tarefas.length === 0 || !usuarios || usuarios.length === 0) {
+      setData(boardsIniciais);
+      return;
+    }
+
     const boardsAtualizados: BoardData[] = boardsIniciais.map(board => ({
       ...board,
       card: [],
     }));
-  
+
     tarefas.forEach((tarefa: any) => {
       const usuarioAutor = usuarios.find(
         (user: { idusuarios: number }) => user.idusuarios === tarefa.idUsuario
       );
       const nomeAutor = usuarioAutor ? usuarioAutor.nomeDoUsuario : "Desconhecido";
-  
+
       const card: Card = {
         id: tarefa.idtarefa.toString(),
         title: tarefa.titulo,
-        tags: tarefa.labels || [],
+        tags: typeof tarefa.labels === "string"
+          ? JSON.parse(tarefa.labels || "[]")
+          : tarefa.labels || [], 
         task: JSON.parse(tarefa.descricoes || "[]"),
         prioridade: tarefa.prioridade || 0,
         idCliente: tarefa.idCliente,
         autor: nomeAutor,
         dataLimite: tarefa.dataLimite,
       };
-  
+      
+
       const boardIndex = boardsAtualizados.findIndex(
         board => board.boardName === tarefa.status
       );
-  
+
       if (boardIndex !== -1) {
         boardsAtualizados[boardIndex].card.push(card);
       } else {
-        boardsAtualizados[1].card.push(card); // fallback: "A Fazer"
+        boardsAtualizados[1].card.push(card);
       }
     });
-  
+
     setData(boardsAtualizados);
   }, [tarefas, usuarios]);
 

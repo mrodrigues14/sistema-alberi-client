@@ -2,7 +2,7 @@
 
 import Navbar from '@/components/Navbar';
 import React, { useEffect, useMemo, useState } from 'react';
-import { FaFilePdf, FaFileExcel } from 'react-icons/fa'; // Ícones de PDF e Excel
+import { FaFilePdf, FaFileExcel, FaPlusCircle, FaUpload, FaDownload } from 'react-icons/fa'; // Ícones de PDF e Excel
 import InsercaoManual from './components/insercaoManual/insercaoManual';
 import Calendario from './components/calendario/calendario';
 import TabelaExtrato from './components/tabelaExtrato/tabelaExtrato';
@@ -12,13 +12,18 @@ import { useClienteContext } from '@/context/ClienteContext';
 import { useSaldoInicial } from '@/lib/hooks/useSaldoInicial';
 import { Categoria, useCategoriasPorCliente } from '@/lib/hooks/useCategoria';
 import { useFornecedoresPorCliente } from '@/lib/hooks/useFornecedor';
+import { FaChevronDown } from "react-icons/fa";
+import * as XLSX from "xlsx";
+import PreviewExtrato from './components/previewExtrato/previewExtrato';
 
 const Extrato: React.FC = () => {
     const { idCliente } = useClienteContext();
     const [showModalRubrica, setShowModalRubrica] = useState(false);
     const [showModalBanco, setShowModalBanco] = useState(false);
     const [showModalFornecedor, setShowModalFornecedor] = useState(false);
-
+    const [dropdownAberto, setDropdownAberto] = useState(false);
+    const [dropdownAdicionarAberto, setDropdownAdicionarAberto] = useState(false);
+    const [dropdownAcoesAberto, setDropdownAcoesAberto] = useState(false);
     const { bancos, isLoading: loadingBancos, isError: errorBancos, mutate: mutateBancos } = useBanco(
         idCliente ? idCliente : undefined
     );
@@ -27,9 +32,18 @@ const Extrato: React.FC = () => {
     const [mesSelecionado, setMesSelecionado] = useState<string>("");
     const [anoSelecionado, setAnoSelecionado] = useState<string>("");
     const [dadosTabela, setDadosTabela] = useState<any[]>([]);
-
     const shouldFetchData = !!idCliente && !!bancoSelecionado && !!mesSelecionado && !!anoSelecionado;
-
+    const [dados, setDados] = useState<{
+        data: string;
+        categoria: any;
+        fornecedor: any;
+        descricao: any;
+        nome: any;
+        rubricaContabil: any;
+        tipo: string;
+        valor: string;
+    }[]>([]);
+    const [mostrarPreview, setMostrarPreview] = useState(false);
     const { extratos, isLoading, isError, mutate } = useExtratos(
         shouldFetchData ? idCliente : undefined,
         shouldFetchData ? bancoSelecionado : undefined,
@@ -84,6 +98,76 @@ const Extrato: React.FC = () => {
             }));
     }, [fornecedores]);
 
+
+    const excelDateToJSDate = (serial: any) => {
+        if (typeof serial !== "number" || isNaN(serial)) return "";
+      
+        const utc_days = Math.floor(serial - 25569);
+        const utc_value = utc_days * 86400;
+        const date_info = new Date(utc_value * 1000);
+      
+        if (isNaN(date_info.getTime())) return "";
+      
+        return date_info.toISOString().split("T")[0].split("-").reverse().join("/");
+      };
+      
+
+    const formatarValorFinanceiro = (valor: number | string) => {
+        if (typeof valor === "string") valor = parseFloat(valor.replace(",", "."));
+        return Number(valor).toFixed(2).replace(".", ",");
+    };
+
+    const handleFile = async (file: File) => {
+        try {
+          const data = await file.arrayBuffer();
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+      
+          const processado = jsonData.slice(1).map((row) => {
+            if (row.every((cell) => cell === undefined || cell === null || cell === "")) return null;
+      
+            const extrair = (cell: any) => (typeof cell === "object" && cell?.v !== undefined ? cell.v : cell || "");
+      
+            const valorData = extrair(row[0]);
+            const data = typeof valorData === "number" ? excelDateToJSDate(valorData) : "";
+            const categoria = extrair(row[1]);
+            const fornecedor = extrair(row[2]);
+            const descricao = extrair(row[3]);
+            const nome = extrair(row[4]);
+            const rubricaContabil = extrair(row[5]);
+            const valorEntrada = row[6] ? formatarValorFinanceiro(row[6]) : "";
+            const valorSaida = row[7] ? formatarValorFinanceiro(row[7]) : "";
+            const tipo = valorEntrada ? "entrada" : valorSaida ? "saida" : "";
+      
+            return {
+              data,
+              categoria,
+              fornecedor,
+              descricao,
+              nome,
+              rubricaContabil,
+              tipo,
+              valor: valorEntrada || valorSaida || "",
+            };
+          }).filter(Boolean);
+      
+          setDados(processado.filter((item): item is {
+            data: string;
+            categoria: any;
+            fornecedor: any;
+            descricao: any;
+            nome: any;
+            rubricaContabil: any;
+            tipo: string;
+            valor: string;
+          } => item !== null));
+          setMostrarPreview(true); // <- aqui mostra o modal
+        } catch (error) {
+          console.error("Erro ao processar o arquivo:", error);
+        }
+      };
+      
 
     const handleToggleSelecionado = (id: number) => {
         setSelecionados((prev) =>
@@ -167,66 +251,184 @@ const Extrato: React.FC = () => {
                 "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
                 "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
             ];
-    
-            const mesAtual = nomesMeses[dataAtual.getMonth()]; 
+
+            const mesAtual = nomesMeses[dataAtual.getMonth()];
             const anoAtual = dataAtual.getFullYear().toString();
-    
+
             setMesSelecionado(mesAtual);
             setAnoSelecionado(anoAtual);
         }
     }, []);
-    
 
-    
+
+
 
     return (
         <>
             <div className="fixed top-0 left-0 w-full z-10">
                 <Navbar />
-            </div>
-            <div className="mt-20 flex flex-col items-center space-y-4 px-4">
-                <div className="flex space-x-4 mt-8">
-                    <select
-                        className="px-4 py-2 border rounded shadow-md"
-                        value={bancoSelecionado || ''}
-                        onChange={handleBancoChange}
-                    >
-                        <option value="" disabled>Selecione o Banco</option>
-                        {bancos.map((banco: Banco) => (
-                            <option key={banco.idbanco} value={banco.idbanco}>
-                                {banco.nome} - {banco.tipo}
-                            </option>
-                        ))}
-                    </select>
+                <div className="mt-5 w-full px-10 flex justify-between items-start gap-4 flex-wrap">
+                    {/* Esquerda: Botão de Inserir Lançamento */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setDropdownAberto(prev => !prev)}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition"
+                        >
+                            Inserir Lançamentos Extrato <FaPlusCircle />
+                        </button>
 
+                        {dropdownAberto && (
+                            <div className="absolute mt-2 bg-white border rounded shadow-md p-4 min-w-[250px] z-50">
+                                <select
+                                    className="w-full px-3 py-2 border rounded mb-2"
+                                    value={metodoInsercao}
+                                    onChange={(e) => {
+                                        handleInsercaoChange(e);
+                                        setDropdownAberto(false);
+                                    }}
+                                >
+                                    <option value="">Selecione o Método</option>
+                                    <option value="manual">Inserção Manual</option>
+                                    <option value="importar">Importar Arquivo</option>
+                                </select>
+                            </div>
+                        )}
+                    </div>
 
-                    <select
-                        className="px-4 py-2 border rounded shadow-md"
-                        value={metodoInsercao}
-                        onChange={handleInsercaoChange}
-                    >
-                        <option value="">Selecione o Método de Inserção</option>
-                        <option value="manual">Inserção Manual</option>
-                        <option value="importar">Importar Arquivo</option>
-                    </select>
+                    {/* Centro: Seletor de banco */}
+                    <div className="flex-1 flex justify-center">
+                        <select
+                            className="px-4 py-2 border rounded shadow-md min-w-[250px]"
+                            value={bancoSelecionado || ''}
+                            onChange={handleBancoChange}
+                        >
+                            <option value="" disabled>Selecione o Banco</option>
+                            {bancos.map((banco: Banco) => (
+                                <option key={banco.idbanco} value={banco.idbanco}>
+                                    {banco.nome} - {banco.tipo}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
 
-                    {metodoInsercao === 'importar' && (
-                        <button className="px-4 py-2 border rounded shadow-md hover:bg-gray-100 transition">
+                    {/* Direita: Adicionar e Ações */}
+                    <div className="flex items-center gap-4">
+                        {/* Botão: Adicionar */}
+                        <div className="relative">
+                            <button
+                                onClick={() => {
+                                    setDropdownAdicionarAberto(!dropdownAdicionarAberto);
+                                    setDropdownAcoesAberto(false);
+                                }}
+                                className="px-4 py-2 border rounded hover:bg-gray-100 transition flex items-center gap-2"
+                            >
+                                Adicionar <FaChevronDown size={14} />
+                            </button>
+
+                            {dropdownAdicionarAberto && (
+                                <div className="absolute right-0 mt-2 bg-white border rounded shadow-md w-52 z-50">
+                                    <button
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
+                                        onClick={() => {
+                                            setShowModalRubrica(true);
+                                            setDropdownAdicionarAberto(false);
+                                        }}
+                                    >
+                                        Adicionar Rubricas
+                                    </button>
+                                    <button
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
+                                        onClick={() => {
+                                            setShowModalFornecedor(true);
+                                            setDropdownAdicionarAberto(false);
+                                        }}
+                                    >
+                                        Adicionar Fornecedor
+                                    </button>
+                                    <button
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
+                                        onClick={() => {
+                                            setShowModalBanco(true);
+                                            setDropdownAdicionarAberto(false);
+                                        }}
+                                    >
+                                        Adicionar Banco
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Botão: Ações */}
+                        <div className="relative">
+                            <button
+                                onClick={() => {
+                                    setDropdownAcoesAberto(!dropdownAcoesAberto);
+                                    setDropdownAdicionarAberto(false);
+                                }}
+                                className="px-4 py-2 border rounded hover:bg-gray-100 transition flex items-center gap-2"
+                            >
+                                Ações <FaChevronDown size={14} />
+                            </button>
+
+                            {dropdownAcoesAberto && (
+                                <div className="absolute right-0 mt-2 bg-white border rounded shadow-md w-64 z-50">
+                                    <button
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
+                                        onClick={() => {
+                                            handleSelecionarTodos();
+                                            setDropdownAcoesAberto(false);
+                                        }}
+                                    >
+                                        {selecionados.length === dadosTabela.length ? "Desmarcar Todos" : "Selecionar Todos"}
+                                    </button>
+                                    <button className="w-full text-left px-4 py-2 hover:bg-gray-100 transition">
+                                        Deletar Selecionados
+                                    </button>
+                                    <button className="w-full text-left px-4 py-2 hover:bg-gray-100 transition">
+                                        Editar Todas as Linhas
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+                {metodoInsercao === "importar" && (
+                    <div className="flex flex-col gap-3 mt-2">
+                        {/* Botão de Download */}
+                        <button
+                            className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-800 rounded-md transition shadow-sm"
+                            onClick={() => {
+                                console.log("Baixar template");
+                            }}
+                        >
+                            <FaDownload className="text-gray-500" />
                             Download Template
                         </button>
-                    )}
-                </div>
 
-                <div className="flex space-x-4 mt-8">
-                    <button className="flex items-center justify-center w-12 h-12 bg-red-500 text-white rounded-full hover:bg-red-600 transition shadow-md" title="Gerar PDF">
-                        <FaFilePdf size={24} />
-                    </button>
-                    <button className="flex items-center justify-center w-12 h-12 bg-green-500 text-white rounded-full hover:bg-green-600 transition shadow-md" title="Gerar Excel">
-                        <FaFileExcel size={24} />
-                    </button>
-                </div>
+                        {/* Upload de Arquivo */}
+                        <label
+                            htmlFor="upload-arquivo"
+                            className="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-100 hover:bg-blue-200 border border-blue-300 text-blue-800 rounded-md transition shadow-sm cursor-pointer"
+                        >
+                            <FaUpload className="text-blue-600" />
+                            Upload Arquivo
+                            <input
+                                id="upload-arquivo"
+                                type="file"
+                                accept=".csv,.xlsx"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) handleFile(file);
+                                }}
+                                className="hidden"
+                            />
+                        </label>
+                        
 
-                {/* Inserção Manual será exibida aqui se selecionado */}
+
+                    </div>
+                )}
+
                 {metodoInsercao === "manual" && (
                     <div className="p-6 border rounded shadow-md mt-6">
                         <h2 className="text-xl font-bold mb-4">Inserção Manual</h2>
@@ -237,111 +439,88 @@ const Extrato: React.FC = () => {
 
                     </div>
                 )}
-            </div>
 
 
-            <div className="mt-16 w-full flex justify-between items-center px-10">
-                <div className="flex space-x-4">
-                    <button
-                        className="px-4 py-2 border rounded hover:bg-gray-100 transition"
-                        onClick={() => setShowModalRubrica(true)}
-                    >
-                        Adicionar Rubricas
-                    </button>
+                <div className="mt-5 flex flex-col items-center space-y-4 px-4">
+                    <Calendario onSelectMonth={handleSelectMonth} />
+                </div>
 
-                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition"
-                        onClick={() => setShowModalFornecedor(true)}
-                    >
-                        Adicionar Fornecedor
-                    </button>
-                    <button
-                        className="px-4 py-2 border rounded hover:bg-gray-100 transition"
-                        onClick={() => setShowModalBanco(true)}
-                    >
-                        Adicionar Banco
-                    </button>
+                <div className="mt-8 w-full px-10">
+
+                    <TabelaExtrato
+                        dados={dadosTabela}
+                        saldoInicial={saldoInicial}
+                        selecionados={selecionados}
+                        onToggleSelecionado={handleToggleSelecionado}
+                        onSelecionarTodos={handleSelecionarTodos}
+                        categoriasFormatadas={categoriasFormatadas}
+                        fornecedoresFormatados={fornecedoresFormatados}
+                    />
 
                 </div>
 
-                <div className="flex space-x-4">
-                    <button
-                        className="px-4 py-2 border rounded hover:bg-gray-100 transition"
-                        onClick={handleSelecionarTodos}
-                    >
-                        {selecionados.length === dadosTabela.length ? "Desmarcar Todos" : "Selecionar Todos"}
-                    </button>
-
-                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
-                        Deletar Selecionados
-                    </button>
-                    <button className="px-4 py-2 border rounded hover:bg-gray-100 transition">
-                        Editar Todas as Linhas
-                    </button>
-                </div>
-            </div>
-            <div className="mt-20 flex flex-col items-center space-y-4 px-4">
-                <Calendario onSelectMonth={handleSelectMonth} />
-            </div>
-
-            <div className="mt-8 w-full px-10">
-                <TabelaExtrato
-                    dados={dadosTabela}
-                    saldoInicial={saldoInicial}
-                    selecionados={selecionados}
-                    onToggleSelecionado={handleToggleSelecionado}
-                    onSelecionarTodos={handleSelecionarTodos}
-                    categoriasFormatadas={categoriasFormatadas}
-                    fornecedoresFormatados={fornecedoresFormatados}
-                />
-
-            </div>
-
-            {showModalBanco && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div className="bg-white p-6 rounded shadow-lg w-[800px]">
-                        <h2 className="text-xl font-bold mb-4">Adicionar Banco</h2>
-                        <iframe src="/banco" className="w-full h-[600px] border-none"></iframe>
-                        <button
-                            className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
-                            onClick={() => setShowModalBanco(false)}
-                        >
-                            Fechar
-                        </button>
+                {showModalBanco && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white p-6 rounded shadow-lg w-[800px]">
+                            <h2 className="text-xl font-bold mb-4">Adicionar Banco</h2>
+                            <iframe src="/banco" className="w-full h-[600px] border-none"></iframe>
+                            <button
+                                className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                                onClick={() => setShowModalBanco(false)}
+                            >
+                                Fechar
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {showModalRubrica && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div className="bg-white p-6 rounded shadow-lg w-[800px]">
-                        <h2 className="text-xl font-bold mb-4">Adicionar Rubrica</h2>
-                        <iframe src="/categoria" className="w-full h-[600px] border-none"></iframe>
-                        <button
-                            className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
-                            onClick={() => setShowModalRubrica(false)}
-                        >
-                            Fechar
-                        </button>
+                {showModalRubrica && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white p-6 rounded shadow-lg w-[800px]">
+                            <h2 className="text-xl font-bold mb-4">Adicionar Rubrica</h2>
+                            <iframe src="/categoria" className="w-full h-[600px] border-none"></iframe>
+                            <button
+                                className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                                onClick={() => setShowModalRubrica(false)}
+                            >
+                                Fechar
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-            {showModalFornecedor && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                    <div className="bg-white p-6 rounded shadow-lg w-[800px]">
-                        <h2 className="text-xl font-bold mb-4">Adicionar Rubrica</h2>
-                        <iframe src="/fornecedor" className="w-full h-[600px] border-none"></iframe>
-                        <button
-                            className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
-                            onClick={() => setShowModalFornecedor(false)}
-                        >
-                            Fechar
-                        </button>
+                {showModalFornecedor && (
+                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                        <div className="bg-white p-6 rounded shadow-lg w-[800px]">
+                            <h2 className="text-xl font-bold mb-4">Adicionar Rubrica</h2>
+                            <iframe src="/fornecedor" className="w-full h-[600px] border-none"></iframe>
+                            <button
+                                className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                                onClick={() => setShowModalFornecedor(false)}
+                            >
+                                Fechar
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
 
-
+            </div>
+            {mostrarPreview && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg shadow-lg w-[95%] max-w-5xl h-[90%] overflow-y-auto">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-lg font-semibold">Pré-visualização do Extrato</h2>
+        <button
+          onClick={() => setMostrarPreview(false)}
+          className="text-gray-600 hover:text-red-600 text-xl font-bold"
+        >
+          ×
+        </button>
+      </div>
+      <PreviewExtrato dados={dados} />
+    </div>
+  </div>
+)}
         </>
     );
 };

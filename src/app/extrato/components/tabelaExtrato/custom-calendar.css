@@ -1,0 +1,21 @@
+/* custom-calendar.css */
+.rdrCalendarWrapper {
+    font-size: 12px !important;
+    width: 500px !important;
+  }
+  
+  .rdrDateDisplayWrapper {
+    font-size: 12px !important;
+  }
+  
+  .rdrMonthAndYearWrapper {
+    font-size: 13px !important;
+    padding: 0.5rem !important;
+  }
+  
+  .rdrDay {
+    height: 30px !important;
+    width: 30px !important;
+    line-height: 30px !important;
+  }
+  
