@@ -26,7 +26,7 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar }: Props
       setDescricao(chamadoParaEditar.descricao || "");
       setTipo(chamadoParaEditar.tipo || "");
       setFuncionalidadeAfetada(chamadoParaEditar.funcionalidadeAfetada || "");
-      setPrioridade(chamadoParaEditar.prioridade || ""); // 👈 adiciona isso
+      setPrioridade(chamadoParaEditar.prioridade || ""); 
       setFile(null);
       setRemoverAnexo(false);
     } else {
@@ -34,7 +34,7 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar }: Props
       setDescricao("");
       setTipo("");
       setFuncionalidadeAfetada("");
-      setPrioridade(""); // 👈 e limpa aqui no else
+      setPrioridade(""); 
       setFile(null);
       setRemoverAnexo(false);
     }
