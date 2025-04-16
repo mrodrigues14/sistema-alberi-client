@@ -27,9 +27,11 @@ export interface Cliente {
     inscricao_estadual: string | null;
     cnae_principal: string | null;
     apelido?: string;
+    email: string | null;
+    ativo: boolean; 
     socio: any[];
-}
-
+  }
+  
 export default function Navbar() {
     const { data: session } = useSession();
     const { clientes, isLoading, isError } = useCliente();
@@ -186,25 +188,9 @@ export default function Navbar() {
                         Extrato bancário
                     </Link>
 
-                    {/* Dropdown Configuração de Cliente */}
-                    <div className="relative">
-                        <button
-                            onClick={() => toggleDropdown('configuracao-cliente')}
-                            className="block px-2 md:px-4 py-1.5 md:py-2 text-sm md:text-base border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-2 md:mt-0"
-                        >
-                            Configuração de Cliente
-                        </button>
-                        {showDropdown === 'configuracao-cliente' && (
-                            <div className="absolute bg-white border rounded shadow-lg mt-2 w-52 z-10">
-                                <a href="/configuracao-cliente/cadastro" className="block px-4 py-2 hover:bg-gray-200">
-                                    Cadastro de Cliente
-                                </a>
-                                <a href="/configuracao-cliente/editar" className="block px-4 py-2 hover:bg-gray-200">
-                                    Editar Cliente
-                                </a>                  </div>
-                        )}
-
-                    </div>
+                    <Link href="/configuracaoCliente" className="block px-2 md:px-4 py-1.5 md:py-2 text-sm md:text-base border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-2 md:mt-0">
+                        Configuração de Cliente
+                    </Link>
 
                     <Link href="/chamados" className="block px-2 md:px-4 py-1.5 md:py-2 text-sm md:text-base border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-2 md:mt-0">
                         Reportar Falha

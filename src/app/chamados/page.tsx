@@ -8,6 +8,7 @@ import { FaPlusCircle } from "react-icons/fa";
 import { Chamado } from "../../../types/Chamado";
 import { FaEdit, FaCheck, FaTimes, FaBan } from "react-icons/fa";
 import { mutate } from "swr";
+import { useUsuarios } from "@/lib/hooks/useUsuarios";
 
 const statusLabels = [
   { label: "Não Iniciado", color: "bg-yellow-400", value: "Não Iniciado" },
@@ -23,7 +24,7 @@ export default function ChamadosPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [chamadoSelecionado, setChamadoSelecionado] = useState<Chamado | null>(null);
   const [loadingAvaliacao, setLoadingAvaliacao] = useState(false);
-
+  const { usuarios } = useUsuarios(); 
 
   const handleConcluirChamado = async (id: number) => {
     setLoadingAvaliacao(true);
@@ -73,11 +74,11 @@ export default function ChamadosPage() {
   function normalizarTexto(texto: string): string {
     return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   }
-  
+
 
   const filtrados = chamados
-  .filter((c) => normalizarTexto(c.situacao || "") === normalizarTexto(filtroSituacao))
-  .sort((a, b) => b.id - a.id);
+    .filter((c) => normalizarTexto(c.situacao || "") === normalizarTexto(filtroSituacao))
+    .sort((a, b) => b.id - a.id);
 
 
   const statusCounts = chamados.reduce<Record<string, number>>((acc, chamado) => {
@@ -165,6 +166,16 @@ export default function ChamadosPage() {
                     <strong>Data:</strong>{" "}
                     {chamado.data ? new Date(chamado.data).toLocaleDateString() : "Sem data"}
                   </p>
+                  <p className="text-sm text-gray-400">
+                    <strong>Usuário:</strong>{" "}
+                    {(() => {
+                      const usuario = usuarios.find((u) => u.idusuarios === chamado.idUsuario);
+                      if (!usuario) return "Desconhecido";
+                      const nomes = usuario.nomeDoUsuario.split(" ");
+                      return `${nomes[0]} ${nomes[1] || ""}`;
+                    })()}
+                  </p>
+
                 </div>
 
                 {/* Botão de download do arquivo */}
