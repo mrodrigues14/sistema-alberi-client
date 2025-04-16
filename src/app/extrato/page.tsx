@@ -425,7 +425,6 @@ const Extrato: React.FC = () => {
                     <div className="flex flex-col gap-4 mt-4">
 
                         {/* Botão de Download */}
-                        {/* Botão de Download */}
                         <a
                             href="/template.xlsx"
                             download

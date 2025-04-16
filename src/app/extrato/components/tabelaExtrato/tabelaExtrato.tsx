@@ -3,8 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { FaDivide, FaEdit, FaHandPointer, FaPaperclip, FaSave, FaTrash, FaTimes, FaSort, FaSortUp, FaSortDown, FaFilter } from "react-icons/fa";
 import CustomDropdown from "../dropdown/CustomDropdown";
-import { DateRange } from "react-date-range";
-import { ptBR } from "date-fns/locale";
+
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 
@@ -301,29 +300,6 @@ const TabelaExtrato: React.FC<Props> = ({
                     </label>
                   ))}
                 </div>
-
-                {/* Data */}
-                {/* <div className="col-span-full">
-                  <h4 className="font-semibold mb-2">Filtrar por período</h4>
-                  <DateRange
-                    editableDateInputs={true}
-                    onChange={(item) => setRangeSelecionado([{
-                      startDate: item.selection.startDate || new Date(),
-                      endDate: item.selection.endDate || new Date(),
-                      key: item.selection.key || "selection"
-                    }])}
-                    moveRangeOnFirstSelection={false}
-                    ranges={rangeSelecionado}
-                    rangeColors={["#2563eb"]}
-                    locale={ptBR}
-                    months={1}
-                    direction="horizontal"
-                    className="rounded shadow border"
-                    minDate={primeiroDia}
-                    maxDate={ultimoDia}
-                  />
-
-                </div> */}
 
               </div>
             </div>
