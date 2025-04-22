@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { FaDivide, FaEdit, FaHandPointer, FaPaperclip, FaSave, FaTrash, FaTimes, FaSort, FaSortUp, FaSortDown, FaFilter } from "react-icons/fa";
 import CustomDropdown from "../dropdown/CustomDropdown";
-import { DateRange } from "react-date-range";
+
+import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { Subextrato } from "../../../../../types/Subextrato";
 import { criarSubextrato } from "@/lib/hooks/useSubextrato";
@@ -333,6 +334,7 @@ const TabelaExtrato: React.FC<Props> = ({
                     </label>
                   ))}
                 </div>
+
               </div>
             </div>
           )}

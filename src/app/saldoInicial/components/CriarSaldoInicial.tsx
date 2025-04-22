@@ -1,6 +1,6 @@
 'use client';
 
-import { createSaldoInicial } from '@/lib/hooks/useSaldoInicial';
+import { createSaldoInicial, upsertSaldoInicial } from '@/lib/hooks/useSaldoInicial';
 import { useState } from 'react';
 
 interface Props {
@@ -55,12 +55,13 @@ export default function CriarSaldoInicial({
 
     try {
       setLoading(true);
-      await createSaldoInicial({
+      await upsertSaldoInicial({
         idCliente,
         idBanco,
         mesAno,
         saldo: valorNumerico,
       });
+      
 
       if (onSuccess) onSuccess();
       if (onClose) onClose();

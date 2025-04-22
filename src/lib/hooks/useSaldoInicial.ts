@@ -75,6 +75,41 @@ export async function createSaldoInicial(novoSaldo: Omit<SaldoInicial, "id">) {
 }
 
 
+export async function upsertSaldoInicial(novoSaldo: Omit<SaldoInicial, "id">) {
+  const { idBanco, idCliente, mesAno, saldo } = novoSaldo;
+
+  if (!idBanco || !idCliente || !mesAno || saldo == null) {
+    throw new Error("Todos os campos obrigatórios devem ser preenchidos");
+  }
+
+  // 🔎 Verifica se já existe um saldo para esse cliente/banco/mesAno
+  const checkResponse = await fetch(
+    `${API_URL}/saldo-inicial/cliente/${idCliente}/banco/${idBanco}?mesAno=${mesAno}`
+  );
+
+  if (checkResponse.ok) {
+    const existente = await checkResponse.json();
+    if (existente?.id) {
+      // 🔁 Atualiza saldo existente
+      return await updateSaldoInicial(existente.id, { saldo });
+    }
+  }
+
+  // 🆕 Caso não exista, cria novo
+  const payload = {
+    ...novoSaldo,
+    data: `${mesAno}-01`,
+  };
+
+  const createResponse = await fetch(`${API_URL}/saldo-inicial`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!createResponse.ok) throw new Error("Erro ao criar saldo inicial");
+  return createResponse.json();
+}
 
 // 🔹 Atualizar um saldo inicial pelo ID
 export async function updateSaldoInicial(id: number, updates: Partial<SaldoInicial>) {
