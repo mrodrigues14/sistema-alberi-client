@@ -31,10 +31,9 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     [...options].sort((a, b) => a.label.localeCompare(b.label))
   );
   const [showOptions, setShowOptions] = useState(false);
-  const [showModal, setShowModal] = useState(false); // 🔹 Estado para o modal
+  const [showModal, setShowModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => {
     setFilteredOptions(options);
   }, [options]);
@@ -73,18 +72,17 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
+  
   return (
     <div className="relative w-full" ref={dropdownRef}>
       {/* Dropdown principal */}
       <div
-        className={`border rounded w-full px-2 py-1 bg-white cursor-pointer transition-all ${
-          selectedValue ? "text-black font-medium" : "text-gray-500"
-        }`}
+        className={`border rounded w-full px-2 py-1 bg-white cursor-pointer transition-all ${selectedValue ? "text-black font-medium" : "text-gray-500"
+          }`}
         onClick={handleDropdownToggle}
       >
-        {options.find((opt) => opt.value === selectedValue)?.label || label}
-      </div>
+{options.find((opt) => opt.label === selectedValue)?.label || label}
+</div>
 
       {/* Opções do Dropdown */}
       {showOptions && (
@@ -106,10 +104,9 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
               filteredOptions.map(({ label, value, disabled }, index) => (
                 <div
                   key={index}
-                  className={`px-2 py-1 ${
-                    disabled ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200 cursor-pointer"
-                  }`}
-                  onMouseDown={() => handleSelect(value, disabled)}
+                  className={`px-2 py-1 ${disabled ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200 cursor-pointer"
+                    }`}
+                  onMouseDown={() => handleSelect(label, disabled)}
                 >
                   {label}
                 </div>

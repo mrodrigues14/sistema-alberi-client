@@ -92,7 +92,6 @@ export default function Register() {
             email: email
         };
 
-        console.log('Enviando dados do usuário:', userData);
 
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_REGISTER_URL}`, {
@@ -108,7 +107,6 @@ export default function Register() {
             }
 
             const data = await response.json();
-            console.log('Usuário registrado com sucesso:', data);
             setSuccessMessage('Usuário registrado com sucesso!');
 
             setTimeout(() => {

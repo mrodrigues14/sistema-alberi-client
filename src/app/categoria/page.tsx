@@ -18,7 +18,6 @@ const Categoria: React.FC = () => {
 
 
   const categoriasOrganizadas = useMemo(() => {
-    console.log(categoriasCliente);
     if (!categoriasCliente) return { pais: [], filhas: {} };
 
     const pais: Categoria[] = [];

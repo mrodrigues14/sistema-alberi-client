@@ -22,7 +22,6 @@ export const authOptions = {
                 if (!credentials) return null;
 
                 try {
-                    console.log("Tentando login com CPF:", credentials.cpf);
 
                     const response = await fetch(`${process.env.API_URL}/auth/login`, {
                         method: "POST",
@@ -37,7 +36,6 @@ export const authOptions = {
 
                     if (response.ok && userResponse.user) {
                         const { user } = userResponse;
-                        console.log("Usuário autenticado:", user);
 
                         return {
                             id: user.idusuarios, // 🔑 importante!
@@ -73,7 +71,6 @@ export const authOptions = {
     callbacks: {
         // 🔐 Salva os dados no token JWT
         async jwt({ token, user }: { token: JWT; user?: any }) {
-            console.log("🔍 Token no jwt():", user);
             if (user) {
                 token.id = user.id;
                 token.cpf = user.cpf;

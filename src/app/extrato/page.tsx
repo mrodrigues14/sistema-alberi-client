@@ -15,6 +15,7 @@ import { useFornecedoresPorCliente } from '@/lib/hooks/useFornecedor';
 import { FaChevronDown } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import PreviewExtrato from './components/previewExtrato/previewExtrato';
+import { useSubextratos } from '@/lib/hooks/useSubextrato';
 
 const Extrato: React.FC = () => {
     const { idCliente } = useClienteContext();
@@ -46,12 +47,14 @@ const Extrato: React.FC = () => {
         valor: string;
     }[]>([]);
     const [mostrarPreview, setMostrarPreview] = useState(false);
-    const { extratos, isLoading, isError, mutate } = useExtratos(
+    const { extratos } = useExtratos(
         shouldFetchData ? idCliente : undefined,
         shouldFetchData ? bancoSelecionado : undefined,
         shouldFetchData ? mesSelecionado : undefined,
         shouldFetchData ? anoSelecionado : undefined
     );
+
+    const { subextratos, isLoading, isError, mutate: mutateSubextratos } = useSubextratos();
 
     const { saldoInicial, isLoading: loadingSaldo } = useSaldoInicial(
         shouldFetchData ? idCliente : undefined,
@@ -242,12 +245,11 @@ const Extrato: React.FC = () => {
 
 
     useEffect(() => {
-        console.log(extratos)
         if (extratos) {
             const novosDados = extratos.map((extrato: any) => ({
                 id: extrato.idextrato,
                 data: formatarData(extrato.data),
-                rubricaSelecionada: extrato.categoria || "Sem categoria",
+                rubricaSelecionada: extrato.idCategoria2?.nome || "Sem categoria",
                 fornecedorSelecionado: extrato.fornecedor || "Não informado",
                 observacao: extrato.descricao || "Sem descrição",
                 nomeNoExtrato: extrato.nomeNoExtrato || "Sem nome",
@@ -256,12 +258,25 @@ const Extrato: React.FC = () => {
                 saida: extrato.tipoDeTransacao === "SAIDA" ? extrato.valor.toFixed(2) : "",
             }));
 
-            // Só atualiza se os dados realmente mudaram
             if (JSON.stringify(novosDados) !== JSON.stringify(dadosTabela)) {
                 setDadosTabela(novosDados);
             }
         }
     }, [extratos]);
+
+    const subextratosRelacionados = useMemo(() => {
+        if (!subextratos || !extratos) return [];
+      
+        const idsExtratos = new Set(extratos.map((e: { idextrato: any }) => e.idextrato));
+      
+        return subextratos
+          .filter((s) => idsExtratos.has(s.idExtratoPrincipal))
+          .map((s) => ({
+            ...s,
+            data: formatarData(s.data),
+          }));
+      }, [subextratos, extratos]);
+      
 
 
     useEffect(() => {
@@ -475,7 +490,7 @@ const Extrato: React.FC = () => {
                     <Calendario onSelectMonth={handleSelectMonth} />
                 </div>
 
-                <div className="mt-8 w-full px-10">
+                <div className=" w-full px-10 overflow-auto max-h-[80vh]">
 
                     <TabelaExtrato
                         dados={dadosTabela}
@@ -488,8 +503,9 @@ const Extrato: React.FC = () => {
                         banco={nomeBancoSelecionado ?? undefined}
                         mesSelecionado={mesSelecionado}
                         anoSelecionado={anoSelecionado}
+                        subextratos={subextratosRelacionados}
+                        onAtualizarSubextratos={mutateSubextratos}
                     />
-
 
                 </div>
 

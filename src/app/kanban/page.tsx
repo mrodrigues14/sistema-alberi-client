@@ -51,7 +51,6 @@ const Kanban = () => {
 
   const { tarefas, isLoading } = useTarefas(idCliente === 68 ? undefined : idCliente ?? undefined);
 
-  console.log(tarefas, "tarefas");
   const addCard = useCallback((title: string, bid: string) => {
     setData(prevData => {
       return prevData.map(board =>

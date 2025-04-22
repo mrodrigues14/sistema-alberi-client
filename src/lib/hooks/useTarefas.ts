@@ -52,7 +52,6 @@ export async function createTarefa(novaTarefa: any) {
 
 // 🔹 Atualizar uma tarefa
 export async function updateTarefa(id: number, updates: any) {
-  console.log(id, updates);
   try {
     const res = await fetch(`${BASE_URL}/${id}`, {
       method: "PATCH",
