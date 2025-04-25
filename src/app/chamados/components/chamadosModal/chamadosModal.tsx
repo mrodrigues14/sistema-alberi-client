@@ -134,12 +134,10 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar }: Props
             required
           >
             <option value="">Selecione a prioridade</option>
-            <option value="ERRO GRAVE">ERRO GRAVE</option>
-            <option value="ERRO MEDIO">ERRO MÉDIO</option>
-            <option value="ERRO PEQUENO">ERRO PEQUENO</option>
-            <option value="MELHORIA CURTO PRAZO">MELHORIA DE CURTO PRAZO</option>
-            <option value="MELHORIA MEDIO PRAZO">MELHORIA DE MÉDIO PRAZO</option>
-            <option value="MELHORIA LONGO PRAZO">MELHORIA DE LONGO PRAZO</option>
+            <option value="URGENTE">Urgente</option>
+            <option value="AJUSTE">Ajuste</option>
+            <option value="MELHORIA">Melhoria</option>
+
           </select>
 
 

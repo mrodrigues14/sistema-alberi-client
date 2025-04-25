@@ -137,9 +137,9 @@ const Extrato: React.FC = () => {
                 const valorData = extrair(row[0]);
                 const data = typeof valorData === "number" ? excelDateToJSDate(valorData) : "";
                 const categoria = extrair(row[1]);
-                const fornecedor = extrair(row[2]);
+                const nome = extrair(row[2]);
                 const descricao = extrair(row[3]);
-                const nome = extrair(row[4]);
+                const fornecedor = extrair(row[4]);
                 const rubricaContabil = extrair(row[5]);
                 const valorEntrada = row[6] ? formatarValorFinanceiro(row[6]) : "";
                 const valorSaida = row[7] ? formatarValorFinanceiro(row[7]) : "";
@@ -242,15 +242,13 @@ const Extrato: React.FC = () => {
         }
     }, [bancoSelecionado, bancos]);
 
-
-
     useEffect(() => {
         if (extratos) {
             const novosDados = extratos.map((extrato: any) => ({
                 id: extrato.idextrato,
                 data: formatarData(extrato.data),
                 rubricaSelecionada: extrato.idCategoria2?.nome || "Sem categoria",
-                fornecedorSelecionado: extrato.fornecedor || "Não informado",
+                fornecedorSelecionado: extrato.idFornecedor2?.nome || "Não informado",
                 observacao: extrato.descricao || "Sem descrição",
                 nomeNoExtrato: extrato.nomeNoExtrato || "Sem nome",
                 rubricaContabil: extrato.rubricaContabil || "Não definida",

@@ -82,7 +82,7 @@ const Card: React.FC<CardProps> = ({
       setModalShow(true);
     }
   };
-
+  
   return (
     <>
       {modalShow && (
@@ -93,7 +93,7 @@ const Card: React.FC<CardProps> = ({
             ...cardData,
             tags: Array.isArray(cardData.labels)
               ? cardData.labels
-              : JSON.parse(cardData.labels || "[]"), // 👈 parse seguro
+              : JSON.parse(cardData.labels || "[]"),
             autor: cardData.autor || "",
           }}
           bid={bid}

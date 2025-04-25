@@ -104,14 +104,6 @@ export default function Navbar() {
     }, [idCliente, clientes]);
 
     useEffect(() => {
-        console.log("idCliente ou clientes mudou");
-    }, [idCliente, clientes]);
-
-    useEffect(() => {
-        console.log("selectedCliente mudou", selectedCliente);
-    }, [selectedCliente]);
-
-    useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (clienteDropdownRef.current && !clienteDropdownRef.current.contains(event.target as Node)) {
                 setShowDropdownCliente(null);

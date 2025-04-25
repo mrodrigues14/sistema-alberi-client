@@ -10,6 +10,8 @@ import { Subextrato } from "../../../../../types/Subextrato";
 import { criarSubextrato } from "@/lib/hooks/useSubextrato";
 import { updateExtrato } from "@/lib/hooks/useExtrato";
 import { Extrato } from "../../../../../types/Extrato";
+import Anexos from "../anexos/Anexos";
+import { useExtratoAnexos } from "@/lib/hooks/useExtratoAnexos";
 
 interface Props {
   dados: any[];
@@ -43,9 +45,6 @@ const TabelaExtrato: React.FC<Props> = ({
   mesSelecionado,
   anoSelecionado
 }) => {
-
-
-
   const [saldoFinal, setSaldoFinal] = useState(saldoInicial);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>({});
@@ -57,7 +56,10 @@ const TabelaExtrato: React.FC<Props> = ({
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
   const [subdividindoIndex, setSubdividindoIndex] = useState<number | null>(null);
   const [novoSubextrato, setNovoSubextrato] = useState<any>({});
-
+  const [anexosVisiveis, setAnexosVisiveis] = useState(false);
+  const [extratoSelecionado, setExtratoSelecionado] = useState<number | null>(null);
+  const { anexos, mutate } = useExtratoAnexos();
+  console.log(anexos)
   useEffect(() => {
     let saldoAcumulado = saldoInicial ?? 0;
     dados.forEach((row) => {
@@ -76,28 +78,54 @@ const TabelaExtrato: React.FC<Props> = ({
     setEditData(dados[index]);
   };
 
+  function formatarDataParaISO(data: string): string {
+    const partes = data.split('/');
+    if (partes.length === 3) {
+      const [dia, mes, ano] = partes;
+      return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+    }
+  
+    if (/^\d{4}-\d{2}-\d{2}$/.test(data)) return data;
+  
+    return '';
+  }
+  
   const handleSave = async (index: number) => {
     try {
       const row = dados[index];
-      console.log(row)
+  
+      const categoriaSelecionada = categoriasFormatadas.find(
+        (opt) => opt.label === editData.rubricaSelecionada
+      );
+      const fornecedorSelecionado = fornecedoresFormatados.find(
+        (opt) => opt.label === editData.fornecedorSelecionado
+      );
+  
       const payload: Partial<Extrato> = {
-        data: editData.data,
+        data: formatarDataParaISO(editData.data),
         nomeNoExtrato: editData.nomeNoExtrato,
         rubricaContabil: editData.rubricaContabil,
         observacao: editData.observacao,
-        idCategoria: editData.rubricaSelecionada,
-        idFornecedor: editData.fornecedorSelecionado,
+        idCategoria: categoriaSelecionada?.value ?? null,
+        idFornecedor: fornecedorSelecionado?.value ?? null,
         tipoDeTransacao: editData.entrada ? "ENTRADA" : "SAIDA",
-        valor: parseFloat(editData.entrada || editData.saida || "0")
+        valor: parseFloat(editData.entrada || editData.saida || "0"),
       };
   
       await updateExtrato(row.id, payload);
-      dados[index] = editData;
+  
+      dados[index] = {
+        ...editData,
+        idCategoria: categoriaSelecionada?.value ?? null,
+        idFornecedor: fornecedorSelecionado?.value ?? null,
+      };
+  
       setEditIndex(null);
     } catch (err) {
       console.error("Erro ao atualizar extrato:", err);
     }
   };
+  
 
   const handleCancel = () => {
     setEditIndex(null);
@@ -149,7 +177,6 @@ const TabelaExtrato: React.FC<Props> = ({
   const extrairNumero = (valor: string) => {
     const numero = valor.replace(/\D/g, "");
     const numeroDividido =Number(numero) / 100
-    console.log("Número dividido:", numeroDividido); // Log do número dividido
     return numeroDividido;
   };
   
@@ -225,7 +252,6 @@ const TabelaExtrato: React.FC<Props> = ({
 
     setDadosOrdenados(ordenado);
   }, [ordem, dados]);
-
 
   return (
     <div className="flex justify-center items-center mt-8">
@@ -529,10 +555,17 @@ const TabelaExtrato: React.FC<Props> = ({
                       {saldoAcumulado.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="border px-2 py-2 text-center">
-                      <button className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300">
-                        <FaPaperclip size={16} className="text-gray-700" />
-                      </button>
-                    </td>
+  <button
+    className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+    onClick={() => {
+      setExtratoSelecionado(row.id);
+      setAnexosVisiveis(true);
+    }}
+  >
+    <FaPaperclip size={16} className="text-gray-700" />
+  </button>
+</td>
+
                     <td className="border px-2 py-2 text-center">
                       <div className="flex justify-center items-center space-x-4 h-full">
                         {editIndex === index ? (
@@ -747,6 +780,18 @@ const TabelaExtrato: React.FC<Props> = ({
             })}
           </tbody>
         </table>
+        {anexosVisiveis && extratoSelecionado !== null && (
+  <Anexos
+    anexos={anexos.filter(a => a.idExtrato === extratoSelecionado)}
+    onFechar={() => setAnexosVisiveis(false)}
+    onAtualizar={() => {
+      mutate(); // ou outro método que recarregue os dados dos anexos
+    }}
+  />
+)}
+
+      
+      
       </div>
 
 

@@ -27,8 +27,10 @@ const FornecedorPage: React.FC = () => {
     setDeletando(true);
 
     try {
-      await deletarFornecedor(94, idFornecedor);
-      mutate();
+      if (idCliente != null && idFornecedor != null) {
+        await deletarFornecedor(idCliente, idFornecedor);
+      }
+            mutate();
       alert("Fornecedor excluído com sucesso!");
     } catch (error) {
       console.error("Erro ao excluir fornecedor:", error);

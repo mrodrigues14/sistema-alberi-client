@@ -35,7 +35,7 @@ const AdicionarFornecedor: React.FC<AdicionarFornecedorProps> = ({ onClose, muta
         entrada: entrada ? 1 : 0,
         saida: saida ? 1 : 0,
       };
-      await criarFornecedor(novoFornecedor, 94);
+      await criarFornecedor(novoFornecedor, idCliente);
       mutate();
       onClose();
       alert("Fornecedor adicionado com sucesso!");

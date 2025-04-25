@@ -1,6 +1,6 @@
 'use client';
 
-import { createSaldoInicial, upsertSaldoInicial } from '@/lib/hooks/useSaldoInicial';
+import { createSaldoInicial, upsertSaldoInicial, useSaldoInicial } from '@/lib/hooks/useSaldoInicial';
 import { useState } from 'react';
 
 interface Props {
@@ -16,12 +16,19 @@ export default function CriarSaldoInicial({
   onClose,
   onSuccess,
 }: Props) {
+  const [mensagemSucesso, setMensagemSucesso] = useState('');
   const [valorFormatado, setValorFormatado] = useState('');
   const [mes, setMes] = useState('');
   const [ano, setAno] = useState(String(new Date().getFullYear())); // ano atual automático
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
-
+  const { saldoInicial, isLoading: loadingSaldo } = useSaldoInicial(
+    idCliente,
+    idBanco,
+    mes,
+    ano
+  );
+  
   const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let raw = e.target.value;
     const cleaned = raw.replace(/\D/g, '');
@@ -62,6 +69,7 @@ export default function CriarSaldoInicial({
         saldo: valorNumerico,
       });
       
+      setMensagemSucesso(`Saldo atualizado com sucesso: R$ ${valorNumerico.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);
 
       if (onSuccess) onSuccess();
       if (onClose) onClose();
@@ -109,21 +117,36 @@ export default function CriarSaldoInicial({
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Valor do Saldo</label>
-        <input
-          type="text"
-          inputMode="numeric"
-          placeholder="0,00"
-          className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={valorFormatado}
-          onChange={handleValorChange}
-        />
-      </div>
+      {!loadingSaldo && saldoInicial > 0 && (
+  <div className="text-green-700 font-semibold bg-green-50 border border-green-300 rounded p-2 mb-2">
+    Saldo já definido: R$ {saldoInicial.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+  </div>
+)}
+
+<div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    {saldoInicial > 0 ? "Novo Saldo" : "Valor do Saldo"}
+  </label>
+  <input
+    type="text"
+    inputMode="numeric"
+    placeholder="0,00"
+    className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+    value={valorFormatado}
+    onChange={handleValorChange}
+  />
+</div>
+
 
       {erro && (
         <p className="text-red-600 text-sm">{erro}</p>
       )}
+
+{mensagemSucesso && (
+  <div className="text-green-600 font-semibold bg-green-50 border border-green-300 rounded p-2">
+    {mensagemSucesso}
+  </div>
+)}
 
       <div className="flex justify-end gap-3 pt-4">
         {onClose && (

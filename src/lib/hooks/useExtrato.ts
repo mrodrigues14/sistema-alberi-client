@@ -1,6 +1,7 @@
 import useSWR from "swr";
 import { fetcher } from "../api";
 import { Extrato } from "../../../types/Extrato";
+import { log } from "console";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 

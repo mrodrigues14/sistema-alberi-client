@@ -29,6 +29,7 @@ export function useFornecedoresPorCliente(idCliente: number | null) {
     return [...data].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR", { sensitivity: "base" }));
   }, [data]);
 
+  console.log("Fornecedores:", fornecedores);
   return {
     fornecedores,
     isLoading: !data && !error,

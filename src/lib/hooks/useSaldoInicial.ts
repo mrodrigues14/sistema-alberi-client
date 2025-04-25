@@ -46,8 +46,6 @@ export function useSaldoInicial(idCliente?: number, idBanco?: number, mes?: stri
     };
 }
 
-  
-
 // 🔹 Criar um novo saldo inicial
 export async function createSaldoInicial(novoSaldo: Omit<SaldoInicial, "id">) {
   const { idBanco, idCliente, mesAno, saldo } = novoSaldo;
@@ -90,9 +88,15 @@ export async function upsertSaldoInicial(novoSaldo: Omit<SaldoInicial, "id">) {
   if (checkResponse.ok) {
     const existente = await checkResponse.json();
     if (existente?.id) {
-      // 🔁 Atualiza saldo existente
-      return await updateSaldoInicial(existente.id, { saldo });
+      // 🔁 Atualiza saldo existente com todos os campos obrigatórios
+      return await updateSaldoInicial(existente.id, {
+        saldo,
+        idBanco,
+        idCliente,
+        mesAno,
+      });
     }
+    
   }
 
   // 🆕 Caso não exista, cria novo

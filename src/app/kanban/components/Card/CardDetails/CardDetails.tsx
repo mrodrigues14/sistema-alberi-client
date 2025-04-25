@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from "react";
 import {
-  Calendar,
-  Check,
-  CheckSquare,
   CreditCard,
-  List,
-  Plus,
-  Type,
   X,
-  Star, Tag, Clock, Trash, User, Briefcase
+  Star, Tag, Clock, Trash, User,
+  Check,
+  Type,
+  Edit
 } from "react-feather";
 import Editable from "../../Editable/Editable";
 import Modal from "../../Modal/Modal";
@@ -18,8 +15,6 @@ import Label from "../../Label/Label";
 import { useCallback } from "react";
 import { useUsuarios, Usuario } from "@/lib/hooks/useUsuarios";
 import { useCliente } from "@/lib/hooks/useCliente";
-
-import Card from "../Card";
 import { deleteTarefa, updateTarefa } from "@/lib/hooks/useTarefas";
 import { Tarefa } from "../../../../../../types/Tarefa";
 
@@ -62,7 +57,8 @@ interface ClienteCategoria {
 
 export default function CardDetails(props: CardDetailsProps) {
   const colors = ["#61bd4f", "#f2d600", "#ff9f1a", "#eb5a46", "#c377e0"];
-
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+const [editingTaskText, setEditingTaskText] = useState<string>("");
   const [input, setInput] = useState(false);
   const [labelShow, setLabelShow] = useState(false);
   const { usuarios } = useUsuarios(); // Obtém os usuários do sistema
@@ -70,6 +66,7 @@ export default function CardDetails(props: CardDetailsProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Controla a abertura do dropdown
   const { clientes, isLoading, isError } = useCliente(); // 🔹 Obtendo a lista de empresas
   const [clientName, setClientName] = useState<string>("");
+  const { updateCard } = props;
 
   const [values, setValues] = useState(() => {
     if (typeof window !== "undefined") {
@@ -110,7 +107,35 @@ export default function CardDetails(props: CardDetailsProps) {
       dataLimite: props.card.dataLimite ,
     };
   });
-  
+
+  console.log(values)
+const startEditTask = (task: Task) => {
+  setEditingTaskId(task.id);
+  setEditingTaskText(task.text);
+};
+
+const confirmEditTask = async (id: string) => {
+  const updatedTasks = values.task.map((task: Task) =>
+    task.id === id ? { ...task, text: editingTaskText } : task
+  );
+
+  setValues((prev: any) => ({
+    ...prev,
+    task: updatedTasks,
+  }));
+
+  setEditingTaskId(null);
+  setEditingTaskText("");
+
+  try {
+    await updateTarefa(Number(values.id), {
+      descricoes: JSON.stringify(updatedTasks),
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar tarefa:", error);
+  }
+};
+
 
   const [text, setText] = useState(values.title);
 
@@ -129,9 +154,19 @@ export default function CardDetails(props: CardDetailsProps) {
         onChange={(e) => {
           setText(e.target.value);
         }}
+        className="form-control"
+        style={{
+          fontSize: "1.125rem", // menor que antes, maior que padrão
+          fontWeight: "600", // sem ser ultra bold
+          width: "80%", // não ocupa 100%, deixa espaço
+          border: "1px solid #ccc", // borda neutra
+          borderRadius: "6px",
+          padding: "6px 10px",
+        }}
       />
     );
   };
+  
 
 
   const addTask = async (value: string) => {
@@ -164,17 +199,6 @@ export default function CardDetails(props: CardDetailsProps) {
     const remaningTask = values.task.filter((item: Task) => item.id !== id);
     setValues({ ...values, task: remaningTask });
   };
-
-
-  const updateTask = (id: string) => {
-    setValues((prevValues: typeof values) => ({
-      ...prevValues,
-      task: prevValues.task.map((task: Task) =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      ),
-    }));
-  };
-
 
   const updateTitle = useCallback(async (value: string) => {
     setValues((prevValues: any) => {
@@ -234,7 +258,6 @@ export default function CardDetails(props: CardDetailsProps) {
     };
   }, [text, values.title, handelClickListner]);
 
-  const { updateCard } = props;
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -269,6 +292,46 @@ export default function CardDetails(props: CardDetailsProps) {
     }
   };
   
+  const updateTaskCompleted = async (id: string) => {
+    const updatedTasks = values.task.map((task: Task) =>
+      task.id === id ? { ...task, completed: !task.completed } : task
+    );
+    setValues((prevValues: typeof values) => ({
+      ...prevValues,
+      task: updatedTasks,
+    }));
+  
+    try {
+      await updateTarefa(Number(values.id), {
+        descricoes: JSON.stringify(updatedTasks),
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar tarefa:", error);
+    }
+  };
+  
+  const updateTaskText = async (id: string, newText: string) => {
+    const updatedTasks = values.task.map((task: Task) =>
+      task.id === id ? { ...task, text: newText } : task
+    );
+    setValues((prevValues: typeof values) => ({
+      ...prevValues,
+      task: updatedTasks,
+    }));
+  
+    try {
+      await updateTarefa(Number(values.id), {
+        descricoes: JSON.stringify(updatedTasks),
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar texto da tarefa:", error);
+    }
+  };
+  
+  const cancelEditTask = () => {
+    setEditingTaskId(null);
+    setEditingTaskText("");
+  };
   
   return (
     <Modal onClose={() => {
@@ -361,42 +424,74 @@ export default function CardDetails(props: CardDetailsProps) {
                         <input
                           className="task__checkbox"
                           type="checkbox"
-                          checked={item.completed} // 🔹 Garante controle do estado
-                          onChange={() => updateTask(item.id)}
+                          checked={item.completed}
+                          onChange={() => updateTaskCompleted(item.id)}
                           style={{
-                            flexShrink: 0, // 🔹 Evita que o checkbox redimensione
-                            height: "20px", // 🔹 Tamanho fixo do checkbox
-                            width: "20px",
-                          }}
-                        />
-
-                        <h6
-                          className={`flex-grow-1 ${item.completed ? "strike-through" : ""}`}
-                          style={{
-                            fontSize: "14px", // 🔹 Mantém tamanho de fonte fixo
-                            minHeight: "40px",
-                            lineHeight: "1.4",
-                            display: "flex",
-                            alignItems: "center",
-                            wordBreak: "break-word",
-                            whiteSpace: "pre-wrap",
-                            maxWidth: "100%",
-                          }}
-                        >
-                          {item.text}
-                        </h6>
-
-                        <Trash
-                          onClick={() => removeTask(item.id)}
-                          style={{
-                            flexShrink: 0, // 🔹 Mantém tamanho fixo do ícone
-                            cursor: "pointer",
-                            width: "20px",
+                            flexShrink: 0,
                             height: "20px",
+                            width: "20px",
                           }}
                         />
-                      </div>
+                    
+                        {editingTaskId === item.id ? (
+                          <input
+                            className="flex-grow-1 border rounded px-2 py-1"
+                            style={{
+                              fontSize: "14px",
+                              minHeight: "40px",
+                              lineHeight: "1.4",
+                              display: "flex",
+                              alignItems: "center",
+                              wordBreak: "break-word",
+                              whiteSpace: "pre-wrap",
+                              maxWidth: "100%",
+                            }}
+                            value={editingTaskText}
+                            onChange={(e) => setEditingTaskText(e.target.value)}
+                          />
+                        ) : (
+                          <h6
+                            className={`flex-grow-1 ${item.completed ? "strike-through" : ""}`}
+                            style={{
+                              fontSize: "14px",
+                              minHeight: "40px",
+                              lineHeight: "1.4",
+                              display: "flex",
+                              alignItems: "center",
+                              wordBreak: "break-word",
+                              whiteSpace: "pre-wrap",
+                              maxWidth: "100%",
+                            }}
+                          >
+                            {item.text}
+                          </h6>
+                        )}
+                    
+                    {editingTaskId === item.id ? (
+  <>
+    <Check
+      onClick={() => confirmEditTask(item.id)}
+      style={{ cursor: "pointer", width: "20px", height: "20px" }}
+    />
+    <X
+      onClick={() => cancelEditTask()}
+      style={{ cursor: "pointer", width: "20px", height: "20px" }}
+    />
+  </>
+) : (
+  <>
+    <Edit
+      onClick={() => startEditTask(item)}
+      style={{ cursor: "pointer", width: "20px", height: "20px" }}
+    />
+    <Trash
+      onClick={() => removeTask(item.id)}
+      style={{ cursor: "pointer", width: "20px", height: "20px" }}
+    />
+  </>
+)}
 
+                      </div>
                     ))
                   ) : (
                     <></>
@@ -442,7 +537,6 @@ export default function CardDetails(props: CardDetailsProps) {
                 {/* Executor */}
                 <h6>Responsável</h6>
                 <div className="responsavel-dropdown">
-                  {/* Exibir nome do responsável e permitir clique para abrir dropdown */}
                   <div
                     className="responsavel-selecionado"
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -491,31 +585,36 @@ export default function CardDetails(props: CardDetailsProps) {
 
 
                 <h6>Empresa</h6>
-                {isLoading ? (
-                  <p>Carregando empresas...</p>
-                ) : isError ? (
-                  <p>Erro ao carregar empresas.</p>
-                ) : (
-                  <select
-                    className="select-field"
-                    value={values.company}
-                    onChange={(e) => {
-                      const empresaId = Number(e.target.value);
-                      setValues((prev: any) => {
-                        atualizarTarefa({ idCliente: empresaId });
-                        return { ...prev, company: e.target.value };
-                      });
-                    }}
+{isLoading ? (
+  <p>Carregando empresas...</p>
+) : isError ? (
+  <p>Erro ao carregar empresas.</p>
+) : (
+  <select
+    className="select-field"
+    value={values.company}
+    onChange={(e) => {
+      const value = e.target.value;
+      const empresaId = value ? Number(value) : null;
 
-                  >
-                    <option value="" disabled>Selecione uma empresa</option>
-                    {clientes.map((cliente: ClienteCategoria) => (
-                      <option key={cliente.idcliente} value={String(cliente.idcliente)}>
-                        {cliente.apelido || cliente.nome} {/* ✅ Exibe apelido se existir, senão nome */}
-                      </option>
-                    ))}
-                  </select>
-                )}
+      setValues((prev: any) => {
+        atualizarTarefa({ idCliente: empresaId });
+        return { ...prev, company: value };
+      });
+    }}
+  >
+    {/* Opção SEM empresa */}
+    <option value="">Sem empresa vinculada</option>
+
+    {/* Lista de empresas */}
+    {clientes.map((cliente: ClienteCategoria) => (
+      <option key={cliente.idcliente} value={String(cliente.idcliente)}>
+        {cliente.apelido || cliente.nome}
+      </option>
+    ))}
+  </select>
+)}
+
 
 
                 {labelShow && (
@@ -531,38 +630,51 @@ export default function CardDetails(props: CardDetailsProps) {
                   <div className="d-flex align-items-center gap-2">
                     <Clock className="icon__sm" />
                     <input
-                      type="text"
-                      className="form-control"
-                      placeholder="dd-mm-aaaa"
-                      value={
-                        values.dataLimite && values.dataLimite !== "1899-11-30"
-                          ? values.dataLimite.split("-").reverse().join("-")
-                          : ""
-                      }
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        const [dd, mm, yyyy] = raw.split("-");
+  type="text"
+  className="form-control"
+  placeholder="dd-mm-aaaa"
+  maxLength={10}
+  value={
+    values.dataLimite && values.dataLimite !== "0000-00-00" && values.dataLimite !== "1899-11-30"
+      ? values.dataLimite
+      : ""
+  }
+  onChange={(e) => {
+    let raw = e.target.value.replace(/\D/g, "");
 
-                        const isValid =
-                          dd && mm && yyyy &&
-                          dd.length === 2 &&
-                          mm.length === 2 &&
-                          yyyy.length === 4;
+    if (raw.length > 8) raw = raw.slice(0, 8);
 
-                        if (isValid) {
-                          const formatToDB = `${yyyy}-${mm}-${dd}`;
-                          setValues((prev: any) => {
-                            atualizarTarefa({ dataLimite: formatToDB });
-                            return { ...prev, dataLimite: formatToDB };
-                          });
-                        } else if (raw === "") {
-                          setValues((prev: any) => {
-                            atualizarTarefa({ dataLimite: "1899-11-30" });
-                            return { ...prev, dataLimite: "1899-11-30" };
-                          });
-                        }
-                      }}
-                    />
+    let formatted = raw;
+    if (raw.length > 4) {
+      formatted = `${raw.slice(0, 2)}-${raw.slice(2, 4)}-${raw.slice(4)}`;
+    } else if (raw.length > 2) {
+      formatted = `${raw.slice(0, 2)}-${raw.slice(2)}`;
+    }
+
+    setValues((prev: any) => ({
+      ...prev,
+      dataLimite: formatted,
+    }));
+  }}
+  onBlur={() => {
+    const raw = values.dataLimite.replace(/\D/g, "");
+
+    if (!raw) {
+      setValues((prev: any) => ({
+        ...prev,
+        dataLimite: "",
+      }));
+      atualizarTarefa({ dataLimite: "0000-00-00" });
+    } else if (raw.length === 8) {
+      const dd = raw.slice(0, 2);
+      const mm = raw.slice(2, 4);
+      const yyyy = raw.slice(4);
+      const formatToDB = `${yyyy}-${mm}-${dd}`;
+      atualizarTarefa({ dataLimite: formatToDB });
+    }
+  }}
+/>
+
                   </div>
                 </div>
 

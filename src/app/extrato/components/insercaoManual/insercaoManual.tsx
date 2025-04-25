@@ -80,7 +80,6 @@ const InsercaoManual: React.FC<{
     };
 
     const handleCategoriaChange = (idCategoria: number) => {
-        console.log("ID da categoria selecionada:", idCategoria);
         const categoriaFilha: Categoria | undefined = categoriasCliente?.find((cat: Categoria) => cat.idcategoria === idCategoria);
         const categoriaPai: Categoria | null = categoriaFilha ? categoriasCliente?.find((cat: Categoria) => cat.idcategoria === categoriaFilha.idCategoriaPai) || null : null;
 
@@ -130,7 +129,6 @@ const InsercaoManual: React.FC<{
         };
 
         try {
-            console.log("Novo extrato:", novoExtrato);
             await createExtrato(novoExtrato);
             alert("Extrato inserido com sucesso!");
 
