@@ -7,7 +7,7 @@ import InsercaoManual from './components/insercaoManual/insercaoManual';
 import Calendario from './components/calendario/calendario';
 import TabelaExtrato from './components/tabelaExtrato/tabelaExtrato';
 import { useBanco, Banco } from '@/lib/hooks/userBanco';
-import { useExtratos } from '@/lib/hooks/useExtrato';
+import { deleteExtrato, useExtratos } from '@/lib/hooks/useExtrato';
 import { useClienteContext } from '@/context/ClienteContext';
 import { useSaldoInicial } from '@/lib/hooks/useSaldoInicial';
 import { Categoria, useCategoriasPorCliente } from '@/lib/hooks/useCategoria';
@@ -34,8 +34,11 @@ const Extrato: React.FC = () => {
     const [metodoInsercao, setMetodoInsercao] = useState<string>("");
     const [mesSelecionado, setMesSelecionado] = useState<string>("");
     const [anoSelecionado, setAnoSelecionado] = useState<string>("");
+    const [loadingDeletar, setLoadingDeletar] = useState(false);
     const [dadosTabela, setDadosTabela] = useState<any[]>([]);
     const shouldFetchData = !!idCliente && !!bancoSelecionado && !!mesSelecionado && !!anoSelecionado;
+    const [editandoLote, setEditandoLote] = useState(false);
+
     const [dados, setDados] = useState<{
         data: string;
         categoria: any;
@@ -46,13 +49,16 @@ const Extrato: React.FC = () => {
         tipo: string;
         valor: string;
     }[]>([]);
+
     const [mostrarPreview, setMostrarPreview] = useState(false);
-    const { extratos } = useExtratos(
+
+    const { extratos, mutate: mutateExtratos } = useExtratos(
         shouldFetchData ? idCliente : undefined,
         shouldFetchData ? bancoSelecionado : undefined,
         shouldFetchData ? mesSelecionado : undefined,
         shouldFetchData ? anoSelecionado : undefined
     );
+
 
     const { subextratos, isLoading, isError, mutate: mutateSubextratos } = useSubextratos();
 
@@ -222,6 +228,21 @@ const Extrato: React.FC = () => {
         }
     };
 
+    const handleDeletarSelecionados = async () => {
+        setLoadingDeletar(true);
+        try {
+            await Promise.all(selecionados.map(id => deleteExtrato(id)));
+            setSelecionados([]);
+            await mutateExtratos();
+            mutateSubextratos?.();
+        } catch (error) {
+            console.error("Erro ao deletar extratos:", error);
+        } finally {
+            setLoadingDeletar(false);
+        }
+    };
+
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -264,17 +285,17 @@ const Extrato: React.FC = () => {
 
     const subextratosRelacionados = useMemo(() => {
         if (!subextratos || !extratos) return [];
-      
+
         const idsExtratos = new Set(extratos.map((e: { idextrato: any }) => e.idextrato));
-      
+
         return subextratos
-          .filter((s) => idsExtratos.has(s.idExtratoPrincipal))
-          .map((s) => ({
-            ...s,
-            data: formatarData(s.data),
-          }));
-      }, [subextratos, extratos]);
-      
+            .filter((s) => idsExtratos.has(s.idExtratoPrincipal))
+            .map((s) => ({
+                ...s,
+                data: formatarData(s.data),
+            }));
+    }, [subextratos, extratos]);
+
 
 
     useEffect(() => {
@@ -292,8 +313,6 @@ const Extrato: React.FC = () => {
             setAnoSelecionado(anoAtual);
         }
     }, []);
-
-
 
 
     return (
@@ -423,12 +442,26 @@ const Extrato: React.FC = () => {
                                     >
                                         {selecionados.length === dadosTabela.length ? "Desmarcar Todos" : "Selecionar Todos"}
                                     </button>
-                                    <button className="w-full text-left px-4 py-2 hover:bg-gray-100 transition">
+                                    <button
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
+                                        onClick={() => {
+                                            handleDeletarSelecionados();
+                                            setDropdownAcoesAberto(false);
+                                        }}
+                                    >
                                         Deletar Selecionados
                                     </button>
-                                    <button className="w-full text-left px-4 py-2 hover:bg-gray-100 transition">
+
+                                    <button
+                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
+                                        onClick={() => {
+                                            setEditandoLote(true);
+                                            setDropdownAcoesAberto(false);
+                                        }}
+                                    >
                                         Editar Todas as Linhas
                                     </button>
+
                                 </div>
                             )}
                         </div>
@@ -502,7 +535,11 @@ const Extrato: React.FC = () => {
                         anoSelecionado={anoSelecionado}
                         subextratos={subextratosRelacionados}
                         onAtualizarSubextratos={mutateSubextratos}
-                    />
+                        editandoLote={editandoLote} 
+                        setEditandoLote={setEditandoLote} 
+                        onAtualizarExtratos={mutateExtratos}
+                        />
+
 
                 </div>
 
@@ -555,9 +592,10 @@ const Extrato: React.FC = () => {
                         <div className="bg-white p-6 rounded shadow-lg w-[800px]">
                             <h2 className="text-xl font-bold mb-4">Adicionar Saldo Inicial</h2>
                             <iframe
-                                src={`/saldoInicial?idBanco=${bancoSelecionado}&idCliente=${idCliente}`}
+                                src={`/saldoInicial?idBanco=${bancoSelecionado}&idCliente=${idCliente}&mes=${mesSelecionado}&ano=${anoSelecionado}`}
                                 className="w-full h-[600px] border-none"
                             />
+
 
 
                             <button
@@ -591,6 +629,29 @@ const Extrato: React.FC = () => {
                             idBanco={bancoSelecionado!}
                             onImportarFinalizado={() => setMostrarPreview(false)}
                         />
+                    </div>
+                </div>
+            )}
+            {loadingDeletar && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
+                    <div className="bg-white p-6 rounded shadow-lg flex items-center space-x-3">
+                        <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24">
+                            <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                                fill="none"
+                            />
+                            <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
+                            />
+                        </svg>
+                        <span className="text-gray-700 font-medium">Deletando selecionados...</span>
                     </div>
                 </div>
             )}

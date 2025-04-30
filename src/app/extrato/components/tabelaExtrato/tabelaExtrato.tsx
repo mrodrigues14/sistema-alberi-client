@@ -8,7 +8,7 @@ import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { Subextrato } from "../../../../../types/Subextrato";
 import { criarSubextrato } from "@/lib/hooks/useSubextrato";
-import { updateExtrato } from "@/lib/hooks/useExtrato";
+import { deleteExtrato, updateExtrato } from "@/lib/hooks/useExtrato";
 import { Extrato } from "../../../../../types/Extrato";
 import Anexos from "../anexos/Anexos";
 import { useExtratoAnexos } from "@/lib/hooks/useExtratoAnexos";
@@ -27,6 +27,9 @@ interface Props {
   fornecedoresFormatados: any[];
   mesSelecionado: string;
   anoSelecionado: string;
+  editandoLote: boolean;
+  setEditandoLote: (value: boolean) => void;
+  onAtualizarExtratos: () => void;
 }
 
 
@@ -43,7 +46,10 @@ const TabelaExtrato: React.FC<Props> = ({
   categoriasFormatadas,
   fornecedoresFormatados,
   mesSelecionado,
-  anoSelecionado
+  anoSelecionado,
+  editandoLote,
+  setEditandoLote,
+  onAtualizarExtratos,
 }) => {
   const [saldoFinal, setSaldoFinal] = useState(saldoInicial);
   const [editIndex, setEditIndex] = useState<number | null>(null);
@@ -58,8 +64,12 @@ const TabelaExtrato: React.FC<Props> = ({
   const [novoSubextrato, setNovoSubextrato] = useState<any>({});
   const [anexosVisiveis, setAnexosVisiveis] = useState(false);
   const [extratoSelecionado, setExtratoSelecionado] = useState<number | null>(null);
+  const [dadosEditadosLote, setDadosEditadosLote] = useState<Record<number, any>>({});
+  const [deletandoId, setDeletandoId] = useState<number | null>(null);
+
+
   const { anexos, mutate } = useExtratoAnexos();
-  console.log(anexos)
+
   useEffect(() => {
     let saldoAcumulado = saldoInicial ?? 0;
     dados.forEach((row) => {
@@ -84,23 +94,23 @@ const TabelaExtrato: React.FC<Props> = ({
       const [dia, mes, ano] = partes;
       return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
     }
-  
+
     if (/^\d{4}-\d{2}-\d{2}$/.test(data)) return data;
-  
+
     return '';
   }
-  
+
   const handleSave = async (index: number) => {
     try {
       const row = dados[index];
-  
+
       const categoriaSelecionada = categoriasFormatadas.find(
         (opt) => opt.label === editData.rubricaSelecionada
       );
       const fornecedorSelecionado = fornecedoresFormatados.find(
         (opt) => opt.label === editData.fornecedorSelecionado
       );
-  
+
       const payload: Partial<Extrato> = {
         data: formatarDataParaISO(editData.data),
         nomeNoExtrato: editData.nomeNoExtrato,
@@ -111,21 +121,34 @@ const TabelaExtrato: React.FC<Props> = ({
         tipoDeTransacao: editData.entrada ? "ENTRADA" : "SAIDA",
         valor: parseFloat(editData.entrada || editData.saida || "0"),
       };
-  
+
       await updateExtrato(row.id, payload);
-  
+
       dados[index] = {
         ...editData,
         idCategoria: categoriaSelecionada?.value ?? null,
         idFornecedor: fornecedorSelecionado?.value ?? null,
       };
-  
+
       setEditIndex(null);
     } catch (err) {
       console.error("Erro ao atualizar extrato:", err);
     }
   };
-  
+
+  const handleDeletarLinha = async (id: number) => {
+    setDeletandoId(id);
+    try {
+      await deleteExtrato(id);
+      onAtualizarExtratos();
+    } catch (error) {
+      console.error("Erro ao deletar extrato:", error);
+      alert("Erro ao deletar extrato.");
+    } finally {
+      setDeletandoId(null);
+    }
+  };
+
 
   const handleCancel = () => {
     setEditIndex(null);
@@ -165,21 +188,21 @@ const TabelaExtrato: React.FC<Props> = ({
   const formatarMoedaDigitar = (valor: string) => {
     const numeros = valor.replace(/\D/g, "");
     const numero = Number(numeros) / 100;
-  
+
     if (isNaN(numero)) return "";
-  
+
     return numero.toLocaleString("pt-BR", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
   };
-  
+
   const extrairNumero = (valor: string) => {
     const numero = valor.replace(/\D/g, "");
-    const numeroDividido =Number(numero) / 100
+    const numeroDividido = Number(numero) / 100
     return numeroDividido;
   };
-  
+
   const toggleOrdem = (coluna: string) => {
     if (ordem?.coluna === coluna) {
       setOrdem({
@@ -257,7 +280,53 @@ const TabelaExtrato: React.FC<Props> = ({
     <div className="flex justify-center items-center mt-8">
       <div className="w-[5000px] bg-white rounded-lg shadow-lg p-4">
 
-        {/* Linha de Saldos e Título */}
+        {editandoLote && (
+          <div className="mt-4 flex justify-end space-x-2">
+            <button
+              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+              onClick={async () => {
+                try {
+                  const promises = selecionados.map(async (id) => {
+                    const edit = dadosEditadosLote[id];
+                    if (!edit) return;
+
+                    const categoriaSelecionada = categoriasFormatadas.find(opt => opt.label === edit.rubricaSelecionada);
+                    const fornecedorSelecionado = fornecedoresFormatados.find(opt => opt.label === edit.fornecedorSelecionado);
+
+                    await updateExtrato(id, {
+                      data: formatarDataParaISO(edit.data),
+                      nomeNoExtrato: edit.nomeNoExtrato,
+                      rubricaContabil: edit.rubricaContabil,
+                      observacao: edit.observacao,
+                      idCategoria: categoriaSelecionada?.value ?? null,
+                      idFornecedor: fornecedorSelecionado?.value ?? null,
+                      tipoDeTransacao: edit.entrada ? "ENTRADA" : "SAIDA",
+                      valor: parseFloat(edit.entrada || edit.saida || "0"),
+                    });
+                  });
+
+                  await Promise.all(promises);
+                  setEditandoLote(false);
+                  setDadosEditadosLote({});
+                } catch (err) {
+                  console.error("Erro ao salvar em lote:", err);
+                }
+              }}
+            >
+              Salvar Alterações
+            </button>
+            <button
+              className="bg-gray-300 text-black px-4 py-2 rounded hover:bg-gray-400"
+              onClick={() => {
+                setEditandoLote(false);
+                setDadosEditadosLote({});
+              }}
+            >
+              Cancelar
+            </button>
+          </div>
+        )}
+
         <div className="flex justify-center items-center mt-4">
           <div className="text-center flex-1">
             <h2 className="text-lg font-bold">  Extrato de {mesSelecionado} / {anoSelecionado} - Banco: {banco || "Não informado"}
@@ -395,8 +464,12 @@ const TabelaExtrato: React.FC<Props> = ({
                 (s) => s.idExtratoPrincipal === row.id
               );
               saldoAcumulado = saldoAcumulado + entrada - saida;
+              const isEditando = editandoLote
+                ? selecionados.includes(row.id)
+                : editIndex === index;
 
               return (
+
                 <React.Fragment key={index}>
 
                   <tr
@@ -524,7 +597,7 @@ const TabelaExtrato: React.FC<Props> = ({
                       {editIndex === index ? (
                         <input
                           type="text"
-                          value={formatarMoedaDigitar(editData.entrada)} 
+                          value={formatarMoedaDigitar(editData.entrada)}
                           onChange={(e) => {
                             const rawValue = e.target.value.replace(/[^\d,]/g, "").replace(",", ".");
                             setEditData({ ...editData, entrada: rawValue });
@@ -555,16 +628,16 @@ const TabelaExtrato: React.FC<Props> = ({
                       {saldoAcumulado.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="border px-2 py-2 text-center">
-  <button
-    className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
-    onClick={() => {
-      setExtratoSelecionado(row.id);
-      setAnexosVisiveis(true);
-    }}
-  >
-    <FaPaperclip size={16} className="text-gray-700" />
-  </button>
-</td>
+                      <button
+                        className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+                        onClick={() => {
+                          setExtratoSelecionado(row.id);
+                          setAnexosVisiveis(true);
+                        }}
+                      >
+                        <FaPaperclip size={16} className="text-gray-700" />
+                      </button>
+                    </td>
 
                     <td className="border px-2 py-2 text-center">
                       <div className="flex justify-center items-center space-x-4 h-full">
@@ -605,10 +678,19 @@ const TabelaExtrato: React.FC<Props> = ({
                               <FaHandPointer size={20} />
                             </button>
 
-
-                            <button className="text-red-500 hover:text-red-700">
-                              <FaTrash size={20} />
+                            <button
+                              className="text-red-500 hover:text-red-700"
+                              onClick={() => handleDeletarLinha(row.id)}
+                              disabled={deletandoId === row.id}
+                            >
+                              {deletandoId === row.id ? (
+                                <span className="animate-spin inline-block w-5 h-5 border-2 border-red-500 border-t-transparent rounded-full"></span>
+                              ) : (
+                                <FaTrash size={20} />
+                              )}
                             </button>
+
+
                           </>
                         )}
                       </div>
@@ -781,17 +863,17 @@ const TabelaExtrato: React.FC<Props> = ({
           </tbody>
         </table>
         {anexosVisiveis && extratoSelecionado !== null && (
-  <Anexos
-    anexos={anexos.filter(a => a.idExtrato === extratoSelecionado)}
-    onFechar={() => setAnexosVisiveis(false)}
-    onAtualizar={() => {
-      mutate(); // ou outro método que recarregue os dados dos anexos
-    }}
-  />
-)}
+          <Anexos
+            idExtrato={extratoSelecionado} // ← ESSENCIAL
+            anexos={anexos.filter(a => a.idExtrato === extratoSelecionado)}
+            onFechar={() => setAnexosVisiveis(false)}
+            onAtualizar={() => mutate()}
+          />
+        )}
 
-      
-      
+
+
+
       </div>
 
 

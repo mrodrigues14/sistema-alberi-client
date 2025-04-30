@@ -1,34 +1,52 @@
 'use client';
 
 import { createSaldoInicial, upsertSaldoInicial, useSaldoInicial } from '@/lib/hooks/useSaldoInicial';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface Props {
   idBanco: number;
   idCliente: number;
   onClose?: () => void;
   onSuccess?: () => void;
+  mesSelecionado?: number | null;
+  anoSelecionado?: number | null;
 }
-
 export default function CriarSaldoInicial({
   idBanco,
   idCliente,
   onClose,
   onSuccess,
+  mesSelecionado,
+  anoSelecionado,
 }: Props) {
   const [mensagemSucesso, setMensagemSucesso] = useState('');
   const [valorFormatado, setValorFormatado] = useState('');
   const [mes, setMes] = useState('');
-  const [ano, setAno] = useState(String(new Date().getFullYear())); // ano atual automático
+  const [ano, setAno] = useState(String(new Date().getFullYear()));
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
+
+  const meses = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+
+   useEffect(() => {
+    if (mesSelecionado && mesSelecionado >= 1 && mesSelecionado <= 12) {
+      setMes(meses[mesSelecionado - 1]);
+    }
+
+    if (anoSelecionado) {
+      setAno(String(anoSelecionado));
+    }
+  }, [mesSelecionado, anoSelecionado]);
+
   const { saldoInicial, isLoading: loadingSaldo } = useSaldoInicial(
     idCliente,
     idBanco,
     mes,
     ano
   );
-  
   const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let raw = e.target.value;
     const cleaned = raw.replace(/\D/g, '');

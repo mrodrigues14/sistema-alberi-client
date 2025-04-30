@@ -39,7 +39,8 @@ const Anexos: React.FC<Props> = ({ anexos, onFechar, onAtualizar, idExtrato }) =
 
   const handleUpload = async () => {
     if (!previewFile || !idExtrato) return;
-  
+    console.log("Upload iniciado. idExtrato:", idExtrato);
+
     try {
       await uploadExtratoAnexo({
         file: previewFile,
