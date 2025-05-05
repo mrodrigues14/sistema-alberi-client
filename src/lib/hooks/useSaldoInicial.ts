@@ -9,6 +9,7 @@ export interface SaldoInicial {
   idBanco: number;
   mesAno: string;
   saldo: number;
+  definidoManualmente?: boolean;
 }
 
 
@@ -31,48 +32,23 @@ export function useSaldoInicial(idCliente?: number, idBanco?: number, mes?: stri
         "Dezembro": "12",
       };
 
-      const mesFormatado = meses[mes] ?? "01"; // Converte o nome do mês para número
-      const mesAnoFormatado = `${ano}-${mesFormatado}`; // Exemplo: 2024-12
+      const mesFormatado = meses[mes] ?? "01";
+      const mesAnoFormatado = `${ano}-${mesFormatado}`; 
 
       query = `/saldo-inicial/cliente/${idCliente}/banco/${idBanco}?mesAno=${mesAnoFormatado}`;
     }
-  
     const { data, error, isLoading, mutate } = useSWR(query, fetcher);
+
     return {
-      saldoInicial: data ? Number(data.saldo) || 0 : 0, // Garante que o valor seja tratado corretamente
+      saldoInicial: data ? Number(data.saldo) || 0 : 0,
+      definidoManualmente: data ? data.definidoManualmente === 1 || data.definidoManualmente === true : false,
       isLoading,
       isError: error,
       mutate,
     };
 }
 
-// 🔹 Criar um novo saldo inicial
-export async function createSaldoInicial(novoSaldo: Omit<SaldoInicial, "id">) {
-  const { idBanco, idCliente, mesAno, saldo } = novoSaldo;
-
-  if (!idBanco || !idCliente || !mesAno || saldo == null) {
-    throw new Error("Todos os campos obrigatórios devem ser preenchidos");
-  }
-
-  const data = `${mesAno}-01`; // exemplo: "2025-04-01"
-
-  const payload = {
-    ...novoSaldo,
-    data, 
-  };
-
-  const response = await fetch(`${API_URL}/saldo-inicial`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) throw new Error("Erro ao criar saldo inicial");
-
-  return response.json();
-}
-
-
+  
 export async function upsertSaldoInicial(novoSaldo: Omit<SaldoInicial, "id">) {
   const { idBanco, idCliente, mesAno, saldo } = novoSaldo;
 
@@ -115,7 +91,6 @@ export async function upsertSaldoInicial(novoSaldo: Omit<SaldoInicial, "id">) {
   return createResponse.json();
 }
 
-// 🔹 Atualizar um saldo inicial pelo ID
 export async function updateSaldoInicial(id: number, updates: Partial<SaldoInicial>) {
   const response = await fetch(`${API_URL}/saldo-inicial/${id}`, {
     method: "PATCH",

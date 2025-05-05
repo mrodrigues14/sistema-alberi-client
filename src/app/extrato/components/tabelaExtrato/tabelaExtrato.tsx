@@ -17,6 +17,7 @@ interface Props {
   dados: any[];
   subextratos?: Subextrato[];
   saldoInicial: number;
+  definidoManualmente?: boolean;
   mesAno?: string;
   banco?: string;
   selecionados: number[];
@@ -38,6 +39,7 @@ const TabelaExtrato: React.FC<Props> = ({
   dados,
   subextratos,
   saldoInicial,
+  definidoManualmente,
   banco,
   selecionados,
   onToggleSelecionado,

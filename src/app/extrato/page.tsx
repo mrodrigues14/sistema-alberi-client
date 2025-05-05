@@ -62,7 +62,7 @@ const Extrato: React.FC = () => {
 
     const { subextratos, isLoading, isError, mutate: mutateSubextratos } = useSubextratos();
 
-    const { saldoInicial, isLoading: loadingSaldo } = useSaldoInicial(
+    const { saldoInicial, definidoManualmente, isLoading: loadingSaldo } = useSaldoInicial(
         shouldFetchData ? idCliente : undefined,
         shouldFetchData ? bancoSelecionado : undefined,
         shouldFetchData ? mesSelecionado : undefined,
@@ -320,7 +320,6 @@ const Extrato: React.FC = () => {
             <div className="fixed top-0 left-0 w-full z-10">
                 <Navbar />
                 <div className="mt-5 w-full px-10 flex justify-between items-start gap-4 flex-wrap">
-                    {/* Esquerda: Botão de Inserir Lançamento */}
                     <div className="relative">
                         <button
                             onClick={() => setDropdownAberto(prev => !prev)}
@@ -525,6 +524,7 @@ const Extrato: React.FC = () => {
                     <TabelaExtrato
                         dados={dadosTabela}
                         saldoInicial={saldoInicial}
+                        definidoManualmente={definidoManualmente}
                         selecionados={selecionados}
                         onToggleSelecionado={handleToggleSelecionado}
                         onSelecionarTodos={handleSelecionarTodos}

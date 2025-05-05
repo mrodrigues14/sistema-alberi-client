@@ -71,23 +71,24 @@ export default function Register() {
 
     const handleSubmit = async (event: { preventDefault: () => void; }) => {
         event.preventDefault();
+        const cpfLimpo = cpf.replace(/[^\d]+/g, '');
         if (password !== confirmPassword) {
             setPasswordError('As senhas não correspondem');
             return;
         }
-
-        if (!isValidCPF(cpf)) {
+    
+        if (!isValidCPF(cpfLimpo)) {
             setCpfError('CPF inválido');
             return;
         }
-
+    
         setPasswordError('');
         setCpfError('');
         setSuccessMessage('');
-
+    
         const userData = {
             nome: fullName,
-            cpf: cpf,
+            cpf: cpfLimpo, 
             password: password,
             email: email
         };
