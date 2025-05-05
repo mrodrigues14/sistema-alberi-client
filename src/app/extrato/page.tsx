@@ -16,6 +16,7 @@ import { FaChevronDown } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import PreviewExtrato from './components/previewExtrato/previewExtrato';
 import { useSubextratos } from '@/lib/hooks/useSubextrato';
+import { useBancoContext } from '@/context/BancoContext';
 
 const Extrato: React.FC = () => {
     const { idCliente } = useClienteContext();
@@ -29,8 +30,7 @@ const Extrato: React.FC = () => {
     const { bancos, isLoading: loadingBancos, isError: errorBancos, mutate: mutateBancos } = useBanco(
         idCliente ? idCliente : undefined
     );
-    const [bancoSelecionado, setBancoSelecionado] = useState<number | null>(null);
-    const [nomeBancoSelecionado, setNomeBancoSelecionado] = useState<string | null>(null);
+    const { bancoSelecionado, nomeBancoSelecionado, setBancoSelecionado, setNomeBancoSelecionado } = useBancoContext();
     const [metodoInsercao, setMetodoInsercao] = useState<string>("");
     const [mesSelecionado, setMesSelecionado] = useState<string>("");
     const [anoSelecionado, setAnoSelecionado] = useState<string>("");
@@ -206,13 +206,9 @@ const Extrato: React.FC = () => {
         if (bancoSelecionado !== selectedBancoId) {
             setBancoSelecionado(selectedBancoId);
             setNomeBancoSelecionado(banco?.nome || null);
-
-            if (typeof window !== "undefined") {
-                sessionStorage.setItem("bancoSelecionado", String(selectedBancoId));
-                sessionStorage.setItem("nomeBancoSelecionado", banco?.nome || "");
-            }
         }
     };
+
 
 
     /** ✅ Atualiza o método de inserção **/
@@ -509,8 +505,8 @@ const Extrato: React.FC = () => {
                         <InsercaoManual
                             idCliente={idCliente}
                             bancoSelecionado={bancoSelecionado}
+                            onFechar={() => setMetodoInsercao("")}
                         />
-
                     </div>
                 )}
 
@@ -535,10 +531,10 @@ const Extrato: React.FC = () => {
                         anoSelecionado={anoSelecionado}
                         subextratos={subextratosRelacionados}
                         onAtualizarSubextratos={mutateSubextratos}
-                        editandoLote={editandoLote} 
-                        setEditandoLote={setEditandoLote} 
+                        editandoLote={editandoLote}
+                        setEditandoLote={setEditandoLote}
                         onAtualizarExtratos={mutateExtratos}
-                        />
+                    />
 
 
                 </div>

@@ -117,147 +117,140 @@ export default function Navbar() {
 
     return (
         <nav className={`bg-white shadow-md ${font.className}`}>
-            <div className="flex flex-col md:flex-row justify-between items-center px-4 md:px-6 py-2">
-                {/* Lado esquerdo: logo + botão menu mobile */}
-                <div className="flex items-center justify-between w-full md:w-auto">
-                    <a href="/home" className="p-0 mr-4">
-                        <Image
-                            src="/icone_imagem.png"
-                            alt="Menu inicial"
-                            width={90}
-                            height={60}
-                            className="object-contain"
-                        />
-                    </a>
-
-                    <button
-                        className="md:hidden ml-4"
-                        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                    >
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
-                </div>
-
-                {/* Menu de navegação principal */}
-                <div className={`w-full md:flex md:items-center md:space-x-4 ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
-                    <Link href="/kanban" className="block px-2 md:px-4 py-1.5 md:py-2 text-sm md:text-base border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-2 md:mt-0">
-                        Tarefas
-                    </Link>
-
-                    {/* Dropdown Estudos */}
-                    <div className="relative">
-                        <button
-                            onClick={() => toggleDropdown('estudos')}
-                            className="block px-2 md:px-4 py-1.5 md:py-2 text-sm md:text-base border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-2 md:mt-0"
-                        >
-                            Estudos
-                        </button>
-                        {showDropdown === 'estudos' && (
-                            <div className="absolute bg-white border rounded shadow-lg mt-2 w-52 z-10">
-                                <a href="/estudos/resumo-mensal" className="block px-4 py-2 hover:bg-gray-200">
-                                    Resumo Mensal
-                                </a>
-                                <a href="/estudos/resumo-financeiro" className="block px-4 py-2 hover:bg-gray-200">
-                                    Resumo Financeiro
-                                </a>
-                                <a href="/estudos/resumo-anual" className="block px-4 py-2 hover:bg-gray-200">
-                                    Resumo Anual
-                                </a>
-                                <a href="/estudos/resumo-faturamento" className="block px-4 py-2 hover:bg-gray-200">
-                                    Resumo Faturamento Mensal
-                                </a>
-                                <a href="/estudos/resumo-conta" className="block px-4 py-2 hover:bg-gray-200">
-                                    Resumo da Conta
-                                </a>
-                                <a href="/estudos/metas" className="block px-4 py-2 hover:bg-gray-200">Metas</a>
-                            </div>
-                        )}
-                    </div>
-
-                    <Link href="/extrato" className="block px-2 md:px-4 py-1.5 md:py-2 text-sm md:text-base border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-2 md:mt-0">
-                        Extrato bancário
-                    </Link>
-
-                    <Link href="/configuracaoCliente" className="block px-2 md:px-4 py-1.5 md:py-2 text-sm md:text-base border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-2 md:mt-0">
-                        Configuração de Cliente
-                    </Link>
-
-                    <Link href="/chamados" className="block px-2 md:px-4 py-1.5 md:py-2 text-sm md:text-base border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-2 md:mt-0">
-                        Reportar Falha
-                    </Link>
-                </div>
-
-                {/* Lado direito: Seletor de Cliente + Usuário */}
-                <div className="flex flex-col md:flex-row items-center gap-2 mt-4 md:mt-0 md:ml-4">
-                    {/* Seletor de Cliente */}
-                    <div className="relative mt-2 md:mt-0" ref={clienteDropdownRef}>
-                        <button
-                            onClick={() => toggleDropdown('cliente')}
-                            className="px-2 md:px-4 py-1.5 md:py-2 text-sm md:text-base border border-gray-300 rounded bg-gray-100 hover:bg-gray-200 transition shadow-md w-full md:w-56"
-
-                        >
-                            {selectedCliente ? selectedCliente.nome : 'Selecionar Cliente'}
-                        </button>
-                        {showDropdown === 'cliente' && (
-                            <div className="absolute bg-white border rounded shadow-lg mt-2 w-full md:w-[250px] z-10">
-                                <input
-                                    type="text"
-                                    className="block px-4 py-2 border-b w-full"
-                                    placeholder="Pesquisar cliente"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                                {isLoading && <p className="text-center p-2">Carregando...</p>}
-                                {isError && <p className="text-red-500 text-center p-2">Erro ao buscar clientes</p>}
-                                {filteredClientes.length === 0 && !isLoading && (
-                                    <p className="text-center p-2">Nenhum cliente encontrado</p>
-                                )}
-                                <div className="max-h-60 overflow-y-auto">
-                                    {filteredClientes.map((cliente: Cliente) => (
-                                        <button
-                                            key={cliente.idcliente}
-                                            className="block w-full text-left px-4 py-2 hover:bg-gray-200"
-                                            onClick={() => handleClienteSelect(cliente)}
-                                        >
-                                            {cliente.apelido || cliente.nome}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Botão de Usuário */}
-                    <div className="relative" ref={usuarioDropdownRef}>
-                        <button
-                            onClick={() => toggleDropdown("usuario")}
-                            className="px-4 py-2 border border-gray-300 rounded bg-white hover:bg-[#8BACAF] transition shadow-md text-center w-full md:w-48"
-                        >
-                            {usuario}
-                        </button>
-                        {showDropdown === "usuario" && (
-                            <div className="absolute right-0 w-full md:w-48 bg-white border rounded shadow-lg z-20">
-                                <button
-                                    className="w-full text-left px-4 py-2 hover:bg-gray-100"
-                                    onMouseDown={async (e) => {
-                                        e.preventDefault();
-                                        sessionStorage.removeItem("selectedCliente");
-                                        localStorage.clear();
-                                        setIdCliente(null);
-                                        await signOut({ callbackUrl: "/" });
-                                    }}
-                                >
-                                    Sair
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                </div>
+          <div className="flex flex-col md:flex-row justify-between items-center px-2 sm:px-4 md:px-6 py-1 md:py-2 space-y-2 md:space-y-0">
+            {/* Lado esquerdo: logo + botão menu mobile */}
+            <div className="flex items-center justify-between w-full md:w-auto">
+              <a href="/home" className="p-0 mr-4">
+                <Image
+                  src="/icone_imagem.png"
+                  alt="Menu inicial"
+                  width={70} // Reduzido
+                  height={50}
+                  className="object-contain"
+                />
+              </a>
+      
+              <button
+                className="md:hidden ml-4"
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
             </div>
+      
+            {/* Menu principal */}
+            <div className={`w-full md:flex md:items-center md:space-x-2 ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
+              {[
+                { href: '/kanban', label: 'Tarefas' },
+                { href: '/extrato', label: 'Extrato bancário' },
+                { href: '/configuracaoCliente', label: 'Configuração de Cliente' },
+                { href: '/chamados', label: 'Reportar Falha' },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="block px-2 sm:px-3 py-1 text-sm sm:text-[13px] border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-1 sm:mt-0"
+                >
+                  {item.label}
+                </Link>
+              ))}
+      
+              {/* Dropdown Estudos */}
+              <div className="relative">
+                <button
+                  onClick={() => toggleDropdown('estudos')}
+                  className="block px-2 sm:px-3 py-1 text-sm sm:text-[13px] border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-1 sm:mt-0"
+                >
+                  Estudos
+                </button>
+                {showDropdown === 'estudos' && (
+                  <div className="absolute bg-white border rounded shadow-lg mt-2 w-52 z-10 text-sm">
+                    {[
+                      { href: '/estudos/resumo-mensal', label: 'Resumo Mensal' },
+                      { href: '/estudos/resumo-financeiro', label: 'Resumo Financeiro' },
+                      { href: '/estudos/resumo-anual', label: 'Resumo Anual' },
+                      { href: '/estudos/resumo-faturamento', label: 'Resumo Faturamento Mensal' },
+                      { href: '/estudos/resumo-conta', label: 'Resumo da Conta' },
+                      { href: '/estudos/metas', label: 'Metas' },
+                    ].map((item) => (
+                      <a
+                        key={item.href}
+                        href={item.href}
+                        className="block px-4 py-2 hover:bg-gray-200"
+                      >
+                        {item.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+      
+            {/* Lado direito: Cliente + Usuário */}
+            <div className="flex flex-col sm:flex-row items-center gap-2 mt-3 md:mt-0 md:ml-4 text-sm sm:text-[13px]">
+              {/* Cliente */}
+              <div className="relative" ref={clienteDropdownRef}>
+                <button
+                  onClick={() => toggleDropdown('cliente')}
+                  className="px-3 py-1 border border-gray-300 rounded bg-gray-100 hover:bg-gray-200 transition shadow-sm w-full sm:w-44"
+                >
+                  {selectedCliente ? selectedCliente.nome : 'Selecionar Cliente'}
+                </button>
+                {showDropdown === 'cliente' && (
+                  <div className="absolute bg-white border rounded shadow-lg mt-2 w-full sm:w-[250px] z-10">
+                    <input
+                      type="text"
+                      className="block px-4 py-2 border-b w-full text-sm"
+                      placeholder="Pesquisar cliente"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <div className="max-h-60 overflow-y-auto text-sm">
+                      {filteredClientes.map((cliente: Cliente) => (
+                        <button
+                          key={cliente.idcliente}
+                          className="block w-full text-left px-4 py-2 hover:bg-gray-200"
+                          onClick={() => handleClienteSelect(cliente)}
+                        >
+                          {cliente.apelido || cliente.nome}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+      
+              {/* Usuário */}
+              <div className="relative" ref={usuarioDropdownRef}>
+                <button
+                  onClick={() => toggleDropdown("usuario")}
+                  className="px-3 py-1 border border-gray-300 rounded bg-white hover:bg-[#8BACAF] transition shadow-sm w-full sm:w-44"
+                >
+                  {usuario}
+                </button>
+                {showDropdown === "usuario" && (
+                  <div className="absolute right-0 w-full sm:w-44 bg-white border rounded shadow-lg z-20 text-sm">
+                    <button
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                      onMouseDown={async (e) => {
+                        e.preventDefault();
+                        sessionStorage.removeItem("selectedCliente");
+                        localStorage.clear();
+                        setIdCliente(null);
+                        await signOut({ callbackUrl: "/" });
+                      }}
+                    >
+                      Sair
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </nav>
-    );
-
+      );
+      
 
 }

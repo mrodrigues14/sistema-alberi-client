@@ -24,7 +24,7 @@ export default function ChamadosPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [chamadoSelecionado, setChamadoSelecionado] = useState<Chamado | null>(null);
   const [loadingAvaliacao, setLoadingAvaliacao] = useState(false);
-  const { usuarios } = useUsuarios(); 
+  const { usuarios } = useUsuarios();
 
   const handleConcluirChamado = async (id: number) => {
     setLoadingAvaliacao(true);
@@ -209,12 +209,14 @@ export default function ChamadosPage() {
                   >
                     <FaTimes /> Cancelar
                   </button>
-                  <button
-                    onClick={() => handleRecusarChamado(chamado.id)}
-                    className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
-                  >
-                    <FaBan /> Recusar
-                  </button>
+                  {chamado.situacao !== "Não Iniciado" && (
+                    <button
+                      onClick={() => handleRecusarChamado(chamado.id)}
+                      className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                    >
+                      <FaBan /> Recusar
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -228,7 +230,9 @@ export default function ChamadosPage() {
             setChamadoSelecionado(null);
           }}
           chamadoParaEditar={chamadoSelecionado}
+          onSuccess={() => mutate()}
         />
+
         {loadingAvaliacao && (
           <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
             <div className="bg-white p-6 rounded shadow text-center">

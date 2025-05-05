@@ -8,9 +8,10 @@ interface Props {
   open: boolean;
   onClose: () => void;
   chamadoParaEditar?: Chamado | null;
+  onSuccess?: () => void; 
 }
 
-export default function ChamadoModal({ open, onClose, chamadoParaEditar }: Props) {
+export default function ChamadoModal({ open, onClose, chamadoParaEditar, onSuccess }: Props) {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [tipo, setTipo] = useState("");
@@ -21,12 +22,14 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar }: Props
   const modoEdicao = !!chamadoParaEditar;
 
   useEffect(() => {
+    if (!open) return;
+  
     if (chamadoParaEditar) {
       setTitulo(chamadoParaEditar.titulo || "");
       setDescricao(chamadoParaEditar.descricao || "");
       setTipo(chamadoParaEditar.tipo || "");
       setFuncionalidadeAfetada(chamadoParaEditar.funcionalidadeAfetada || "");
-      setPrioridade(chamadoParaEditar.prioridade || ""); 
+      setPrioridade(chamadoParaEditar.prioridade || "");
       setFile(null);
       setRemoverAnexo(false);
     } else {
@@ -34,11 +37,12 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar }: Props
       setDescricao("");
       setTipo("");
       setFuncionalidadeAfetada("");
-      setPrioridade(""); 
+      setPrioridade("");
       setFile(null);
       setRemoverAnexo(false);
     }
-  }, [chamadoParaEditar, open]);
+  }, [open]);
+  
   
 
   if (!open) return null;
@@ -95,6 +99,7 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar }: Props
       }
 
       onClose();
+      onSuccess?.();
     } catch (err) {
       alert("Erro ao salvar chamado");
       console.error(err);
@@ -124,7 +129,6 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar }: Props
             rows={4}
             value={descricao}
             onChange={(e) => setDescricao(e.target.value)}
-            required
           />
 
           <select
@@ -152,10 +156,11 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar }: Props
             <option value="Tarefas">Tarefas</option>
             <option value="Estudos">Estudos</option>
             <option value="Usuário">Usuário</option>
+            <option value="Chamados">Chamados</option>
+
           </select>
 
 
-          {/* Anexo existente no modo edição */}
           {modoEdicao && typeof chamadoParaEditar?.arquivo === "string" && !removerAnexo && (
             <div className="text-sm text-gray-600 border rounded p-2 bg-gray-100">
               <p className="mb-1">Anexo atual:</p>
