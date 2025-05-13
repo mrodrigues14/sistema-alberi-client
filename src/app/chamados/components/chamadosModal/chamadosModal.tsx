@@ -62,7 +62,7 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar }: Props
       tipo,
       funcionalidadeAfetada,
       prioridade,
-      situacao: "Não Iniciado",
+      situacao: chamadoParaEditar?.situacao || "Não Iniciado",
       data: new Date().toISOString(),
       idUsuario: 1,
     };
@@ -124,7 +124,6 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar }: Props
             rows={4}
             value={descricao}
             onChange={(e) => setDescricao(e.target.value)}
-            required
           />
 
           <select

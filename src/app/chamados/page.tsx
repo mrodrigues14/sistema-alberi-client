@@ -7,8 +7,8 @@ import Navbar from "@/components/Navbar";
 import { FaPlusCircle } from "react-icons/fa";
 import { Chamado } from "../../../types/Chamado";
 import { FaEdit, FaCheck, FaTimes, FaBan } from "react-icons/fa";
-import { mutate } from "swr";
 import { useUsuarios } from "@/lib/hooks/useUsuarios";
+import ModalRecusa from "./components/recusaModal/page";
 
 const statusLabels = [
   { label: "Não Iniciado", color: "bg-yellow-400", value: "Não Iniciado" },
@@ -24,7 +24,10 @@ export default function ChamadosPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [chamadoSelecionado, setChamadoSelecionado] = useState<Chamado | null>(null);
   const [loadingAvaliacao, setLoadingAvaliacao] = useState(false);
-  const { usuarios } = useUsuarios(); 
+  const [modalRecusaOpen, setModalRecusaOpen] = useState(false);
+  const [chamadoRecusando, setChamadoRecusando] = useState<Chamado | null>(null);
+
+  const { usuarios } = useUsuarios();
 
   const handleConcluirChamado = async (id: number) => {
     setLoadingAvaliacao(true);
@@ -53,18 +56,11 @@ export default function ChamadosPage() {
     }
   };
 
-  const handleRecusarChamado = async (id: number) => {
-    setLoadingAvaliacao(true);
-    try {
-      await updateChamado(id, { situacao: "Recusados pelo Usuário" });
-      await mutate();
-    } catch (error) {
-      alert("Erro ao recusar chamado");
-      console.error(error);
-    } finally {
-      setLoadingAvaliacao(false);
-    }
+  const handleRecusarChamado = (chamado: Chamado) => {
+    setChamadoRecusando(chamado);
+    setModalRecusaOpen(true);
   };
+
 
   const handleEditarChamado = (chamado: Chamado) => {
     setChamadoSelecionado(chamado);
@@ -89,6 +85,25 @@ export default function ChamadosPage() {
     }
     return acc;
   }, {});
+
+  const confirmarRecusaChamado = async (motivo: string) => {
+    if (!chamadoRecusando) return;
+    setLoadingAvaliacao(true);
+    try {
+      await updateChamado(chamadoRecusando.id, {
+        situacao: "Recusados pelo Usuário",
+        descricaoRecusa: motivo,
+      });
+      await mutate();
+    } catch (error) {
+      alert("Erro ao recusar chamado.");
+      console.error(error);
+    } finally {
+      setLoadingAvaliacao(false);
+      setModalRecusaOpen(false);
+      setChamadoRecusando(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -161,6 +176,11 @@ export default function ChamadosPage() {
                   <p className="text-sm text-gray-500 mb-1">
                     <strong>Descrição:</strong> {chamado.descricao}
                   </p>
+                  {chamado.situacao === "Recusados pelo Usuário" && chamado.descricaoRecusa && (
+                    <p className="text-sm text-red-600 mt-2">
+                      <strong>Motivo da recusa:</strong> {chamado.descricaoRecusa}
+                    </p>
+                  )}
 
                   <p className="text-sm text-gray-400 mt-3">
                     <strong>Data:</strong>{" "}
@@ -210,11 +230,12 @@ export default function ChamadosPage() {
                     <FaTimes /> Cancelar
                   </button>
                   <button
-                    onClick={() => handleRecusarChamado(chamado.id)}
+                    onClick={() => handleRecusarChamado(chamado)}
                     className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
                   >
                     <FaBan /> Recusar
                   </button>
+
                 </div>
               </div>
             ))}
@@ -229,14 +250,20 @@ export default function ChamadosPage() {
           }}
           chamadoParaEditar={chamadoSelecionado}
         />
+
+        <ModalRecusa
+          open={modalRecusaOpen}
+          onClose={() => setModalRecusaOpen(false)}
+          onConfirm={confirmarRecusaChamado}
+        />
+
         {loadingAvaliacao && (
-          <div className="fixed inset-0 z-50 bg-black bg-opacity-40 flex items-center justify-center">
+          <div className="fixed inset-0 z-[9999] bg-black bg-opacity-40 flex items-center justify-center">
             <div className="bg-white p-6 rounded shadow text-center">
               <p className="text-gray-800 font-medium">Processando...</p>
             </div>
           </div>
         )}
-
       </div>
     </div>
   );

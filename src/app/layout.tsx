@@ -4,7 +4,7 @@ import "./globals.css";
 import NextAuthSessionProvider from "@/providers/sessionProvider";
 import React from "react";
 import "bootstrap-icons/font/bootstrap-icons.css";
-import { ClienteProvider } from "@/context/ClienteContext"; // 🔥 Importa o ClienteProvider
+import { ClienteProvider } from "@/context/ClienteContext";
 
 const inter = Inter({ subsets: ["latin"] });
 

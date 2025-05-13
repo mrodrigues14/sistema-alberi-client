@@ -183,6 +183,9 @@ export default function Navbar() {
                     <Link href="/configuracaoCliente" className="block px-2 md:px-4 py-1.5 md:py-2 text-sm md:text-base border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-2 md:mt-0">
                         Configuração de Cliente
                     </Link>
+                    <Link href="/configuracaoUsuario" className="block px-2 md:px-4 py-1.5 md:py-2 text-sm md:text-base border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-2 md:mt-0">
+                        Configuração de Usuário
+                    </Link>
 
                     <Link href="/chamados" className="block px-2 md:px-4 py-1.5 md:py-2 text-sm md:text-base border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-2 md:mt-0">
                         Reportar Falha

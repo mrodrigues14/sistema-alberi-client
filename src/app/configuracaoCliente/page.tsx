@@ -4,7 +4,7 @@ import Navbar from "@/components/Navbar";
 import { useState } from "react";
 import { FaPlus, FaEdit, FaCheck, FaTimes, FaBan } from "react-icons/fa";
 import ModalCliente from "./modalCliente/ModalCliente";
-import { updateCliente, useCliente } from "@/lib/hooks/useCliente";
+import { createCliente, updateCliente, useCliente } from "@/lib/hooks/useCliente";
 import { Cliente } from "../../../types/Cliente";
 
 export default function ConfiguracaoCliente() {
@@ -16,15 +16,19 @@ export default function ConfiguracaoCliente() {
   const handleSalvarCliente = async (cliente: Cliente) => {
     if (clienteEditando) {
       await updateCliente(cliente.idcliente, cliente);
+    } else {
+      await createCliente(cliente);
     }
+  
     await mutate();
     setModalOpen(false);
     setClienteEditando(null);
   };
+  
 
   if (isLoading) return <p className="p-4">Carregando clientes...</p>;
   if (isError) return <p className="p-4 text-red-600">Erro ao carregar clientes.</p>;
-
+  
   const clientesAtivos = clientes.filter((c: Cliente) => c.ativo);
   const clientesInativos = clientes.filter((c: Cliente) => !c.ativo);
 

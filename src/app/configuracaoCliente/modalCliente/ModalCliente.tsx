@@ -67,14 +67,20 @@ export default function ModalCliente({ open, onClose, onSave, cliente }: Props) 
   if (!open) return null;
 
   const handleChange = (field: keyof typeof formData, value: string) => {
-    if (field === "cpf" || field === "cnpj" || field === "cpfResponsavel") {
-      value = value.replace(/[^\d.-/]/g, ""); // permite apenas números, pontos, barras e hífens
+    if (field === "cpf" || field === "cpfResponsavel") {
+      value = value.replace(/[^\d]/g, "").slice(0, 11); 
     }
+  
+    if (field === "cnpj") {
+      value = value.replace(/[^\d]/g, "").slice(0, 14);
+    }
+  
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
+  
 
   const handleSalvar = () => {
     if (!formData.nome || (!formData.cpf && !formData.cnpj)) {
