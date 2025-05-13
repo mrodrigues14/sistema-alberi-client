@@ -16,53 +16,69 @@ interface Categoria {
 const InsercaoManual: React.FC<{
     idCliente: number | null;
     bancoSelecionado: number | null;
-}> = ({ idCliente, bancoSelecionado }) => {
+    onFechar: () => void;
+}> = ({ idCliente, bancoSelecionado, onFechar }) => {
     const { categoriasCliente, isLoading } = useCategoriasPorCliente(idCliente || undefined);
-    const [categoriaSelecionada, setCategoriaSelecionada] = useState<{ id: number; nome: string } | null>(null);
+    const [categoriaSelecionada, setCategoriaSelecionada] = useState<{ label: string; value: number } | null>(null);
 
     const categoriasFormatadas = useMemo(() => {
-        if (!categoriasCliente || categoriasCliente.length === 0) return [];
-    
-        const categoriasPai: Categoria[] = categoriasCliente.filter((cat: Categoria) => !cat.idCategoriaPai);
-        const categoriasFilhas: Categoria[] = categoriasCliente.filter((cat: Categoria) => cat.idCategoriaPai);
-    
+        if (!categoriasCliente?.length) return [];
+
+        const categoriasPai = categoriasCliente.filter((cat: { idCategoriaPai: any; }) => !cat.idCategoriaPai);
+        const categoriasFilhas = categoriasCliente.filter((cat: { idCategoriaPai: any; }) => cat.idCategoriaPai);
+
         return categoriasPai
-            .sort((a, b) => a.nome.localeCompare(b.nome)) // 🔹 Ordenando pais em ordem alfabética
-            .flatMap((pai) => {
-                const subrubricas = categoriasFilhas
-                    .filter((filha) => filha.idCategoriaPai === pai.idcategoria)
-                    .sort((a, b) => a.nome.localeCompare(b.nome)) // 🔹 Ordenando filhos em ordem alfabética
-                    .map((filha) => ({
+            .sort((a: Categoria, b: Categoria) => a.nome.localeCompare(b.nome))
+            .flatMap((pai: Categoria) => {
+                const subrubricas: Array<{ label: string; value: number; disabled: boolean }> = categoriasFilhas
+                    .filter((filha: Categoria) => filha.idCategoriaPai === pai.idcategoria)
+                    .sort((a: Categoria, b: Categoria) => a.nome.localeCompare(b.nome))
+                    .map((filha: Categoria) => ({
                         label: `   └ ${filha.nome}`,
                         value: filha.idcategoria,
                         disabled: false,
                     }));
-    
+
                 return [
-                    { label: pai.nome, value: pai.idcategoria, disabled: subrubricas.length > 0 }, // 🔹 Pai aparece antes dos filhos
+                    {
+                        label: pai.nome,
+                        value: pai.idcategoria,
+                        disabled: subrubricas.length > 0,
+                    },
                     ...subrubricas,
                 ];
             });
     }, [categoriasCliente]);
-    
+
+
     const { fornecedores } = useFornecedoresPorCliente(idCliente);
-    
     const fornecedoresFormatados = useMemo(() => {
         if (!fornecedores?.length) return [];
-    
+
         return fornecedores
-            .sort((a, b) => a.nome.localeCompare(b.nome)) // 🔹 Ordena os fornecedores por nome
-            .map((fornecedor) => ({
-                label: fornecedor?.nome,
-                value: fornecedor?.idfornecedor,
+            .sort((a, b) => a.nome.localeCompare(b.nome))
+            .map(fornecedor => ({
+                label: fornecedor.nome,
+                value: fornecedor.idfornecedor,
+                disabled: false,
             }));
     }, [fornecedores]);
-    
+
+    const handleFornecedorChange = (option: { label: string; value: string | number }) => {
+        setEntrada((prev) => ({
+            ...prev,
+            fornecedorSelecionado: {
+                label: option.label,
+                value: typeof option.value === "string" ? parseInt(option.value, 10) : option.value,
+            },
+        }));
+    };
+
     const [entrada, setEntrada] = useState({
         id: Date.now(),
         data: "",
         rubricaSelecionada: "",
-        fornecedorSelecionado: "",
+        fornecedorSelecionado: null as null | { label: string; value: number },
         observacao: "",
         nomeNoExtrato: "",
         rubricaContabil: "",
@@ -70,7 +86,8 @@ const InsercaoManual: React.FC<{
         saida: "",
     });
 
-    const handleInputChange = (field: string, value: string) => {
+
+    const handleInputChange = (field: string, value: any) => {
         setEntrada((prev) => ({
             ...prev,
             entrada: field === "saida" ? "" : prev.entrada,
@@ -79,17 +96,17 @@ const InsercaoManual: React.FC<{
         }));
     };
 
-    const handleCategoriaChange = (idCategoria: number) => {
-        const categoriaFilha: Categoria | undefined = categoriasCliente?.find((cat: Categoria) => cat.idcategoria === idCategoria);
-        const categoriaPai: Categoria | null = categoriaFilha ? categoriasCliente?.find((cat: Categoria) => cat.idcategoria === categoriaFilha.idCategoriaPai) || null : null;
+    // const handleCategoriaChange = (idCategoria: number) => {
+    //     const categoriaFilha: Categoria | undefined = categoriasCliente?.find((cat: Categoria) => cat.idcategoria === idCategoria);
+    //     const categoriaPai: Categoria | null = categoriaFilha ? categoriasCliente?.find((cat: Categoria) => cat.idcategoria === categoriaFilha.idCategoriaPai) || null : null;
 
-        if (categoriaFilha) {
-            setCategoriaSelecionada({
-                id: categoriaFilha.idcategoria,
-                nome: categoriaPai ? `${categoriaPai.nome} - ${categoriaFilha.nome}` : categoriaFilha.nome,
-            });
-        }
-    };
+    //     if (categoriaFilha) {
+    //         setCategoriaSelecionada({
+    //             id: categoriaFilha.idcategoria,
+    //             nome: categoriaPai ? `${categoriaPai.nome} - ${categoriaFilha.nome}` : categoriaFilha.nome,
+    //         });
+    //     }
+    // };
 
     const handleDateChange = (value: string) => {
         let cleaned = value.replace(/\D/g, "");
@@ -112,11 +129,10 @@ const InsercaoManual: React.FC<{
             alert("Selecione um cliente, um banco e uma categoria antes de adicionar!");
             return;
         }
-
         const novoExtrato = {
             idCliente,
             idBanco: bancoSelecionado,
-            idCategoria: categoriaSelecionada.id, // 🔹 Envia apenas o ID da categoria filha para o banco
+            idCategoria: categoriaSelecionada.value, // ← aqui
             data: entrada.data.split("/").reverse().join("-"),
             nomeNoExtrato: entrada.nomeNoExtrato,
             descricao: entrada.observacao,
@@ -124,7 +140,7 @@ const InsercaoManual: React.FC<{
                 ? Number(entrada.entrada.replace(/\D/g, "")) / 100
                 : Number(entrada.saida.replace(/\D/g, "")) / 100,
             tipoDeTransacao: entrada.entrada ? "ENTRADA" as "ENTRADA" : "SAIDA" as "SAIDA",
-            idFornecedor: null,
+            idFornecedor: entrada.fornecedorSelecionado?.value ?? null,
             rubricaContabil: entrada.rubricaContabil || null,
         };
 
@@ -136,7 +152,7 @@ const InsercaoManual: React.FC<{
                 id: Date.now(),
                 data: "",
                 rubricaSelecionada: "",
-                fornecedorSelecionado: "",
+                fornecedorSelecionado: null,
                 observacao: "",
                 nomeNoExtrato: "",
                 rubricaContabil: "",
@@ -153,7 +169,7 @@ const InsercaoManual: React.FC<{
     const formatarMoeda = (valor: string) => {
         const numeroLimpo = valor.replace(/\D/g, "");
         if (!numeroLimpo) return "";
-    
+
         const numero = parseFloat(numeroLimpo) / 100;
         return numero.toLocaleString("pt-BR", {
             style: "currency",
@@ -161,7 +177,7 @@ const InsercaoManual: React.FC<{
             minimumFractionDigits: 2,
         });
     };
-    
+
     return (
         <div className="w-full p-4">
             <table className="w-full border-collapse border">
@@ -191,22 +207,29 @@ const InsercaoManual: React.FC<{
                         <td className="border px-4 py-2">
                             <CustomDropdown
                                 label="Selecione uma rubrica"
-                                options={categoriasFormatadas} 
-                                selectedValue={categoriaSelecionada?.nome ?? ""} 
-                                onSelect={(value) => handleCategoriaChange(Number(value))}
+                                options={categoriasFormatadas}
+                                selectedValue={categoriaSelecionada ?? { label: "", value: "" }}
+                                onSelect={(option) => {
+                                    setCategoriaSelecionada({
+                                        ...option,
+                                        value: Number(option.value),
+                                    });
+                                }}
                                 type="rubrica"
                             />
+
+
                         </td>
 
                         <td className="border px-4 py-2">
                             <CustomDropdown
                                 label="Selecione um fornecedor"
                                 options={fornecedoresFormatados}
-                                selectedValue={entrada.fornecedorSelecionado}
-                                onSelect={(value) => handleInputChange("fornecedorSelecionado", String(value))}
+                                selectedValue={entrada.fornecedorSelecionado ?? { label: "", value: "" }}
+                                onSelect={handleFornecedorChange}
                                 type="fornecedor"
-
                             />
+
                         </td>
                         <td className="border px-4 py-2">
                             <input
@@ -257,7 +280,13 @@ const InsercaoManual: React.FC<{
                 </tbody>
             </table>
 
-            <div className="mt-4 flex justify-center">
+            <div className="mt-4 flex justify-center gap-4">
+            <button
+                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                    onClick={onFechar}
+                >
+                    Fechar
+                </button>
                 <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition" onClick={adicionarLinha}>
                     + Adicionar Linha
                 </button>

@@ -135,19 +135,29 @@ const PreviewExtrato: React.FC<Props> = ({ dados, idCliente, idBanco, onImportar
                   <input value={linha.data} onChange={(e) => handleChange(i, "data", e.target.value)} className="w-full" />
                 </td>
                 <td className="border px-2 py-1">
-                  <div className={`
-                    ${!categoriasFormatadas.some((opt: { label: string; }) => normalize(opt.label) === normalize(String(linha.categoria)))
-                      ? "text-red-600 font-semibold border border-red-500 rounded"
-                      : ""}
-                  `}>
+                  <div
+                    className={`${!categoriasFormatadas.some(
+                      (opt: { label: string; value: number; disabled?: boolean }) =>
+                        normalize(opt.label) === normalize(String(linha.categoria))
+                    )
+                        ? "text-red-600 font-semibold border border-red-500 rounded"
+                        : ""
+                      }`}
+                  >
                     <CustomDropdown
                       label={
-                        !categoriasFormatadas.some((opt: { label: string; }) => normalize(opt.label) === normalize(String(linha.categoria)))
+                        !categoriasFormatadas.some(
+                          (opt: { label: string; value: number; disabled?: boolean }) =>
+                            normalize(opt.label) === normalize(String(linha.categoria))
+                        )
                           ? `❗${linha.categoria || "Categoria desconhecida"}`
                           : "Selecione a rubrica"
                       }
                       options={
-                        categoriasFormatadas.some((opt: { label: string; }) => normalize(opt.label) === normalize(String(linha.categoria)))
+                        categoriasFormatadas.some(
+                          (opt: { label: string; value: number; disabled?: boolean }) =>
+                            normalize(opt.label) === normalize(String(linha.categoria))
+                        )
                           ? categoriasFormatadas
                           : [
                             {
@@ -158,8 +168,15 @@ const PreviewExtrato: React.FC<Props> = ({ dados, idCliente, idBanco, onImportar
                             ...categoriasFormatadas,
                           ]
                       }
-                      selectedValue={linha.categoria}
-                      onSelect={(val) => handleChange(i, "categoria", val as string)}
+                      selectedValue={
+                        categoriasFormatadas.find(
+                          (opt: { label: string; value: number; disabled?: boolean }) =>
+                            normalize(opt.label) === normalize(String(linha.categoria))
+                        ) || { label: String(linha.categoria), value: linha.categoria }
+                      }
+                      onSelect={(val: { label: string; value: string | number }) =>
+                        handleChange(i, "categoria", val.label)
+                      }
                       type="rubrica"
                     />
                   </div>
@@ -174,12 +191,12 @@ const PreviewExtrato: React.FC<Props> = ({ dados, idCliente, idBanco, onImportar
   `}>
                     <CustomDropdown
                       label={
-                        !fornecedoresFormatados.some(opt => opt.label === linha.fornecedor)
+                        !fornecedoresFormatados.some(opt => normalize(opt.label) === normalize(String(linha.fornecedor)))
                           ? `❗${linha.fornecedor || "Fornecedor desconhecido"}`
                           : "Selecione o fornecedor"
                       }
                       options={
-                        fornecedoresFormatados.some(opt => opt.label === linha.fornecedor)
+                        fornecedoresFormatados.some(opt => normalize(opt.label) === normalize(String(linha.fornecedor)))
                           ? fornecedoresFormatados
                           : [
                             {
@@ -190,10 +207,14 @@ const PreviewExtrato: React.FC<Props> = ({ dados, idCliente, idBanco, onImportar
                             ...fornecedoresFormatados,
                           ]
                       }
-                      selectedValue={linha.fornecedor}
-                      onSelect={(val) => handleChange(i, "fornecedor", val)}
+                      selectedValue={
+                        fornecedoresFormatados.find(opt => normalize(opt.label) === normalize(String(linha.fornecedor))) ||
+                        { label: String(linha.fornecedor), value: linha.fornecedor }
+                      }
+                      onSelect={(val) => handleChange(i, "fornecedor", val.label)}
                       type="fornecedor"
                     />
+
                   </div>
                 </td>
 

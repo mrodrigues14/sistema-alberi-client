@@ -249,6 +249,7 @@ export default function ChamadosPage() {
             setChamadoSelecionado(null);
           }}
           chamadoParaEditar={chamadoSelecionado}
+          onSuccess={() => mutate()}
         />
 
         <ModalRecusa

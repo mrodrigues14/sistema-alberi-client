@@ -5,6 +5,7 @@ import NextAuthSessionProvider from "@/providers/sessionProvider";
 import React from "react";
 import "bootstrap-icons/font/bootstrap-icons.css";
 import { ClienteProvider } from "@/context/ClienteContext";
+import { BancoProvider } from "@/context/BancoContext"; // ✅ importe aqui
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,16 +19,18 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
     return (
         <html lang="en">
-        <head>
-            <link rel="icon" href="icone_alberi.png" />
-        </head>
-        <body className={inter.className}>
-            <NextAuthSessionProvider>
-                <ClienteProvider> 
-                    {children}
-                </ClienteProvider>
-            </NextAuthSessionProvider>
-        </body>
+            <head>
+                <link rel="icon" href="icone_alberi.png" />
+            </head>
+            <body className={inter.className}>
+                <NextAuthSessionProvider>
+                    <ClienteProvider>
+                        <BancoProvider>
+                            {children}
+                        </BancoProvider>
+                    </ClienteProvider>
+                </NextAuthSessionProvider>
+            </body>
         </html>
     );
 }

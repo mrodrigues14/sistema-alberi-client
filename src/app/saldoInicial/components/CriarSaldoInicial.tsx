@@ -1,6 +1,6 @@
 'use client';
 
-import { createSaldoInicial, upsertSaldoInicial, useSaldoInicial } from '@/lib/hooks/useSaldoInicial';
+import { upsertSaldoInicial, useSaldoInicial } from '@/lib/hooks/useSaldoInicial';
 import { useEffect, useState } from 'react';
 
 interface Props {
@@ -85,6 +85,7 @@ export default function CriarSaldoInicial({
         idBanco,
         mesAno,
         saldo: valorNumerico,
+        definidoManualmente: true,
       });
       
       setMensagemSucesso(`Saldo atualizado com sucesso: R$ ${valorNumerico.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`);

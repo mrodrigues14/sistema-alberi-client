@@ -8,7 +8,7 @@ interface Option {
   disabled?: boolean;
 }
 
-interface CustomDropdownProps<T = string | number> {
+interface CustomDropdownProps<T = { label: string; value: string | number }> {
   label: string;
   options: Option[];
   selectedValue: T;
@@ -16,6 +16,7 @@ interface CustomDropdownProps<T = string | number> {
   allowSearch?: boolean;
   type?: "rubrica" | "fornecedor";
 }
+
 
 
 const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -37,7 +38,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   useEffect(() => {
     setFilteredOptions(options);
   }, [options]);
-
+  
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setSearch(value);
@@ -54,7 +55,6 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     setShowOptions(false);
     setSearch("");
   };
-
   const handleDropdownToggle = () => {
     setShowOptions(!showOptions);
     if (allowSearch) {
@@ -72,7 +72,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-  
+
   return (
     <div className="relative w-full" ref={dropdownRef}>
       {/* Dropdown principal */}
@@ -81,8 +81,8 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
           }`}
         onClick={handleDropdownToggle}
       >
-{options.find((opt) => opt.label === selectedValue)?.label || label}
-</div>
+        {options.find((opt) => opt.label === selectedValue.label)?.label || label}
+      </div>
 
       {/* Opções do Dropdown */}
       {showOptions && (
@@ -106,8 +106,8 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                   key={index}
                   className={`px-2 py-1 ${disabled ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200 cursor-pointer"
                     }`}
-                  onMouseDown={() => handleSelect(label, disabled)}
-                >
+                    onMouseDown={() => handleSelect({ label, value }, disabled)}
+                    >
                   {label}
                 </div>
               ))

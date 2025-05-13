@@ -9,100 +9,74 @@ export interface SaldoInicial {
   idBanco: number;
   mesAno: string;
   saldo: number;
+  definidoManualmente?: boolean;
 }
 
 
 export function useSaldoInicial(idCliente?: number, idBanco?: number, mes?: string, ano?: string) {
-    let query = null;
-  
-    if (idCliente && idBanco && mes && ano) {
-      const meses: Record<string, string> = {
-        "Janeiro": "01",
-        "Fevereiro": "02",
-        "Março": "03",
-        "Abril": "04",
-        "Maio": "05",
-        "Junho": "06",
-        "Julho": "07",
-        "Agosto": "08",
-        "Setembro": "09",
-        "Outubro": "10",
-        "Novembro": "11",
-        "Dezembro": "12",
-      };
+  let query = null;
 
-      const mesFormatado = meses[mes] ?? "01"; // Converte o nome do mês para número
-      const mesAnoFormatado = `${ano}-${mesFormatado}`; // Exemplo: 2024-12
-
-      query = `/saldo-inicial/cliente/${idCliente}/banco/${idBanco}?mesAno=${mesAnoFormatado}`;
-    }
-  
-    const { data, error, isLoading, mutate } = useSWR(query, fetcher);
-    return {
-      saldoInicial: data ? Number(data.saldo) || 0 : 0, // Garante que o valor seja tratado corretamente
-      isLoading,
-      isError: error,
-      mutate,
+  if (idCliente && idBanco && mes && ano) {
+    const meses: Record<string, string> = {
+      "Janeiro": "01",
+      "Fevereiro": "02",
+      "Março": "03",
+      "Abril": "04",
+      "Maio": "05",
+      "Junho": "06",
+      "Julho": "07",
+      "Agosto": "08",
+      "Setembro": "09",
+      "Outubro": "10",
+      "Novembro": "11",
+      "Dezembro": "12",
     };
-}
 
-// 🔹 Criar um novo saldo inicial
-export async function createSaldoInicial(novoSaldo: Omit<SaldoInicial, "id">) {
-  const { idBanco, idCliente, mesAno, saldo } = novoSaldo;
+    const mesFormatado = meses[mes] ?? "01";
+    const mesAnoFormatado = `${ano}-${mesFormatado}`;
 
-  if (!idBanco || !idCliente || !mesAno || saldo == null) {
-    throw new Error("Todos os campos obrigatórios devem ser preenchidos");
+    query = `/saldo-inicial/cliente/${idCliente}/banco/${idBanco}?mesAno=${mesAnoFormatado}`;
   }
 
-  const data = `${mesAno}-01`; // exemplo: "2025-04-01"
+  const { data, error, isLoading, mutate } = useSWR(query, fetcher);
 
-  const payload = {
-    ...novoSaldo,
-    data, 
+  const isValidData = data && typeof data === "object" && "saldo" in data;
+
+  return {
+    saldoInicial: isValidData ? Number(data.saldo) || 0 : 0,
+    definidoManualmente: isValidData ? data.definidoManualmente === 1 || data.definidoManualmente === true : false,
+    isLoading,
+    isError: error,
+    mutate,
   };
-
-  const response = await fetch(`${API_URL}/saldo-inicial`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) throw new Error("Erro ao criar saldo inicial");
-
-  return response.json();
 }
-
 
 export async function upsertSaldoInicial(novoSaldo: Omit<SaldoInicial, "id">) {
-  const { idBanco, idCliente, mesAno, saldo } = novoSaldo;
+  const { idBanco, idCliente, mesAno, saldo, definidoManualmente } = novoSaldo;
 
-  if (!idBanco || !idCliente || !mesAno || saldo == null) {
-    throw new Error("Todos os campos obrigatórios devem ser preenchidos");
-  }
-
-  // 🔎 Verifica se já existe um saldo para esse cliente/banco/mesAno
   const checkResponse = await fetch(
     `${API_URL}/saldo-inicial/cliente/${idCliente}/banco/${idBanco}?mesAno=${mesAno}`
   );
 
+  // Se já existe, faz update
   if (checkResponse.ok) {
     const existente = await checkResponse.json();
-    if (existente?.id) {
-      // 🔁 Atualiza saldo existente com todos os campos obrigatórios
+
+    if (existente && existente.id) {
       return await updateSaldoInicial(existente.id, {
         saldo,
         idBanco,
         idCliente,
         mesAno,
+        definidoManualmente,
       });
     }
-    
   }
 
-  // 🆕 Caso não exista, cria novo
+  // Senão, cria novo
   const payload = {
     ...novoSaldo,
-    data: `${mesAno}-01`,
+    data: `${mesAno}-01`, // data precisa ser preenchida
   };
 
   const createResponse = await fetch(`${API_URL}/saldo-inicial`, {
@@ -112,10 +86,10 @@ export async function upsertSaldoInicial(novoSaldo: Omit<SaldoInicial, "id">) {
   });
 
   if (!createResponse.ok) throw new Error("Erro ao criar saldo inicial");
-  return createResponse.json();
+  return await createResponse.json();
 }
 
-// 🔹 Atualizar um saldo inicial pelo ID
+
 export async function updateSaldoInicial(id: number, updates: Partial<SaldoInicial>) {
   const response = await fetch(`${API_URL}/saldo-inicial/${id}`, {
     method: "PATCH",
@@ -128,7 +102,6 @@ export async function updateSaldoInicial(id: number, updates: Partial<SaldoInici
   return response.json();
 }
 
-// 🔹 Deletar um saldo inicial pelo ID
 export async function deleteSaldoInicial(id: number) {
   const response = await fetch(`${API_URL}/saldo-inicial/${id}`, {
     method: "DELETE",
