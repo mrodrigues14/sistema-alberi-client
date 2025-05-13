@@ -268,7 +268,7 @@ const Extrato: React.FC = () => {
                 fornecedorSelecionado: extrato.idFornecedor2?.nome || "Não informado",
                 observacao: extrato.descricao || "Sem descrição",
                 nomeNoExtrato: extrato.nomeNoExtrato || "Sem nome",
-                rubricaContabil: extrato.rubricaContabil || "Não definida",
+                rubricaContabil: extrato.rubricaContabilRelacionada?.nome || "Não definida",
                 entrada: extrato.tipoDeTransacao === "ENTRADA" ? extrato.valor.toFixed(2) : "",
                 saida: extrato.tipoDeTransacao === "SAIDA" ? extrato.valor.toFixed(2) : "",
             }));
@@ -618,7 +618,6 @@ const Extrato: React.FC = () => {
                             </button>
                         </div>
 
-                        {/* Passa props obrigatórios: idCliente, idBanco e função de fechamento */}
                         <PreviewExtrato
                             dados={dados}
                             idCliente={idCliente!}

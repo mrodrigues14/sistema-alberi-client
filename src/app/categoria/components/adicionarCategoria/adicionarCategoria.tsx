@@ -1,7 +1,6 @@
-"use client";
-
 import React, { useState } from "react";
 import { Categoria, criarCategoria } from "@/lib/hooks/useCategoria";
+import { criarRubrica } from "@/lib/hooks/useRubricaContabil";
 import { useCategoriasPorCliente } from "@/lib/hooks/useCategoria";
 import { useClienteContext } from "@/context/ClienteContext";
 
@@ -19,34 +18,37 @@ const AdicionarCategoria: React.FC<AdicionarCategoriaProps> = ({ onClose, mutate
   const [gastoMes, setGastoMes] = useState(false);
   const [gastoExtra, setGastoExtra] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [tipo, setTipo] = useState<"financeira" | "contabil">("financeira");
 
-  const handleAdicionarCategoria = async () => {
+  const handleAdicionar = async () => {
     if (!nome.trim()) {
-      alert("Digite um nome para a categoria.");
+      alert("Digite um nome.");
       return;
     }
-  
-    if (!idCliente) {
-      alert("Erro: Cliente não identificado.");
-      return;
-    }
-  
+
     setLoading(true);
     try {
-      const novaCategoria = await criarCategoria(nome, idCliente, idPai, gastoMes, gastoExtra);
+      if (tipo === "contabil") {
+        await criarRubrica({ nome, gastoMes, gastoExtra });
+      } else {
+        if (!idCliente) {
+          alert("Erro: Cliente não identificado.");
+          return;
+        }
+        await criarCategoria(nome, idCliente, idPai, gastoMes, gastoExtra);
+      }
+
       mutate();
-      onClose(); 
-      alert("Categoria adicionada com sucesso!");
+      onClose();
+      alert("Rubrica adicionada com sucesso!");
     } catch (error) {
-      console.error("Erro ao criar categoria:", error);
-      alert("Erro ao criar categoria.");
+      console.error("Erro ao criar rubrica:", error);
+      alert("Erro ao criar rubrica.");
     } finally {
       setLoading(false);
     }
   };
-  
 
-  // 🔹 Alterna entre Rubrica do Mês e Extra (só um pode estar ativo)
   const handleToggleGasto = (tipo: "mes" | "extra") => {
     if (tipo === "mes") {
       setGastoMes(!gastoMes);
@@ -57,13 +59,24 @@ const AdicionarCategoria: React.FC<AdicionarCategoriaProps> = ({ onClose, mutate
     }
   };
 
-  
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
       <div className="bg-white p-6 rounded shadow-lg w-[400px]">
-        <h2 className="text-xl font-bold mb-4">Adicionar Categoria</h2>
+        <h2 className="text-xl font-bold mb-4">Adicionar Rubrica</h2>
 
-        <label className="block text-sm font-semibold mb-1">Nome da Categoria</label>
+        <div className="mb-4">
+          <label className="block text-sm font-semibold mb-1">Tipo de Rubrica</label>
+          <select
+            className="w-full px-3 py-2 border rounded"
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value as "financeira" | "contabil")}
+          >
+            <option value="financeira">Rubrica Financeira</option>
+            <option value="contabil">Rubrica Contábil</option>
+          </select>
+        </div>
+
+        <label className="block text-sm font-semibold mb-1">Nome</label>
         <input
           type="text"
           className="w-full px-3 py-2 border rounded mb-4"
@@ -71,21 +84,25 @@ const AdicionarCategoria: React.FC<AdicionarCategoriaProps> = ({ onClose, mutate
           onChange={(e) => setNome(e.target.value)}
         />
 
-        <label className="block text-sm font-semibold mb-1">Rubrica Financeira Pai (Opcional)</label>
-        <select
-          className="w-full px-3 py-2 border rounded mb-4"
-          value={idPai || ""}
-          onChange={(e) => setIdPai(e.target.value ? Number(e.target.value) : null)}
-        >
-          <option value="">Nenhuma (Criar Rubrica Financeira)</option>
-          {categoriasCliente
-            .filter((cat: Categoria) => !cat.idCategoriaPai) // 🔹 Só categorias pai podem ser escolhidas
-            .map((cat: Categoria) => (
-              <option key={cat.idcategoria} value={cat.idcategoria}>
-                {cat.nome}
-              </option>
-            ))}
-        </select>
+        {tipo === "financeira" && (
+          <>
+            <label className="block text-sm font-semibold mb-1">Rubrica Pai (opcional)</label>
+            <select
+              className="w-full px-3 py-2 border rounded mb-4"
+              value={idPai || ""}
+              onChange={(e) => setIdPai(e.target.value ? Number(e.target.value) : null)}
+            >
+              <option value="">Nenhuma (Rubrica Principal)</option>
+              {categoriasCliente
+                .filter((cat: Categoria) => !cat.idCategoriaPai)
+                .map((cat: Categoria) => (
+                  <option key={cat.idcategoria} value={cat.idcategoria}>
+                    {cat.nome}
+                  </option>
+                ))}
+            </select>
+          </>
+        )}
 
         <div className="flex justify-between mb-4">
           <button
@@ -108,7 +125,7 @@ const AdicionarCategoria: React.FC<AdicionarCategoriaProps> = ({ onClose, mutate
           </button>
           <button
             className="px-4 py-2 bg-blue-600 text-white rounded"
-            onClick={handleAdicionarCategoria}
+            onClick={handleAdicionar}
             disabled={loading}
           >
             {loading ? "Adicionando..." : "Adicionar"}

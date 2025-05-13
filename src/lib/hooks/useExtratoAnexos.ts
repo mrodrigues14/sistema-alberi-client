@@ -4,13 +4,16 @@ import { fetcher } from "../api";
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface ExtratoAnexo {
-    caminho: any;
-    idAnexo: number;
-    nomeArquivo: string;
-    tipoExtratoAnexo: string;
-    idExtrato: number;
-    arquivo?: Blob; // Opcional, pode não vir no GET
-  }
+  caminho?: any; // se ainda usar base64 em alguns casos
+  idAnexo: number;
+  nomeArquivo: string;
+  tipoExtratoAnexo: string;
+  idExtrato: number;
+  arquivo?: {
+    data: number[]; // representa o conteúdo binário do arquivo
+  };
+}
+
   
 
 // 🔹 Hook para listar todos os anexos

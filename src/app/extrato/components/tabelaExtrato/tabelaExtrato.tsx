@@ -73,6 +73,8 @@ const TabelaExtrato: React.FC<Props> = ({
   const { anexos, mutate } = useExtratoAnexos();
   const { idCliente } = useClienteContext();
   const { bancoSelecionado, nomeBancoSelecionado, setBancoSelecionado, setNomeBancoSelecionado } = useBancoContext();
+  const [paginaCarregada, setPaginaCarregada] = useState(false);
+  const [isLoadingSetSaldo, setIsLoadingSetSaldo] = useState(false);
 
   let saldoAcumulado = saldoInicial ?? 0;
 
@@ -262,7 +264,7 @@ const TabelaExtrato: React.FC<Props> = ({
     const numero = valor.replace(/\./g, "").replace(",", ".");
     return parseFloat(numero);
   };
-  
+
   useEffect(() => {
     let saldoAcumulado = saldoInicial ?? 0;
 
@@ -273,40 +275,62 @@ const TabelaExtrato: React.FC<Props> = ({
     });
 
     setSaldoFinal(saldoAcumulado);
+    setPaginaCarregada(true);
+
   }, [dados, saldoInicial]);
 
   useEffect(() => {
     const atualizarSaldoMesSeguinte = async () => {
       if (
+        paginaCarregada &&
         saldoFinal !== undefined &&
-        saldoDefinidoManualmenteMesSeguinte === false
+        saldoDefinidoManualmenteMesSeguinte === false &&
+        idCliente && idCliente > 0 &&
+        bancoSelecionado && bancoSelecionado > 0
       ) {
-        const proximo = getMesAnoSeguinte(mesSelecionado, anoSelecionado);
-        const mesNumero = String(
-          [
-            "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-            "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
-          ].indexOf(proximo.mes) + 1
-        ).padStart(2, "0");
-
-        const mesAno = `${proximo.ano}-${mesNumero}`;
-        console.log("🟢 Atualizando saldo para:", mesAno, saldoFinal);
-
-        await upsertSaldoInicial({
-          idCliente: idCliente ?? 0,
-          idBanco: bancoSelecionado ?? 0,
-          mesAno,
-          saldo: saldoFinal,
-          definidoManualmente: false,
-        });
-
-        ultimoSaldoRef.current = saldoFinal;
-        mutateSaldoMesSeguinte();
+        setIsLoadingSetSaldo(true); // ✅ só ativa se for executar
+        try {
+          const proximo = getMesAnoSeguinte(mesSelecionado, anoSelecionado);
+          const mesNumero = String(
+            [
+              "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+              "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+            ].indexOf(proximo.mes) + 1
+          ).padStart(2, "0");
+  
+          const mesAno = `${proximo.ano}-${mesNumero}`;
+  
+          await upsertSaldoInicial({
+            idCliente,
+            idBanco: bancoSelecionado,
+            mesAno,
+            saldo: saldoFinal,
+            definidoManualmente: false,
+          });
+  
+          ultimoSaldoRef.current = saldoFinal;
+          mutateSaldoMesSeguinte();
+        } catch (err) {
+          console.error("Erro ao atualizar saldo:", err);
+        } finally {
+          setIsLoadingSetSaldo(false); // ✅ garante que sempre será desativado
+        }
       }
     };
-
+  
     atualizarSaldoMesSeguinte();
-  }, [saldoFinal, saldoDefinidoManualmenteMesSeguinte, dados.length, mesSelecionado, anoSelecionado, idCliente, bancoSelecionado]);
+  }, [
+    saldoFinal,
+    saldoDefinidoManualmenteMesSeguinte,
+    dados.length,
+    mesSelecionado,
+    anoSelecionado,
+    idCliente,
+    bancoSelecionado,
+    paginaCarregada,
+  ]);
+  
+
 
   useEffect(() => {
     const dadosFiltrados = dados.filter(row => {
@@ -775,6 +799,7 @@ const TabelaExtrato: React.FC<Props> = ({
                           className="w-full px-2 py-1 border"
                           value={novoSubextrato.data || ""}
                           onChange={(e) => setNovoSubextrato({ ...novoSubextrato, data: e.target.value.split("/").reverse().join("-") })}
+                          required
                         />
                       </td>
                       <td className="border px-2 py-2">
@@ -833,18 +858,18 @@ const TabelaExtrato: React.FC<Props> = ({
                             const formatarMoeda = (valor: string) => {
                               const numeroLimpo = valor.replace(/\D/g, "");
                               if (!numeroLimpo) return "";
-                            
+
                               const numero = parseFloat(numeroLimpo) / 100;
                               return numero.toLocaleString("pt-BR", {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                               });
                             };
-                                                  
-                          setNovoSubextrato({
+
+                            setNovoSubextrato({
                               ...novoSubextrato,
                               tipoDeTransacao: "ENTRADA",
-                              valor: formatarMoeda(e.target.value), 
+                              valor: formatarMoeda(e.target.value),
                             });
                           }}
                         />
@@ -859,18 +884,18 @@ const TabelaExtrato: React.FC<Props> = ({
                             const formatarMoeda = (valor: string) => {
                               const numeroLimpo = valor.replace(/\D/g, "");
                               if (!numeroLimpo) return "";
-                            
+
                               const numero = parseFloat(numeroLimpo) / 100;
                               return numero.toLocaleString("pt-BR", {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                               });
                             };
-                                                 
-                          setNovoSubextrato({
+
+                            setNovoSubextrato({
                               ...novoSubextrato,
                               tipoDeTransacao: "SAIDA",
-                              valor: formatarMoeda(e.target.value), 
+                              valor: formatarMoeda(e.target.value),
                             });
                           }}
                         />
@@ -887,7 +912,6 @@ const TabelaExtrato: React.FC<Props> = ({
                                 idExtratoPrincipal: row.id,
                                 valor: parsePtBrToFloat(novoSubextrato.valor || "0"),
                               };
-                              console.log(payload)
                               await criarSubextrato(payload);
                               setSubdividindoIndex(null);
                               setNovoSubextrato({});
@@ -955,6 +979,7 @@ const TabelaExtrato: React.FC<Props> = ({
 
               );
             })}
+            
           </tbody>
         </table>
         {anexosVisiveis && extratoSelecionado !== null && (
@@ -965,13 +990,16 @@ const TabelaExtrato: React.FC<Props> = ({
             onAtualizar={() => mutate()}
           />
         )}
-
-
-
-
+        {isLoadingSetSaldo && (
+          <div className="fixed inset-0 z-[9999] bg-black bg-opacity-40 flex items-center justify-center">
+            <div className="bg-white p-6 rounded shadow text-center">
+              <p className="text-gray-800 font-medium">Processando...</p>
+            </div>
+          </div>
+        )}
       </div>
 
-
+      
     </div>
   );
 };

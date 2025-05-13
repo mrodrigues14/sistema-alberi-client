@@ -13,10 +13,11 @@ import "./CardDetails.css";
 import { v4 as uuidv4 } from "uuid";
 import Label from "../../Label/Label";
 import { useCallback } from "react";
-import { useUsuarios, Usuario } from "@/lib/hooks/useUsuarios";
+import { useUsuarios } from "@/lib/hooks/useUsuarios";
 import { useCliente } from "@/lib/hooks/useCliente";
 import { deleteTarefa, updateTarefa } from "@/lib/hooks/useTarefas";
 import { Tarefa } from "../../../../../../types/Tarefa";
+import { Usuario } from "../../../../../../types/Usuario";
 
 interface Task {
   text: string;
@@ -58,7 +59,7 @@ interface ClienteCategoria {
 export default function CardDetails(props: CardDetailsProps) {
   const colors = ["#61bd4f", "#f2d600", "#ff9f1a", "#eb5a46", "#c377e0"];
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-const [editingTaskText, setEditingTaskText] = useState<string>("");
+  const [editingTaskText, setEditingTaskText] = useState<string>("");
   const [input, setInput] = useState(false);
   const [labelShow, setLabelShow] = useState(false);
   const { usuarios } = useUsuarios(); // Obtém os usuários do sistema
@@ -75,13 +76,13 @@ const [editingTaskText, setEditingTaskText] = useState<string>("");
         const parsed = JSON.parse(savedCard);
         return {
           ...parsed,
-          dataLimite: 
-          parsed.dataLimite && parsed.dataLimite !== "0000-00-00"
-            ? parsed.dataLimite
-            : props.card.dataLimite,
-                };
+          dataLimite:
+            parsed.dataLimite && parsed.dataLimite !== "0000-00-00"
+              ? parsed.dataLimite
+              : props.card.dataLimite,
+        };
       }
-  
+
       return {
         ...props.card,
         autor: props.card.autor || "",
@@ -91,10 +92,10 @@ const [editingTaskText, setEditingTaskText] = useState<string>("");
           text: t.text,
           completed: t.completed,
         })),
-        dataLimite: props.card.dataLimite ,
+        dataLimite: props.card.dataLimite,
       };
     }
-  
+
     return {
       ...props.card,
       autor: props.card.autor || "",
@@ -104,37 +105,36 @@ const [editingTaskText, setEditingTaskText] = useState<string>("");
         text: t.text,
         completed: t.completed,
       })),
-      dataLimite: props.card.dataLimite ,
+      dataLimite: props.card.dataLimite,
     };
   });
 
-  console.log(values)
-const startEditTask = (task: Task) => {
-  setEditingTaskId(task.id);
-  setEditingTaskText(task.text);
-};
+  const startEditTask = (task: Task) => {
+    setEditingTaskId(task.id);
+    setEditingTaskText(task.text);
+  };
 
-const confirmEditTask = async (id: string) => {
-  const updatedTasks = values.task.map((task: Task) =>
-    task.id === id ? { ...task, text: editingTaskText } : task
-  );
+  const confirmEditTask = async (id: string) => {
+    const updatedTasks = values.task.map((task: Task) =>
+      task.id === id ? { ...task, text: editingTaskText } : task
+    );
 
-  setValues((prev: any) => ({
-    ...prev,
-    task: updatedTasks,
-  }));
+    setValues((prev: any) => ({
+      ...prev,
+      task: updatedTasks,
+    }));
 
-  setEditingTaskId(null);
-  setEditingTaskText("");
+    setEditingTaskId(null);
+    setEditingTaskText("");
 
-  try {
-    await updateTarefa(Number(values.id), {
-      descricoes: JSON.stringify(updatedTasks),
-    });
-  } catch (error) {
-    console.error("Erro ao atualizar tarefa:", error);
-  }
-};
+    try {
+      await updateTarefa(Number(values.id), {
+        descricoes: JSON.stringify(updatedTasks),
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar tarefa:", error);
+    }
+  };
 
 
   const [text, setText] = useState(values.title);
@@ -166,7 +166,7 @@ const confirmEditTask = async (id: string) => {
       />
     );
   };
-  
+
 
 
   const addTask = async (value: string) => {
@@ -220,13 +220,13 @@ const confirmEditTask = async (id: string) => {
 
   const removeTag = (id: string) => {
     const tagsFiltradas = values.tags.filter((item: Tag) => item.id !== id);
-  
+
     setValues({ ...values, tags: tagsFiltradas });
-  
+
     atualizarTarefa({ labels: tagsFiltradas }); // ✅ Aqui também
   };
-  
-  
+
+
 
   const addTag = (value: string, color: string) => {
     const novaTag = {
@@ -234,15 +234,15 @@ const confirmEditTask = async (id: string) => {
       tagName: value,
       color: color,
     };
-  
+
     const tagsAtualizadas = [...values.tags, novaTag];
-  
+
     setValues((prev: any) => ({ ...prev, tags: tagsAtualizadas }));
-  
+
     atualizarTarefa({ labels: tagsAtualizadas }); // ✅ Aqui
   };
-  
-  
+
+
 
   const handelClickListner = useCallback((e: KeyboardEvent) => {
     if (e.code === "Enter") {
@@ -284,14 +284,14 @@ const confirmEditTask = async (id: string) => {
         ? JSON.stringify(campoAtualizado.labels)
         : undefined,
     };
-  
+
     try {
       await updateTarefa(Number(values.id), payload);
     } catch (error) {
       console.error("Erro ao atualizar tarefa:", error);
     }
   };
-  
+
   const updateTaskCompleted = async (id: string) => {
     const updatedTasks = values.task.map((task: Task) =>
       task.id === id ? { ...task, completed: !task.completed } : task
@@ -300,7 +300,7 @@ const confirmEditTask = async (id: string) => {
       ...prevValues,
       task: updatedTasks,
     }));
-  
+
     try {
       await updateTarefa(Number(values.id), {
         descricoes: JSON.stringify(updatedTasks),
@@ -309,7 +309,7 @@ const confirmEditTask = async (id: string) => {
       console.error("Erro ao atualizar tarefa:", error);
     }
   };
-  
+
   const updateTaskText = async (id: string, newText: string) => {
     const updatedTasks = values.task.map((task: Task) =>
       task.id === id ? { ...task, text: newText } : task
@@ -318,7 +318,7 @@ const confirmEditTask = async (id: string) => {
       ...prevValues,
       task: updatedTasks,
     }));
-  
+
     try {
       await updateTarefa(Number(values.id), {
         descricoes: JSON.stringify(updatedTasks),
@@ -327,12 +327,12 @@ const confirmEditTask = async (id: string) => {
       console.error("Erro ao atualizar texto da tarefa:", error);
     }
   };
-  
+
   const cancelEditTask = () => {
     setEditingTaskId(null);
     setEditingTaskText("");
   };
-  
+
   return (
     <Modal onClose={() => {
       props.updateCard(values);
@@ -432,7 +432,7 @@ const confirmEditTask = async (id: string) => {
                             width: "20px",
                           }}
                         />
-                    
+
                         {editingTaskId === item.id ? (
                           <input
                             className="flex-grow-1 border rounded px-2 py-1"
@@ -466,30 +466,30 @@ const confirmEditTask = async (id: string) => {
                             {item.text}
                           </h6>
                         )}
-                    
-                    {editingTaskId === item.id ? (
-  <>
-    <Check
-      onClick={() => confirmEditTask(item.id)}
-      style={{ cursor: "pointer", width: "20px", height: "20px" }}
-    />
-    <X
-      onClick={() => cancelEditTask()}
-      style={{ cursor: "pointer", width: "20px", height: "20px" }}
-    />
-  </>
-) : (
-  <>
-    <Edit
-      onClick={() => startEditTask(item)}
-      style={{ cursor: "pointer", width: "20px", height: "20px" }}
-    />
-    <Trash
-      onClick={() => removeTask(item.id)}
-      style={{ cursor: "pointer", width: "20px", height: "20px" }}
-    />
-  </>
-)}
+
+                        {editingTaskId === item.id ? (
+                          <>
+                            <Check
+                              onClick={() => confirmEditTask(item.id)}
+                              style={{ cursor: "pointer", width: "20px", height: "20px" }}
+                            />
+                            <X
+                              onClick={() => cancelEditTask()}
+                              style={{ cursor: "pointer", width: "20px", height: "20px" }}
+                            />
+                          </>
+                        ) : (
+                          <>
+                            <Edit
+                              onClick={() => startEditTask(item)}
+                              style={{ cursor: "pointer", width: "20px", height: "20px" }}
+                            />
+                            <Trash
+                              onClick={() => removeTask(item.id)}
+                              style={{ cursor: "pointer", width: "20px", height: "20px" }}
+                            />
+                          </>
+                        )}
 
                       </div>
                     ))
@@ -585,35 +585,35 @@ const confirmEditTask = async (id: string) => {
 
 
                 <h6>Empresa</h6>
-{isLoading ? (
-  <p>Carregando empresas...</p>
-) : isError ? (
-  <p>Erro ao carregar empresas.</p>
-) : (
-  <select
-    className="select-field"
-    value={values.company}
-    onChange={(e) => {
-      const value = e.target.value;
-      const empresaId = value ? Number(value) : null;
+                {isLoading ? (
+                  <p>Carregando empresas...</p>
+                ) : isError ? (
+                  <p>Erro ao carregar empresas.</p>
+                ) : (
+                  <select
+                    className="select-field"
+                    value={values.company}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const empresaId = value ? Number(value) : null;
 
-      setValues((prev: any) => {
-        atualizarTarefa({ idCliente: empresaId });
-        return { ...prev, company: value };
-      });
-    }}
-  >
-    {/* Opção SEM empresa */}
-    <option value="">Sem empresa vinculada</option>
+                      setValues((prev: any) => {
+                        atualizarTarefa({ idCliente: empresaId });
+                        return { ...prev, company: value };
+                      });
+                    }}
+                  >
+                    {/* Opção SEM empresa */}
+                    <option value="">Sem empresa vinculada</option>
 
-    {/* Lista de empresas */}
-    {clientes.map((cliente: ClienteCategoria) => (
-      <option key={cliente.idcliente} value={String(cliente.idcliente)}>
-        {cliente.apelido || cliente.nome}
-      </option>
-    ))}
-  </select>
-)}
+                    {/* Lista de empresas */}
+                    {clientes.map((cliente: ClienteCategoria) => (
+                      <option key={cliente.idcliente} value={String(cliente.idcliente)}>
+                        {cliente.apelido || cliente.nome}
+                      </option>
+                    ))}
+                  </select>
+                )}
 
 
 
@@ -630,50 +630,50 @@ const confirmEditTask = async (id: string) => {
                   <div className="d-flex align-items-center gap-2">
                     <Clock className="icon__sm" />
                     <input
-  type="text"
-  className="form-control"
-  placeholder="dd-mm-aaaa"
-  maxLength={10}
-  value={
-    values.dataLimite && values.dataLimite !== "0000-00-00" && values.dataLimite !== "1899-11-30"
-      ? values.dataLimite
-      : ""
-  }
-  onChange={(e) => {
-    let raw = e.target.value.replace(/\D/g, "");
+                      type="text"
+                      className="form-control"
+                      placeholder="dd-mm-aaaa"
+                      maxLength={10}
+                      value={
+                        values.dataLimite && values.dataLimite !== "0000-00-00" && values.dataLimite !== "1899-11-30"
+                          ? values.dataLimite
+                          : ""
+                      }
+                      onChange={(e) => {
+                        let raw = e.target.value.replace(/\D/g, "");
 
-    if (raw.length > 8) raw = raw.slice(0, 8);
+                        if (raw.length > 8) raw = raw.slice(0, 8);
 
-    let formatted = raw;
-    if (raw.length > 4) {
-      formatted = `${raw.slice(0, 2)}-${raw.slice(2, 4)}-${raw.slice(4)}`;
-    } else if (raw.length > 2) {
-      formatted = `${raw.slice(0, 2)}-${raw.slice(2)}`;
-    }
+                        let formatted = raw;
+                        if (raw.length > 4) {
+                          formatted = `${raw.slice(0, 2)}-${raw.slice(2, 4)}-${raw.slice(4)}`;
+                        } else if (raw.length > 2) {
+                          formatted = `${raw.slice(0, 2)}-${raw.slice(2)}`;
+                        }
 
-    setValues((prev: any) => ({
-      ...prev,
-      dataLimite: formatted,
-    }));
-  }}
-  onBlur={() => {
-    const raw = values.dataLimite.replace(/\D/g, "");
+                        setValues((prev: any) => ({
+                          ...prev,
+                          dataLimite: formatted,
+                        }));
+                      }}
+                      onBlur={() => {
+                        const raw = values.dataLimite.replace(/\D/g, "");
 
-    if (!raw) {
-      setValues((prev: any) => ({
-        ...prev,
-        dataLimite: "",
-      }));
-      atualizarTarefa({ dataLimite: "0000-00-00" });
-    } else if (raw.length === 8) {
-      const dd = raw.slice(0, 2);
-      const mm = raw.slice(2, 4);
-      const yyyy = raw.slice(4);
-      const formatToDB = `${yyyy}-${mm}-${dd}`;
-      atualizarTarefa({ dataLimite: formatToDB });
-    }
-  }}
-/>
+                        if (!raw) {
+                          setValues((prev: any) => ({
+                            ...prev,
+                            dataLimite: "",
+                          }));
+                          atualizarTarefa({ dataLimite: "0000-00-00" });
+                        } else if (raw.length === 8) {
+                          const dd = raw.slice(0, 2);
+                          const mm = raw.slice(2, 4);
+                          const yyyy = raw.slice(4);
+                          const formatToDB = `${yyyy}-${mm}-${dd}`;
+                          atualizarTarefa({ dataLimite: formatToDB });
+                        }
+                      }}
+                    />
 
                   </div>
                 </div>

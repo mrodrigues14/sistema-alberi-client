@@ -12,7 +12,7 @@ export interface RubricaContabil {
 
 // 🔹 Hook principal para listar rubricas
 export function useRubricasContabeis() {
-  const { data, error, isLoading, mutate } = useSWR<RubricaContabil[]>("/rubricas", fetcher);
+  const { data, error, isLoading, mutate } = useSWR<RubricaContabil[]>("/rubrica-contabil", fetcher);
 
   return {
     rubricas: data || [],
@@ -24,7 +24,7 @@ export function useRubricasContabeis() {
 
 // 🔹 Criar uma nova rubrica contábil
 export async function criarRubrica(data: Partial<RubricaContabil>) {
-  const response = await fetch(`${API_URL}/rubricas`, {
+  const response = await fetch(`${API_URL}/rubrica-contabil`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -39,7 +39,7 @@ export async function atualizarRubrica(
   idRubricaContabil: number,
   updates: Partial<RubricaContabil>
 ) {
-  const response = await fetch(`${API_URL}/rubricas/${idRubricaContabil}`, {
+  const response = await fetch(`${API_URL}/rubrica-contabil/${idRubricaContabil}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updates),
@@ -51,7 +51,7 @@ export async function atualizarRubrica(
 
 // 🔹 Deletar rubrica contábil
 export async function deletarRubrica(idRubricaContabil: number) {
-  const response = await fetch(`${API_URL}/rubricas/${idRubricaContabil}`, {
+  const response = await fetch(`${API_URL}/rubrica-contabil/${idRubricaContabil}`, {
     method: "DELETE",
   });
 

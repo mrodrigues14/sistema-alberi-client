@@ -40,7 +40,6 @@ export function useExtratos(idCliente?: number, idBanco?: number, mes?: string, 
 
 
 export async function createExtrato(novoExtrato: Omit<Extrato, "idextrato">) {
-
   const response = await fetch(`${API_URL}/extratos`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

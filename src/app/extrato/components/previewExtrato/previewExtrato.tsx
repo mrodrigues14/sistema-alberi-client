@@ -57,45 +57,55 @@ const PreviewExtrato: React.FC<Props> = ({ dados, idCliente, idBanco, onImportar
     str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
   const handleImportar = async () => {
-    const categoriasInvalidas = linhas.some(
-      (linha) =>
-        !categoriasFormatadas.some(
-          (opt: { label: string; }) => normalize(opt.label) === normalize(String(linha.categoria))
-        )
-    );
+    const camposObrigatoriosInvalidos = linhas.some((linha) => {
+      const rubricaValida = categoriasFormatadas.some(
+        (opt: { label: string; }) => normalize(opt.label) === normalize(String(linha.categoria))
+      );
+      const fornecedorValido = fornecedoresFormatados.some(
+        (opt) => normalize(opt.label) === normalize(String(linha.fornecedor))
+      );
+      const rubricaContabilValida = linha.rubricaContabil?.trim().length > 0;
 
-    const fornecedoresInvalidos = linhas.some(
-      (linha) =>
-        linha.fornecedor &&
-        !fornecedoresFormatados.some(
-          (opt) => normalize(opt.label) === normalize(String(linha.fornecedor))
-        )
-    );
+      return (
+        !linha.data ||
+        !linha.categoria ||
+        !linha.fornecedor ||
+        !linha.rubricaContabil ||
+        !rubricaValida ||
+        !fornecedorValido ||
+        !rubricaContabilValida
+      );
+    });
 
-
-    if (categoriasInvalidas || fornecedoresInvalidos) {
-      alert("Existem categorias ou fornecedores inválidos! Corrija os campos destacados em vermelho antes de importar.");
-      return;
+    if (camposObrigatoriosInvalidos) {
+      const confirmar = confirm("Alguns campos obrigatórios estão vazios ou inválidos. Deseja importar mesmo assim?");
+      if (!confirmar) return;
     }
 
     try {
       setLoadingImport(true);
 
-      const extratos = linhas.map((linha) => ({
-        idCliente,
-        idBanco,
-        idCategoria: Number(linha.categoria),
-        idFornecedor: linha.fornecedor ? Number(linha.fornecedor) : null,
-        data: linha.data.split("/").reverse().join("-"),
-        nomeNoExtrato: linha.nome,
-        descricao: linha.descricao,
-        rubricaContabil: linha.rubricaContabil || null,
-        valor: Number(linha.valor.replace(/\D/g, "")) / 100,
-        tipoDeTransacao: linha.tipo.toUpperCase() === "ENTRADA" ? "ENTRADA" as "ENTRADA" : "SAIDA" as "SAIDA",
-      }));
+      const extratos = linhas.map((linha) => {
+        const rubricaValida = categoriasFormatadas.find((opt: { label: string; }) => normalize(opt.label) === normalize(String(linha.categoria)));
+        const fornecedorValido = fornecedoresFormatados.find(opt => normalize(opt.label) === normalize(String(linha.fornecedor)));
+        const rubricaContabilValida = linha.rubricaContabil?.trim() || null;
+      
+        return {
+          idCliente,
+          idBanco,
+          idCategoria: rubricaValida ? rubricaValida.value : null,
+          idFornecedor: fornecedorValido ? fornecedorValido.value : null,
+          data: linha.data?.includes("/") ? linha.data.split("/").reverse().join("-") : "",
+          nomeNoExtrato: linha.nome || null,
+          descricao: linha.descricao || null,
+          rubricaContabil: rubricaContabilValida,
+          valor: linha.valor ? Number(linha.valor.replace(/\D/g, "")) / 100 : 0,
+          tipoDeTransacao: linha.tipo?.toUpperCase() === "ENTRADA" ? "ENTRADA" as const : "SAIDA" as const,
+        };
+      });
+      
 
       await createExtratosLote(extratos);
-
       alert("Extratos importados com sucesso!");
       onImportarFinalizado?.();
     } catch (error) {
@@ -105,6 +115,7 @@ const PreviewExtrato: React.FC<Props> = ({ dados, idCliente, idBanco, onImportar
       setLoadingImport(false);
     }
   };
+
 
   return (
     <div className="relative p-6">
@@ -129,83 +140,56 @@ const PreviewExtrato: React.FC<Props> = ({ dados, idCliente, idBanco, onImportar
             </tr>
           </thead>
           <tbody>
-            {linhas.map((linha, i) => (
-              <tr key={i} className="odd:bg-white even:bg-gray-50">
-                <td className="border px-2 py-1">
-                  <input value={linha.data} onChange={(e) => handleChange(i, "data", e.target.value)} className="w-full" />
-                </td>
-                <td className="border px-2 py-1">
-                  <div
-                    className={`${!categoriasFormatadas.some(
-                      (opt: { label: string; value: number; disabled?: boolean }) =>
-                        normalize(opt.label) === normalize(String(linha.categoria))
-                    )
-                        ? "text-red-600 font-semibold border border-red-500 rounded"
-                        : ""
-                      }`}
-                  >
+            {linhas.map((linha, i) => {
+              const rubricaInvalida = !categoriasFormatadas.some((opt: { label: string; }) => normalize(opt.label) === normalize(String(linha.categoria)));
+              const fornecedorInvalido = !fornecedoresFormatados.some(opt => normalize(opt.label) === normalize(String(linha.fornecedor)));
+              const rubricaContabilInvalida = !linha.rubricaContabil?.trim();
+
+              return (
+                <tr key={i} className="odd:bg-white even:bg-gray-50">
+                  {/* DATA */}
+                  <td className={`border px-2 py-1 ${!linha.data ? "text-red-600 border-red-500 font-semibold" : ""}`}>
+                    <input
+                      value={linha.data}
+                      onChange={(e) => handleChange(i, "data", e.target.value)}
+                      className="w-full"
+                    />
+                  </td>
+
+                  {/* RUBRICA */}
+                  <td className={`border px-2 py-1 ${rubricaInvalida ? "text-red-600 border-red-500 font-semibold" : ""}`}>
                     <CustomDropdown
                       label={
-                        !categoriasFormatadas.some(
-                          (opt: { label: string; value: number; disabled?: boolean }) =>
-                            normalize(opt.label) === normalize(String(linha.categoria))
-                        )
-                          ? `❗${linha.categoria || "Categoria desconhecida"}`
+                        rubricaInvalida
+                          ? `❗${linha.categoria}`
                           : "Selecione a rubrica"
                       }
                       options={
-                        categoriasFormatadas.some(
-                          (opt: { label: string; value: number; disabled?: boolean }) =>
-                            normalize(opt.label) === normalize(String(linha.categoria))
-                        )
-                          ? categoriasFormatadas
-                          : [
-                            {
-                              label: `❗${linha.categoria || "Categoria desconhecida"}`,
-                              value: linha.categoria,
-                              disabled: true,
-                            },
-                            ...categoriasFormatadas,
-                          ]
+                        rubricaInvalida
+                          ? [{ label: `❗${linha.categoria}`, value: linha.categoria, disabled: true }, ...categoriasFormatadas]
+                          : categoriasFormatadas
                       }
                       selectedValue={
-                        categoriasFormatadas.find(
-                          (opt: { label: string; value: number; disabled?: boolean }) =>
-                            normalize(opt.label) === normalize(String(linha.categoria))
-                        ) || { label: String(linha.categoria), value: linha.categoria }
+                        categoriasFormatadas.find((opt: { label: string; }) => normalize(opt.label) === normalize(String(linha.categoria))) ||
+                        { label: String(linha.categoria), value: linha.categoria }
                       }
-                      onSelect={(val: { label: string; value: string | number }) =>
-                        handleChange(i, "categoria", val.label)
-                      }
+                      onSelect={(val) => handleChange(i, "categoria", val.label)}
                       type="rubrica"
                     />
-                  </div>
-                </td>
+                  </td>
 
-
-                <td className="border px-2 py-1">
-                  <div className={`
-    ${!fornecedoresFormatados.some(opt => opt.label === linha.fornecedor)
-                      ? "text-red-600 font-semibold border border-red-500 rounded"
-                      : ""}
-  `}>
+                  {/* FORNECEDOR */}
+                  <td className={`border px-2 py-1 ${fornecedorInvalido ? "text-red-600 border-red-500 font-semibold" : ""}`}>
                     <CustomDropdown
                       label={
-                        !fornecedoresFormatados.some(opt => normalize(opt.label) === normalize(String(linha.fornecedor)))
-                          ? `❗${linha.fornecedor || "Fornecedor desconhecido"}`
+                        fornecedorInvalido
+                          ? `❗${linha.fornecedor || "Fornecedor inválido"}`
                           : "Selecione o fornecedor"
                       }
                       options={
-                        fornecedoresFormatados.some(opt => normalize(opt.label) === normalize(String(linha.fornecedor)))
-                          ? fornecedoresFormatados
-                          : [
-                            {
-                              label: `❗${linha.fornecedor || "Fornecedor desconhecido"}`,
-                              value: linha.fornecedor,
-                              disabled: true,
-                            },
-                            ...fornecedoresFormatados,
-                          ]
+                        fornecedorInvalido
+                          ? [{ label: `❗${linha.fornecedor || "Fornecedor inválido"}`, value: linha.fornecedor, disabled: true }, ...fornecedoresFormatados]
+                          : fornecedoresFormatados
                       }
                       selectedValue={
                         fornecedoresFormatados.find(opt => normalize(opt.label) === normalize(String(linha.fornecedor))) ||
@@ -214,42 +198,63 @@ const PreviewExtrato: React.FC<Props> = ({ dados, idCliente, idBanco, onImportar
                       onSelect={(val) => handleChange(i, "fornecedor", val.label)}
                       type="fornecedor"
                     />
+                  </td>
 
-                  </div>
-                </td>
+                  {/* NOME */}
+                  <td className="border px-2 py-1">
+                    <input
+                      value={linha.nome}
+                      onChange={(e) => handleChange(i, "nome", e.target.value)}
+                      className="w-full"
+                    />
+                  </td>
 
-                <td className="border px-2 py-1">
-                  <input value={linha.nome} onChange={(e) => handleChange(i, "nome", e.target.value)} className="w-full" />
-                </td>
-                <td className="border px-2 py-1">
-                  <input value={linha.descricao} onChange={(e) => handleChange(i, "descricao", e.target.value)} className="w-full" />
-                </td>
-                <td className="border px-2 py-1">
-                  <input value={linha.rubricaContabil} onChange={(e) => handleChange(i, "rubricaContabil", e.target.value)} className="w-full" />
-                </td>
-                <td className="border px-2 py-1">
-                  <input
-                    value={linha.tipo === "entrada" ? linha.valor : ""}
-                    onChange={(e) => {
-                      handleChange(i, "valor", e.target.value);
-                      handleChange(i, "tipo", "entrada");
-                    }}
-                    className="w-full"
-                  />
-                </td>
-                <td className="border px-2 py-1">
-                  <input
-                    value={linha.tipo === "saida" ? linha.valor : ""}
-                    onChange={(e) => {
-                      handleChange(i, "valor", e.target.value);
-                      handleChange(i, "tipo", "saida");
-                    }}
-                    className="w-full"
-                  />
-                </td>
-              </tr>
-            ))}
+                  {/* DESCRICAO */}
+                  <td className="border px-2 py-1">
+                    <input
+                      value={linha.descricao}
+                      onChange={(e) => handleChange(i, "descricao", e.target.value)}
+                      className="w-full"
+                    />
+                  </td>
+
+                  {/* RUBRICA CONTÁBIL */}
+                  <td className={`border px-2 py-1 ${rubricaContabilInvalida ? "text-red-600 border-red-500 font-semibold" : ""}`}>
+                    <input
+                      value={linha.rubricaContabil}
+                      onChange={(e) => handleChange(i, "rubricaContabil", e.target.value)}
+                      className="w-full"
+                    />
+                  </td>
+
+                  {/* ENTRADA */}
+                  <td className="border px-2 py-1">
+                    <input
+                      value={linha.tipo === "entrada" ? linha.valor : ""}
+                      onChange={(e) => {
+                        handleChange(i, "valor", e.target.value);
+                        handleChange(i, "tipo", "entrada");
+                      }}
+                      className="w-full"
+                    />
+                  </td>
+
+                  {/* SAÍDA */}
+                  <td className="border px-2 py-1">
+                    <input
+                      value={linha.tipo === "saida" ? linha.valor : ""}
+                      onChange={(e) => {
+                        handleChange(i, "valor", e.target.value);
+                        handleChange(i, "tipo", "saida");
+                      }}
+                      className="w-full"
+                    />
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
+
         </table>
       </div>
 

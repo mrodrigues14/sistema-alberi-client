@@ -7,10 +7,13 @@ import { useClienteContext } from "@/context/ClienteContext";
 import type { Categoria } from "@/lib/hooks/useCategoria";
 import AdicionarCategoria from "./components/adicionarCategoria/adicionarCategoria";
 import EditarCategoria from "./components/editarCategoria/editarCategoria";
+import { atualizarRubrica, deletarRubrica, useRubricasContabeis } from "@/lib/hooks/useRubricaContabil";
 
 const Categoria: React.FC = () => {
   const { idCliente } = useClienteContext();
   const { categoriasCliente, isLoading, mutate } = useCategoriasPorCliente(idCliente || undefined);
+  const { rubricas, isLoading: isLoadingRubricas, mutate: mutateRubricas } = useRubricasContabeis();
+
   const [showModalCategoria, setShowModalCategoria] = useState(false);
   const [showModalSubrubrica, setShowModalSubrubrica] = useState(false);
   const [categoriaSelecionada, setCategoriaSelecionada] = useState<Categoria | null>(null);
@@ -72,6 +75,42 @@ const Categoria: React.FC = () => {
     } catch (error) {
       console.error("Erro ao atualizar a categoria:", error);
       alert("Erro ao atualizar a categoria.");
+    } finally {
+      setLoadingAcoes(false);
+    }
+  };
+
+  const handleToggleRubrica = async (id: number, tipo: "mes" | "extra") => {
+    const rubrica = rubricas.find(r => r.idRubricaContabil === id);
+    if (!rubrica) return;
+
+    const updates = {
+      gastoMes: tipo === "mes" ? !rubrica.gastoMes : false,
+      gastoExtra: tipo === "extra" ? !rubrica.gastoExtra : false,
+    };
+
+    setLoadingAcoes(true);
+    try {
+      await atualizarRubrica(id, updates);
+      mutateRubricas();
+    } catch (error) {
+      console.error("Erro ao atualizar rubrica contábil:", error);
+      alert("Erro ao atualizar rubrica contábil.");
+    } finally {
+      setLoadingAcoes(false);
+    }
+  };
+
+  const handleDeleteRubrica = async (id: number) => {
+    if (!confirm("Deseja mesmo excluir esta rubrica contábil?")) return;
+    setLoadingAcoes(true);
+    try {
+      await deletarRubrica(id);
+      mutateRubricas();
+      alert("Rubrica contábil excluída.");
+    } catch (error) {
+      console.error("Erro ao deletar rubrica contábil:", error);
+      alert("Erro ao deletar rubrica contábil.");
     } finally {
       setLoadingAcoes(false);
     }
@@ -163,6 +202,51 @@ const Categoria: React.FC = () => {
                   </div>
                 </div>
               ))}
+            </div>
+          ))
+        )}
+      </div>
+      {/* 🔹 Seção para Rubricas Contábeis (sem subrubricas) */}
+      <h2 className="text-2xl font-semibold text-center mt-2 mb-4">Rubricas Contabéis</h2>
+
+      <div className="flex justify-center gap-4 mb-4">
+        <button
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+          onClick={() => setShowModalCategoria(true)}
+        >
+          Adicionar Nova Rubrica Contábil
+        </button>
+      </div>
+      <div className="mt-8 border rounded p-4">
+        <h3 className="text-lg font-bold mb-4">Rubricas Contábeis</h3>
+        {isLoading ? (
+          <p>Carregando rubricas contábeis...</p>
+        ) : (
+          rubricas.map((rubrica) => (
+            <div key={rubrica.idRubricaContabil} className="flex justify-between items-center border-b py-2">
+              <span className="font-medium">{rubrica.nome}</span>
+              <div className="flex gap-4">
+                <button
+                  className="text-red-500"
+                  onClick={() => handleDeleteRubrica(rubrica.idRubricaContabil)}
+                >
+                  <FaTrash />
+                </button>
+
+                <button
+                  className={`px-3 py-1 rounded ${rubrica.gastoMes ? "bg-blue-500 text-white" : "bg-gray-300"}`}
+                  onClick={() => handleToggleRubrica(rubrica.idRubricaContabil, "mes")}
+                >
+                  Rubrica do Mês
+                </button>
+
+                <button
+                  className={`px-3 py-1 rounded ${rubrica.gastoExtra ? "bg-green-500 text-white" : "bg-gray-300"}`}
+                  onClick={() => handleToggleRubrica(rubrica.idRubricaContabil, "extra")}
+                >
+                  Rubrica Extra
+                </button>
+              </div>
             </div>
           ))
         )}

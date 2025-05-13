@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import CustomDropdown from "../dropdown/CustomDropdown";
-import { FaCalendarAlt } from "react-icons/fa";
 import { createExtrato } from "@/lib/hooks/useExtrato";
 import { useCategoriasPorCliente } from "@/lib/hooks/useCategoria";
 import { useFornecedoresPorCliente } from "@/lib/hooks/useFornecedor";
+import { useRubricasContabeis } from "@/lib/hooks/useRubricaContabil";
 
 interface Categoria {
     idcategoria: number;
@@ -74,6 +74,20 @@ const InsercaoManual: React.FC<{
         }));
     };
 
+    const { rubricas } = useRubricasContabeis();
+    const [rubricaContabilSelecionada, setRubricaContabilSelecionada] = useState<{ label: string; value: number } | null>(null);
+    const rubricasContabeisFormatadas = useMemo(() => {
+        if (!rubricas?.length) return [];
+
+        return rubricas
+            .sort((a, b) => a.nome.localeCompare(b.nome))
+            .map((rub) => ({
+                label: rub.nome,
+                value: rub.idRubricaContabil,
+                disabled: false,
+            }));
+    }, [rubricas]);
+
     const [entrada, setEntrada] = useState({
         id: Date.now(),
         data: "",
@@ -96,18 +110,6 @@ const InsercaoManual: React.FC<{
         }));
     };
 
-    // const handleCategoriaChange = (idCategoria: number) => {
-    //     const categoriaFilha: Categoria | undefined = categoriasCliente?.find((cat: Categoria) => cat.idcategoria === idCategoria);
-    //     const categoriaPai: Categoria | null = categoriaFilha ? categoriasCliente?.find((cat: Categoria) => cat.idcategoria === categoriaFilha.idCategoriaPai) || null : null;
-
-    //     if (categoriaFilha) {
-    //         setCategoriaSelecionada({
-    //             id: categoriaFilha.idcategoria,
-    //             nome: categoriaPai ? `${categoriaPai.nome} - ${categoriaFilha.nome}` : categoriaFilha.nome,
-    //         });
-    //     }
-    // };
-
     const handleDateChange = (value: string) => {
         let cleaned = value.replace(/\D/g, "");
 
@@ -121,51 +123,55 @@ const InsercaoManual: React.FC<{
 
     const adicionarLinha = async () => {
         if (!entrada.entrada && !entrada.saida) {
-            alert("Preencha pelo menos Entrada ou Saída!");
-            return;
+          alert("Preencha pelo menos Entrada ou Saída!");
+          return;
         }
-
+      
         if (!idCliente || !bancoSelecionado || !categoriaSelecionada) {
-            alert("Selecione um cliente, um banco e uma categoria antes de adicionar!");
-            return;
+          alert("Selecione um cliente, um banco e uma categoria antes de adicionar!");
+          return;
         }
+      
         const novoExtrato = {
-            idCliente,
-            idBanco: bancoSelecionado,
-            idCategoria: categoriaSelecionada.value, // ← aqui
-            data: entrada.data.split("/").reverse().join("-"),
-            nomeNoExtrato: entrada.nomeNoExtrato,
-            descricao: entrada.observacao,
-            valor: entrada.entrada
-                ? Number(entrada.entrada.replace(/\D/g, "")) / 100
-                : Number(entrada.saida.replace(/\D/g, "")) / 100,
-            tipoDeTransacao: entrada.entrada ? "ENTRADA" as "ENTRADA" : "SAIDA" as "SAIDA",
-            idFornecedor: entrada.fornecedorSelecionado?.value ?? null,
-            rubricaContabil: entrada.rubricaContabil || null,
+          idCliente,
+          idBanco: bancoSelecionado,
+          idCategoria: categoriaSelecionada.value,
+          data: entrada.data.split("/").reverse().join("-"),
+          nomeNoExtrato: entrada.nomeNoExtrato,
+          descricao: entrada.observacao,
+          valor: entrada.entrada
+            ? Number(entrada.entrada.replace(/\D/g, "")) / 100
+            : Number(entrada.saida.replace(/\D/g, "")) / 100,
+          tipoDeTransacao: entrada.entrada ? ("ENTRADA" as "ENTRADA") : ("SAIDA" as "SAIDA"),
+          idFornecedor: entrada.fornecedorSelecionado?.value ?? null,
+          rubricaContabil: entrada.rubricaContabil || null,
+          idContabil: rubricaContabilSelecionada?.value ?? null, 
         };
-
+      
         try {
-            await createExtrato(novoExtrato);
-            alert("Extrato inserido com sucesso!");
-
-            setEntrada({
-                id: Date.now(),
-                data: "",
-                rubricaSelecionada: "",
-                fornecedorSelecionado: null,
-                observacao: "",
-                nomeNoExtrato: "",
-                rubricaContabil: "",
-                entrada: "",
-                saida: "",
-            });
-
-            setCategoriaSelecionada(null);
+          await createExtrato(novoExtrato);
+          alert("Extrato inserido com sucesso!");
+      
+          setEntrada({
+            id: Date.now(),
+            data: "",
+            rubricaSelecionada: "",
+            fornecedorSelecionado: null,
+            observacao: "",
+            nomeNoExtrato: "",
+            rubricaContabil: "",
+            entrada: "",
+            saida: "",
+          });
+      
+          setCategoriaSelecionada(null);
+          setRubricaContabilSelecionada(null); // limpar dropdown
         } catch (error) {
-            console.error("Erro ao inserir extrato:", error);
-            alert("Erro ao inserir extrato.");
+          console.error("Erro ao inserir extrato:", error);
+          alert("Erro ao inserir extrato.");
         }
-    };
+      };
+      
     const formatarMoeda = (valor: string) => {
         const numeroLimpo = valor.replace(/\D/g, "");
         if (!numeroLimpo) return "";
@@ -250,13 +256,17 @@ const InsercaoManual: React.FC<{
                             />
                         </td>
                         <td className="border px-4 py-2">
-                            <input
-                                type="text"
-                                className="border rounded w-full px-2"
-                                placeholder="Rubrica Contábil"
-                                value={entrada.rubricaContabil}
-                                onChange={(e) => handleInputChange("rubricaContabil", e.target.value)}
+                            <CustomDropdown
+                                label="Selecione uma rubrica contábil"
+                                options={rubricasContabeisFormatadas}
+                                selectedValue={rubricaContabilSelecionada ?? { label: "", value: "" }}
+                                onSelect={(option) => setRubricaContabilSelecionada({
+                                    ...option,
+                                    value: Number(option.value),
+                                })}
+                                type="rubricaContabil"
                             />
+
                         </td>
                         <td className="border px-4 py-2">
                             <input
@@ -281,7 +291,7 @@ const InsercaoManual: React.FC<{
             </table>
 
             <div className="mt-4 flex justify-center gap-4">
-            <button
+                <button
                     className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
                     onClick={onFechar}
                 >

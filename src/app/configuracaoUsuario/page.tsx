@@ -31,7 +31,6 @@ export default function ConfiguracaoUsuario() {
 
   if (isLoading) return <p className="p-4">Carregando usuários...</p>;
   if (isError) return <p className="p-4 text-red-600">Erro ao carregar usuários.</p>;
-  console.log(usuarios);
   const usuariosAtivos = usuarios.filter((u) => u.ativo !== 0);
   const usuariosInativos = usuarios.filter((u) => u.ativo === 0);
 

@@ -14,10 +14,8 @@ interface CustomDropdownProps<T = { label: string; value: string | number }> {
   selectedValue: T;
   onSelect: (value: T) => void;
   allowSearch?: boolean;
-  type?: "rubrica" | "fornecedor";
+  type?: "rubrica" | "rubricaContabil" | "fornecedor";
 }
-
-
 
 const CustomDropdown: React.FC<CustomDropdownProps> = ({
   label,
@@ -38,7 +36,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   useEffect(() => {
     setFilteredOptions(options);
   }, [options]);
-  
+
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
     setSearch(value);
@@ -72,7 +70,6 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
   return (
     <div className="relative w-full" ref={dropdownRef}>
       {/* Dropdown principal */}
@@ -106,8 +103,8 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                   key={index}
                   className={`px-2 py-1 ${disabled ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200 cursor-pointer"
                     }`}
-                    onMouseDown={() => handleSelect({ label, value }, disabled)}
-                    >
+                  onMouseDown={() => handleSelect({ label, value }, disabled)}
+                >
                   {label}
                 </div>
               ))
@@ -117,9 +114,14 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                   className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition"
                   onClick={() => setShowModal(true)}
                 >
-                  {type === "rubrica" ? "Adicionar Rubrica" : "Adicionar Fornecedor"}
+                  {type === "rubrica"
+                    ? "Adicionar Rubrica"
+                    : type === "rubricaContabil"
+                      ? "Adicionar Rubrica Contábil"
+                      : "Adicionar Fornecedor"}
                 </button>
               </div>
+
             )}
           </div>
         </div>
@@ -129,10 +131,20 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white p-6 rounded shadow-lg w-[800px]">
             <h2 className="text-xl font-bold mb-4">
-              {type === "rubrica" ? "Adicionar Rubrica" : "Adicionar Fornecedor"}
+              {type === "rubrica"
+                ? "Adicionar Rubrica"
+                : type === "rubricaContabil"
+                  ? "Adicionar Rubrica Contábil"
+                  : "Adicionar "}
             </h2>
             <iframe
-              src={type === "rubrica" ? "/categoria" : "/fornecedor"}
+              src={
+                type === "rubrica"
+                  ? "/categoria"
+                  : type === "rubricaContabil"
+                    ? "/categoria"
+                    : "/fornecedor"
+              }
               className="w-full h-[600px] border-none"
             ></iframe>
             <button
