@@ -91,9 +91,6 @@ const Card: React.FC<CardProps> = ({
           onClose={() => setModalShow(false)}
           card={{
             ...cardData,
-            tags: Array.isArray(cardData.labels)
-              ? cardData.labels
-              : JSON.parse(cardData.labels || "[]"),
             autor: cardData.autor || "",
           }}
           bid={bid}

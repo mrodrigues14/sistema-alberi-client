@@ -26,7 +26,7 @@ export default function ChamadosPage() {
   const [loadingAvaliacao, setLoadingAvaliacao] = useState(false);
   const [modalRecusaOpen, setModalRecusaOpen] = useState(false);
   const [chamadoRecusando, setChamadoRecusando] = useState<Chamado | null>(null);
-
+  console.log(chamados)
   const { usuarios } = useUsuarios();
 
   const handleConcluirChamado = async (id: number) => {
@@ -199,7 +199,7 @@ export default function ChamadosPage() {
                 </div>
 
                 {/* Botão de download do arquivo */}
-                {chamado.arquivo && (
+                {chamado.temArquivo && (
                   <div
                     className="bg-gray-200 border rounded-lg px-4 py-2 cursor-pointer hover:bg-gray-300 transition"
                     onClick={async () => {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { FaTimes } from "react-icons/fa";
 import { Usuario } from "../../../../types/Usuario";
+import { remove as removeAccents } from "diacritics"; // instalar com: npm install diacritics
 
 interface Props {
   open: boolean;
@@ -15,22 +16,25 @@ export default function ModalUsuario({ open, onClose, onSave, usuario }: Props) 
     usuarioLogin: "",
     cpf: "",
     usuarioEmail: "",
-    role: "usuario",
+    role: "",
   });
+  console.log("ModalUsuario", usuario);
 
   useEffect(() => {
     if (usuario) {
+      const roleNormalizado = removeAccents(usuario.role?.toLowerCase() || "");
       setFormData({
         nomeDoUsuario: usuario.nomeDoUsuario || "",
         usuarioLogin: usuario.usuarioLogin || "",
         cpf: usuario.cpf || "",
         usuarioEmail: usuario.usuarioEmail || "",
-        role: usuario.role || "usuario",
+        role: roleNormalizado,
       });
     } else {
       limparFormulario();
     }
   }, [usuario, open]);
+
 
   const limparFormulario = () => {
     setFormData({
@@ -99,6 +103,22 @@ export default function ModalUsuario({ open, onClose, onSave, usuario }: Props) 
             value={formData.cpf}
             onChange={(e) => handleChange("cpf", e.target.value)}
           />
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Perfil</label>
+            <select
+              className="border px-3 py-2 rounded w-full"
+              value={formData.role}
+              onChange={(e) => handleChange("role", e.target.value)}
+            >
+              <option value="administrador">Administrador</option>
+              <option value="usuario interno">Usuário Interno</option>
+              <option value="usuario externo">Usuário Externo</option>
+              <option value="cliente">Cliente</option>
+              <option value="configurador">Configurador</option>
+            </select>
+
+          </div>
+
         </div>
 
         <div className="mt-6 flex justify-end">

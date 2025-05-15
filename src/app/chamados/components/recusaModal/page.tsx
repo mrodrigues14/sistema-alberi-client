@@ -4,14 +4,18 @@ import { FaTimes } from "react-icons/fa";
 interface Props {
   open: boolean;
   onClose: () => void;
-  onConfirm: (motivo: string) => void;
+  onConfirm: (motivo: string, anexo: File | null) => void;
 }
 
 export default function ModalRecusa({ open, onClose, onConfirm }: Props) {
   const [motivo, setMotivo] = useState("");
+  const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
-    if (open) setMotivo("");
+    if (open) {
+      setMotivo("");
+      setFile(null);
+    }
   }, [open]);
 
   if (!open) return null;
@@ -36,6 +40,13 @@ export default function ModalRecusa({ open, onClose, onConfirm }: Props) {
           onChange={(e) => setMotivo(e.target.value)}
         />
 
+        <input
+          type="file"
+          accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.mp4,.webm,.ogg,.xlxs,.ods"
+          onChange={(e) => setFile(e.target.files?.[0] || null)}
+          className="w-full mb-4"
+        />
+
         <div className="flex justify-end gap-2">
           <button
             className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
@@ -45,7 +56,7 @@ export default function ModalRecusa({ open, onClose, onConfirm }: Props) {
           </button>
           <button
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-            onClick={() => onConfirm(motivo)}
+            onClick={() => onConfirm(motivo, file)}
             disabled={!motivo.trim()}
           >
             Confirmar Recusa

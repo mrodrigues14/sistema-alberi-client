@@ -369,7 +369,7 @@ const TabelaExtrato: React.FC<Props> = ({
   }, [ordem, dados]);
 
 
-
+  console.log(dadosOrdenados);
   return (
     <div className="flex justify-center items-center mt-8">
       <div className="w-[5000px] bg-white rounded-lg shadow-lg p-4">

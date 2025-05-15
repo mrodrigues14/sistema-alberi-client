@@ -6,7 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 // 🔹 Buscar todos os chamados
 export function useChamados() {
-  const { data, error, isLoading, mutate } = useSWR<Chamado[]>('/report', fetcher); // ⬅️ Corrigido
+  const { data, error, isLoading, mutate } = useSWR<Chamado[]>('/report', fetcher); 
   return {
     chamados: data || [],
     isLoading,
@@ -84,6 +84,7 @@ export async function deleteChamado(id: number) {
 
 // 🔹 Download do arquivo do chamado
 export async function downloadReportFile(id: number) {
+  console.log("Baixando arquivo do chamado com ID:", id);
   const response = await fetch(`${API_URL}/report/${id}/file`);
 
   if (!response.ok) {

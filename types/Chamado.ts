@@ -15,4 +15,5 @@ export interface Chamado {
   tipo: string | null;
   funcionalidadeAfetada: string | null;
   descricaoRecusa: string | null;
+  temArquivo: boolean | null;
 }

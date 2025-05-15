@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   CreditCard,
   X,
@@ -68,7 +68,7 @@ export default function CardDetails(props: CardDetailsProps) {
   const { clientes, isLoading, isError } = useCliente(); // 🔹 Obtendo a lista de empresas
   const [clientName, setClientName] = useState<string>("");
   const { updateCard } = props;
-
+  console.log("CardDetails props", props);
   const [values, setValues] = useState(() => {
     if (typeof window !== "undefined") {
       const savedCard = localStorage.getItem(`card-${props.card.id}`);
@@ -143,7 +143,7 @@ export default function CardDetails(props: CardDetailsProps) {
     return (
       <input
         autoFocus
-        defaultValue={text}
+        value={text}
         type="text"
         onBlur={() => {
           if (text !== values.title) {
@@ -156,18 +156,16 @@ export default function CardDetails(props: CardDetailsProps) {
         }}
         className="form-control"
         style={{
-          fontSize: "1.125rem", // menor que antes, maior que padrão
-          fontWeight: "600", // sem ser ultra bold
-          width: "80%", // não ocupa 100%, deixa espaço
-          border: "1px solid #ccc", // borda neutra
+          fontSize: "1.125rem",
+          fontWeight: "600",
+          width: "80%",
+          border: "1px solid #ccc",
           borderRadius: "6px",
           padding: "6px 10px",
         }}
       />
     );
   };
-
-
 
   const addTask = async (value: string) => {
     const novaTask = {
@@ -333,6 +331,20 @@ export default function CardDetails(props: CardDetailsProps) {
     setEditingTaskText("");
   };
 
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (input && textareaRef.current) {
+      const textarea = textareaRef.current;
+      textarea.focus();
+      textarea.setSelectionRange(0, 0);
+
+      textarea.style.height = "auto"; // reset
+      textarea.style.height = textarea.scrollHeight + "px";
+    }
+  }, [input]);
+
   return (
     <Modal onClose={() => {
       props.updateCard(values);
@@ -347,16 +359,56 @@ export default function CardDetails(props: CardDetailsProps) {
             <div className="col-12">
               <div className="d-flex align-items-center pt-3 gap-2">
                 <CreditCard className="icon__md" />
-                {input ? (
-                  <Input title={values.title} />
-                ) : (
-                  <h5
-                    style={{ cursor: "pointer" }}
-                    onClick={() => setInput(true)}
-                  >
-                    {values.title}
-                  </h5>
-                )}
+                <div style={{ position: "relative", width: "100%" }}>
+                  {!input && (
+                    <h5
+                      style={{
+                        cursor: "pointer",
+                        fontSize: "1.125rem",
+                        fontWeight: 600,
+                        wordBreak: "break-word",
+                      }}
+                      onClick={() => setInput(true)}
+                    >
+                      {values.title}
+                    </h5>
+                  )}
+
+                  {input && (
+                    <textarea
+                      ref={textareaRef}
+                      value={text}
+                      onChange={(e) => {
+                        setText(e.target.value);
+                        // Faz autoResize enquanto digita
+                        if (textareaRef.current) {
+                          textareaRef.current.style.height = "auto";
+                          textareaRef.current.style.height =
+                            textareaRef.current.scrollHeight + "px";
+                        }
+                      }}
+                      onBlur={() => {
+                        if (text !== values.title) updateTitle(text);
+                        setInput(false);
+                      }}
+                      rows={1}
+                      style={{
+                        width: "100%",
+                        fontSize: "1.125rem",
+                        fontWeight: 600,
+                        border: "1px solid #ccc",
+                        borderRadius: "6px",
+                        padding: "6px 10px",
+                        resize: "none",
+                        overflow: "hidden",
+                        lineHeight: "1.4",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  )}
+                </div>
+
+
               </div>
             </div>
           </div>

@@ -8,7 +8,7 @@ interface Props {
   open: boolean;
   onClose: () => void;
   chamadoParaEditar?: Chamado | null;
-  onSuccess?: () => void; 
+  onSuccess?: () => void;
 }
 
 export default function ChamadoModal({ open, onClose, chamadoParaEditar, onSuccess }: Props) {
@@ -19,11 +19,13 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar, onSucce
   const [file, setFile] = useState<File | null>(null);
   const [removerAnexo, setRemoverAnexo] = useState(false);
   const [prioridade, setPrioridade] = useState("");
+  const [descricaoRecusa, setDescricaoRecusa] = useState("");
+
   const modoEdicao = !!chamadoParaEditar;
 
   useEffect(() => {
     if (!open) return;
-  
+
     if (chamadoParaEditar) {
       setTitulo(chamadoParaEditar.titulo || "");
       setDescricao(chamadoParaEditar.descricao || "");
@@ -32,6 +34,7 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar, onSucce
       setPrioridade(chamadoParaEditar.prioridade || "");
       setFile(null);
       setRemoverAnexo(false);
+      setDescricaoRecusa(chamadoParaEditar.descricaoRecusa || "");
     } else {
       setTitulo("");
       setDescricao("");
@@ -40,10 +43,10 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar, onSucce
       setPrioridade("");
       setFile(null);
       setRemoverAnexo(false);
+      setDescricaoRecusa("");
     }
   }, [open]);
-  
-  
+
 
   if (!open) return null;
 
@@ -131,6 +134,21 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar, onSucce
             onChange={(e) => setDescricao(e.target.value)}
           />
 
+          {modoEdicao && chamadoParaEditar?.situacao === "Recusados pelo Usuário" && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Motivo da Recusa
+              </label>
+              <textarea
+                className="w-full border rounded px-3 py-2"
+                value={descricaoRecusa}
+                onChange={(e) => setDescricaoRecusa(e.target.value)}
+                placeholder="Explique o motivo da recusa"
+                rows={3}
+              />
+            </div>
+          )}
+
           <select
             className="w-full border rounded px-3 py-2"
             value={prioridade}
@@ -191,10 +209,30 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar, onSucce
               </label>
               <input
                 type="file"
-                accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.mp4,.webm,.ogg"
+                accept="
+                        .pdf,
+                        .png,
+                        .jpg,
+                        .jpeg,
+                        .doc,
+                        .docx,
+                        .xls,
+                        .xlsx,
+                        .mp4,
+                        .webm,
+                        .ogg,
+                        .mp3,
+                        .wav,
+                        video/*,
+                        audio/*,
+                        image/*,
+                        application/vnd.ms-excel,
+                        application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+                      "
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                 className="w-full"
               />
+
             </div>
           )}
 
