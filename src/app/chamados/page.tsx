@@ -20,6 +20,7 @@ const statusLabels = [
 
 export default function ChamadosPage() {
   const { chamados, isLoading, isError, mutate } = useChamados();
+  console.log(chamados)
   const [filtroSituacao, setFiltroSituacao] = useState("Não Iniciado");
   const [modalOpen, setModalOpen] = useState(false);
   const [chamadoSelecionado, setChamadoSelecionado] = useState<Chamado | null>(null);

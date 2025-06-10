@@ -7,12 +7,15 @@ import {
   useUsuarios,
   createUsuario,
   updateUsuario,
+  useUsuariosInativos,
 } from "@/lib/hooks/useUsuarios";
 import ModalUsuario from "./modalUsuario/modalUsuario";
 import { Usuario } from "../../../types/Usuario";
 
 export default function ConfiguracaoUsuario() {
-  const { usuarios, isLoading, isError, mutateUsuarios } = useUsuarios();
+  const { usuarios: usuariosAtivos, isLoading, isError, mutateUsuarios } = useUsuarios();
+  const { usuarios: usuariosInativos, mutateUsuarios: mutateInativos } = useUsuariosInativos();
+
   const [modalOpen, setModalOpen] = useState(false);
   const [usuarioEditando, setUsuarioEditando] = useState<Usuario | null>(null);
   const [loadingId, setLoadingId] = useState<number | null>(null);
@@ -25,14 +28,13 @@ export default function ConfiguracaoUsuario() {
     }
 
     await mutateUsuarios();
+    await mutateInativos();
     setModalOpen(false);
     setUsuarioEditando(null);
   };
 
   if (isLoading) return <p className="p-4">Carregando usuários...</p>;
   if (isError) return <p className="p-4 text-red-600">Erro ao carregar usuários.</p>;
-  const usuariosAtivos = usuarios.filter((u) => u.ativo !== 0);
-  const usuariosInativos = usuarios.filter((u) => u.ativo === 0);
 
   return (
     <div>
@@ -83,6 +85,7 @@ export default function ConfiguracaoUsuario() {
                         setLoadingId(usuario.idusuarios);
                         await updateUsuario(usuario.idusuarios, { ...usuario, ativo: false });
                         await mutateUsuarios();
+                        await mutateInativos();
                         setLoadingId(null);
                       }}
                     >
@@ -124,6 +127,7 @@ export default function ConfiguracaoUsuario() {
                         setLoadingId(usuario.idusuarios);
                         await updateUsuario(usuario.idusuarios, { ...usuario, ativo: true });
                         await mutateUsuarios();
+                        await mutateInativos();
                         setLoadingId(null);
                       }}
                     >

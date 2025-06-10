@@ -4,7 +4,6 @@ import { Cliente } from "../../../types/Cliente";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-// 🔹 Hook para buscar todos os clientes ou um cliente específico
 export function useCliente(id?: number, cpf?: string, cnpj?: string) {
   let query = `${API_URL}/clientes`;
 
@@ -21,9 +20,29 @@ export function useCliente(id?: number, cpf?: string, cnpj?: string) {
     fetcher
   );
 
+  // 🔹 Se for listagem geral, aplica filtro para clientes ativos
+  const clientesFiltrados = !id && !cpf && !cnpj && Array.isArray(data)
+    ? data.filter((cliente: Cliente) => cliente.ativo === 1)
+    : data;
+
   return {
-    clientes: data,
-    cliente: data && Array.isArray(data) ? data[0] : null,
+    clientes: clientesFiltrados,
+    cliente: Array.isArray(clientesFiltrados) ? clientesFiltrados[0] : clientesFiltrados,
+    isLoading,
+    isError: error,
+    mutate,
+  };
+}
+
+export function useClientesInativos() {
+  const { data, error, isLoading, mutate } = useSWR(`/clientes`, fetcher);
+
+  const clientesFiltrados = Array.isArray(data)
+    ? data.filter((cliente: Cliente) => cliente.ativo !== 1)
+    : [];
+
+  return {
+    clientes: clientesFiltrados,
     isLoading,
     isError: error,
     mutate,

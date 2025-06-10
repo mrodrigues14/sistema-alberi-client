@@ -12,5 +12,5 @@ export interface Cliente {
     cnaePrincipal?: string;
     apelido?: string;
     email?: string;
-    ativo?: boolean;
+    ativo?: number;
   }

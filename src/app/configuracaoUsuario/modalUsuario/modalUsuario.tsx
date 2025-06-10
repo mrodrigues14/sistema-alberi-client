@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaTimes } from "react-icons/fa";
+import { FaEye, FaEyeSlash, FaTimes } from "react-icons/fa";
 import { Usuario } from "../../../../types/Usuario";
 import { remove as removeAccents } from "diacritics"; // instalar com: npm install diacritics
 
@@ -11,38 +11,37 @@ interface Props {
 }
 
 export default function ModalUsuario({ open, onClose, onSave, usuario }: Props) {
-  const [formData, setFormData] = useState<Omit<Usuario, "idusuarios">>({
+  const [formData, setFormData] = useState<Omit<Usuario, "idusuarios" | "usuarioLogin"> & { senha?: string }>({
     nomeDoUsuario: "",
-    usuarioLogin: "",
     cpf: "",
     usuarioEmail: "",
     role: "",
+    senha: "",
   });
-  console.log("ModalUsuario", usuario);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
 
   useEffect(() => {
     if (usuario) {
       const roleNormalizado = removeAccents(usuario.role?.toLowerCase() || "");
       setFormData({
         nomeDoUsuario: usuario.nomeDoUsuario || "",
-        usuarioLogin: usuario.usuarioLogin || "",
         cpf: usuario.cpf || "",
         usuarioEmail: usuario.usuarioEmail || "",
         role: roleNormalizado,
+        senha: "", // senha não vem preenchida
       });
     } else {
       limparFormulario();
     }
   }, [usuario, open]);
 
-
   const limparFormulario = () => {
     setFormData({
       nomeDoUsuario: "",
-      usuarioLogin: "",
       cpf: "",
       usuarioEmail: "",
       role: "usuario",
+      senha: "",
     });
   };
 
@@ -54,7 +53,7 @@ export default function ModalUsuario({ open, onClose, onSave, usuario }: Props) 
   };
 
   const handleSalvar = () => {
-    if (!formData.nomeDoUsuario || !formData.usuarioLogin || !formData.usuarioEmail) {
+    if (!formData.nomeDoUsuario || !formData.usuarioEmail || !formData.senha) {
       alert("Preencha todos os campos obrigatórios.");
       return;
     }
@@ -62,6 +61,7 @@ export default function ModalUsuario({ open, onClose, onSave, usuario }: Props) 
     const usuarioParaSalvar: Usuario = {
       ...formData,
       idusuarios: usuario?.idusuarios || Math.floor(Math.random() * 10000),
+      usuarioLogin: "", // se necessário, pode ser preenchido com base no nome/email
     };
 
     onSave(usuarioParaSalvar);
@@ -86,12 +86,6 @@ export default function ModalUsuario({ open, onClose, onSave, usuario }: Props) 
             onChange={(e) => handleChange("nomeDoUsuario", e.target.value)}
           />
           <input
-            placeholder="Login"
-            className="border px-3 py-2 rounded"
-            value={formData.usuarioLogin}
-            onChange={(e) => handleChange("usuarioLogin", e.target.value)}
-          />
-          <input
             placeholder="Email"
             className="border px-3 py-2 rounded"
             value={formData.usuarioEmail}
@@ -103,6 +97,23 @@ export default function ModalUsuario({ open, onClose, onSave, usuario }: Props) 
             value={formData.cpf}
             onChange={(e) => handleChange("cpf", e.target.value)}
           />
+          <div className="relative">
+            <input
+              type={mostrarSenha ? "text" : "password"}
+              placeholder="Senha"
+              className="border px-3 py-2 pr-10 rounded w-full"
+              value={formData.senha}
+              onChange={(e) => handleChange("senha", e.target.value)}
+            />
+            <button
+              type="button"
+              onClick={() => setMostrarSenha((prev) => !prev)}
+              className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {mostrarSenha ? <FaEyeSlash /> : <FaEye />}
+            </button>
+          </div>
+
           <div className="mt-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">Perfil</label>
             <select
@@ -116,9 +127,7 @@ export default function ModalUsuario({ open, onClose, onSave, usuario }: Props) 
               <option value="cliente">Cliente</option>
               <option value="configurador">Configurador</option>
             </select>
-
           </div>
-
         </div>
 
         <div className="mt-6 flex justify-end">

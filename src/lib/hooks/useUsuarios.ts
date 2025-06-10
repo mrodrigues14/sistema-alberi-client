@@ -8,16 +8,35 @@ const BASE_URL = `${API_URL}/usuarios`;
 
 // 🔹 Buscar todos os usuários
 export function useUsuarios() {
-  const { data, error, isLoading, mutate: swrMutate } = useSWR<Usuario[]>("/usuarios",fetcher);
+  const { data, error, isLoading, mutate: swrMutate } = useSWR<Usuario[]>("/usuarios", fetcher);
+
+  const usuariosFiltrados = Array.isArray(data)
+    ? data.filter((usuario) => usuario.ativo)
+    : [];
 
   return {
-    usuarios: data || [],
+    usuarios: usuariosFiltrados,
     isLoading,
     isError: error,
     mutateUsuarios: swrMutate,
   };
 }
 
+
+export function useUsuariosInativos() {
+  const { data, error, isLoading, mutate } = useSWR<Usuario[]>("/usuarios", fetcher);
+
+  const usuariosFiltrados = Array.isArray(data)
+    ? data.filter((usuario) => !usuario.ativo)
+    : [];
+
+  return {
+    usuarios: usuariosFiltrados,
+    isLoading,
+    isError: error,
+    mutateUsuarios: mutate,
+  };
+}
 // 🔹 Buscar um único usuário pelo ID
 export function useUsuarioById(id: number) {
   const { data, error, isLoading } = useSWR(id ? `${BASE_URL}/${id}` : null, fetcher);

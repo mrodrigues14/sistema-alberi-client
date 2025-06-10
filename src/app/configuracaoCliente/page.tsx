@@ -4,11 +4,12 @@ import Navbar from "@/components/Navbar";
 import { useState } from "react";
 import { FaPlus, FaEdit, FaCheck, FaTimes, FaBan } from "react-icons/fa";
 import ModalCliente from "./modalCliente/ModalCliente";
-import { createCliente, updateCliente, useCliente } from "@/lib/hooks/useCliente";
+import { createCliente, updateCliente, useCliente, useClientesInativos } from "@/lib/hooks/useCliente";
 import { Cliente } from "../../../types/Cliente";
 
 export default function ConfiguracaoCliente() {
-  const { clientes, isLoading, isError, mutate } = useCliente();
+  const { clientes: clientesAtivos, isLoading, isError, mutate } = useCliente();
+  const { clientes: clientesInativos, mutate: mutateInativos } = useClientesInativos();
   const [modalOpen, setModalOpen] = useState(false);
   const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null);
   const [loadingId, setLoadingId] = useState<number | null>(null);
@@ -19,18 +20,15 @@ export default function ConfiguracaoCliente() {
     } else {
       await createCliente(cliente);
     }
-  
+
     await mutate();
+    await mutateInativos();
     setModalOpen(false);
     setClienteEditando(null);
   };
-  
 
   if (isLoading) return <p className="p-4">Carregando clientes...</p>;
   if (isError) return <p className="p-4 text-red-600">Erro ao carregar clientes.</p>;
-  
-  const clientesAtivos = clientes.filter((c: Cliente) => c.ativo);
-  const clientesInativos = clientes.filter((c: Cliente) => !c.ativo);
 
   return (
     <div>
@@ -56,38 +54,39 @@ export default function ConfiguracaoCliente() {
             <h2 className="text-lg font-semibold px-4 pt-4 pb-2 border-b">Clientes Ativos</h2>
             {clientesAtivos.map((cliente: Cliente) => (
               <div
-              key={cliente.idcliente}
-              className="flex items-center justify-between px-4 py-3 border-b last:border-none"
+                key={cliente.idcliente}
+                className="flex items-center justify-between px-4 py-3 border-b last:border-none"
               >
-              <span className="font-medium text-gray-800">{cliente.nome}</span>
-              <div className="flex items-center gap-4">
-                <button
-                className="text-orange-500 hover:text-orange-600"
-                onClick={() => {
-                  setClienteEditando(cliente);
-                  setModalOpen(true);
-                }}
-                title="Editar"
-                >
-                <FaEdit />
-                </button>
-                <div className="flex items-center gap-2">
-                <span>Status:</span>
-                <FaCheck className="text-green-600" />
-                <button
-                  className="text-yellow-500 hover:text-yellow-600 text-sm flex items-center gap-1"
-                  disabled={loadingId === cliente.idcliente}
-                  onClick={async () => {
-                  setLoadingId(cliente.idcliente);
-                  await updateCliente(cliente.idcliente, { ativo: false });
-                  await mutate();
-                  setLoadingId(null);
-                  }}
-                >
-                  <FaBan /> {loadingId === cliente.idcliente ? "Aguarde..." : "Inativar"}
-                </button>
+                <span className="font-medium text-gray-800">{cliente.nome}</span>
+                <div className="flex items-center gap-4">
+                  <button
+                    className="text-orange-500 hover:text-orange-600"
+                    onClick={() => {
+                      setClienteEditando(cliente);
+                      setModalOpen(true);
+                    }}
+                    title="Editar"
+                  >
+                    <FaEdit />
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <span>Status:</span>
+                    <FaCheck className="text-green-600" />
+                    <button
+                      className="text-yellow-500 hover:text-yellow-600 text-sm flex items-center gap-1"
+                      disabled={loadingId === cliente.idcliente}
+                      onClick={async () => {
+                        setLoadingId(cliente.idcliente);
+                        await updateCliente(cliente.idcliente, { ativo: 0 });
+                        await mutate();
+                        await mutateInativos();
+                        setLoadingId(null);
+                      }}
+                    >
+                      <FaBan /> {loadingId === cliente.idcliente ? "Aguarde..." : "Inativar"}
+                    </button>
+                  </div>
                 </div>
-              </div>
               </div>
             ))}
           </div>
@@ -96,36 +95,40 @@ export default function ConfiguracaoCliente() {
           <div className="bg-white shadow-md rounded-lg border">
             <h2 className="text-lg font-semibold px-4 pt-4 pb-2 border-b">Clientes Inativos</h2>
             {clientesInativos.map((cliente: Cliente) => (
-              <div key={cliente.idcliente} className="flex items-center justify-between px-4 py-3 border-b last:border-none">
-              <span className="font-medium text-gray-800">{cliente.nome}</span>
-              <div className="flex items-center gap-4">
-                <button
-                className="text-orange-500 hover:text-orange-600"
-                onClick={() => {
-                  setClienteEditando(cliente);
-                  setModalOpen(true);
-                }}
-                title="Editar"
-                >
-                <FaEdit />
-                </button>
-                <div className="flex items-center gap-2">
-                <span>Status:</span>
-                <FaTimes className="text-red-500" />
-                <button
-                  className="text-green-600 hover:text-green-700 text-sm flex items-center gap-1"
-                  disabled={loadingId === cliente.idcliente}
-                  onClick={async () => {
-                  setLoadingId(cliente.idcliente);
-                  await updateCliente(cliente.idcliente, { ativo: true });
-                  await mutate();
-                  setLoadingId(null);
-                  }}
-                >
-                  <FaCheck /> {loadingId === cliente.idcliente ? "Aguarde..." : "Ativar"}
-                </button>
+              <div
+                key={cliente.idcliente}
+                className="flex items-center justify-between px-4 py-3 border-b last:border-none"
+              >
+                <span className="font-medium text-gray-800">{cliente.nome}</span>
+                <div className="flex items-center gap-4">
+                  <button
+                    className="text-orange-500 hover:text-orange-600"
+                    onClick={() => {
+                      setClienteEditando(cliente);
+                      setModalOpen(true);
+                    }}
+                    title="Editar"
+                  >
+                    <FaEdit />
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <span>Status:</span>
+                    <FaTimes className="text-red-500" />
+                    <button
+                      className="text-green-600 hover:text-green-700 text-sm flex items-center gap-1"
+                      disabled={loadingId === cliente.idcliente}
+                      onClick={async () => {
+                        setLoadingId(cliente.idcliente);
+                        await updateCliente(cliente.idcliente, { ativo: 1 });
+                        await mutate();
+                        await mutateInativos();
+                        setLoadingId(null);
+                      }}
+                    >
+                      <FaCheck /> {loadingId === cliente.idcliente ? "Aguarde..." : "Ativar"}
+                    </button>
+                  </div>
                 </div>
-              </div>
               </div>
             ))}
           </div>

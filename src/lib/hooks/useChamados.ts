@@ -7,6 +7,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 // 🔹 Buscar todos os chamados
 export function useChamados() {
   const { data, error, isLoading, mutate } = useSWR<Chamado[]>('/report', fetcher); 
+  console.log(data)
   return {
     chamados: data || [],
     isLoading,
