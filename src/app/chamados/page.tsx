@@ -27,7 +27,6 @@ export default function ChamadosPage() {
   const [loadingAvaliacao, setLoadingAvaliacao] = useState(false);
   const [modalRecusaOpen, setModalRecusaOpen] = useState(false);
   const [chamadoRecusando, setChamadoRecusando] = useState<Chamado | null>(null);
-  console.log(chamados)
   const { usuarios } = useUsuarios();
 
   const handleConcluirChamado = async (id: number) => {
@@ -139,11 +138,27 @@ export default function ChamadosPage() {
               </button>
             );
           })}
-
         </div>
 
         {isLoading ? (
-          <p className="text-gray-600">Carregando chamados...</p>
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando chamados...</p>
+            </div>
+          </div>
+        ) : isError ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <p className="text-red-600 mb-4">Erro ao carregar chamados</p>
+              <button 
+                onClick={() => window.location.reload()} 
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          </div>
         ) : filtrados.length === 0 ? (
           <p className="text-gray-500 italic">Nenhum chamado com status: {filtroSituacao}</p>
         ) : (

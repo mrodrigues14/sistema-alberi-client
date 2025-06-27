@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import "./bootstrap.css";
 import Board from "./components/Board/Board";
 import Navbar from "@/components/Navbar";
+import AvisoAlerta from "@/components/avisoAlerta/avisoAlerta";
 import "./page.css";
 import { updateTarefa, useTarefas } from "@/lib/hooks/useTarefas";
 import { useTarefasMeusClientes } from "@/lib/hooks/useTarefasMeusClientes";
@@ -33,6 +34,17 @@ interface BoardData {
 
 const Kanban = () => {
   const [activeCard, setActiveCard] = useState<Card | null>(null);
+  const [error, setError] = useState<string>("");
+  
+  // Limpar erro após 5 segundos
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError("");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
   
   const { usuarios } = useUsuarios();
   const { idCliente } = useClienteContext();
@@ -198,47 +210,50 @@ const Kanban = () => {
   
 
   return (
-    <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
-      <div className="App">
-        <Navbar />
-        <div className="overflow-x-auto w-full xl:flex xl:justify-center lg:h-screen lg:p-5">
-        <div className="flex flex-nowrap space-x-4 px-4 py-2 w-fit" style={{ gap: "2rem", justifyContent: "center" }}>
-            {data.map((item) => (
-              <SortableContext key={item.id} items={item.card.map((c) => c.id)}>
-                <div className="w-[250px] shrink-0 px-2">
-                  <Board
-                    id={item.id}
-                    name={item.boardName}
-                    card={item.card}
-                    addCard={addCard}
-                    removeCard={removeCard}
-                    updateCard={updateCard}
-                    isLoading={isLoading}
-                  />
-                </div>
-              </SortableContext>
-            ))}
+    <>
+      <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
+        <div className="App">
+          <Navbar />
+          <div className="overflow-x-auto w-full xl:flex xl:justify-center lg:h-screen lg:p-5">
+          <div className="flex flex-nowrap space-x-4 px-4 py-2 w-fit" style={{ gap: "2rem", justifyContent: "center" }}>
+              {data.map((item) => (
+                <SortableContext key={item.id} items={item.card.map((c) => c.id)}>
+                  <div className="w-[250px] shrink-0 px-2">
+                    <Board
+                      id={item.id}
+                      name={item.boardName}
+                      card={item.card}
+                      addCard={addCard}
+                      removeCard={removeCard}
+                      updateCard={updateCard}
+                      isLoading={isLoading}
+                      setError={setError}
+                    />
+                  </div>
+                </SortableContext>
+              ))}
+            </div>
           </div>
         </div>
 
+        <DragOverlay>
+          {activeCard ? (
+            <Card
+              bid=""
+              id={activeCard.id}
+              index={0}
+              title={activeCard.title}
+              tags={activeCard.tags}
+              card={activeCard}
+              updateCard={() => { }}
+              removeCard={() => { }}
+            />
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
-      </div>
-
-      <DragOverlay>
-        {activeCard ? (
-          <Card
-            bid=""
-            id={activeCard.id}
-            index={0}
-            title={activeCard.title}
-            tags={activeCard.tags}
-            card={activeCard}
-            updateCard={() => { }}
-            removeCard={() => { }}
-          />
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+      {error && <AvisoAlerta mensagem={error} tipo="warning" />}
+    </>
   );
 };
 

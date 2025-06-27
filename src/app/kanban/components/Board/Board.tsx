@@ -30,10 +30,11 @@ interface BoardProps {
   addCard: (title: string, bid: string) => void;
   removeCard: (boardId: string, cardId: string) => void;
   updateCard: (bid: string, cid: string, card: any) => void;
+  setError: (error: string) => void;
 }
 
 
-const Board: React.FC<BoardProps> = ({ id, name, card, isLoading, removeCard, updateCard }) => {
+const Board: React.FC<BoardProps> = ({ id, name, card, isLoading, removeCard, updateCard, setError }) => {
   const { setNodeRef, isOver } = useDroppable({ id });
   return (
     <div className="board">
@@ -90,6 +91,7 @@ const Board: React.FC<BoardProps> = ({ id, name, card, isLoading, removeCard, up
           removeCardLocal={(idTemp) => {
             removeCard(id, idTemp); // remove se falhar
           }}
+          setError={setError}
         />
 
 

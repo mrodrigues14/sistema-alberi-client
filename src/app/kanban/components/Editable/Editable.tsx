@@ -20,6 +20,7 @@ interface EditableProps {
   updateCardId?: (oldId: string, newCard: any) => void;
   removeCardLocal?: (id: string) => void;
   onSubmit?: (value: string) => void; // Nova propriedade para envio de dados
+  setError?: (error: string) => void;
 }
 
 
@@ -35,7 +36,10 @@ const Editable: FC<EditableProps> = (props) => {
 
   const handleOnSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!text.trim()) return;
+    if (!text.trim()) {
+      props.setError?.("Por favor, insira um nome para a tarefa!");
+      return;
+    }
   
     if (props.onSubmit) {
       props.onSubmit(text); 

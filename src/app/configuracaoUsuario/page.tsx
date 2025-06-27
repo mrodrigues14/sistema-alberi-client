@@ -33,8 +33,39 @@ export default function ConfiguracaoUsuario() {
     setUsuarioEditando(null);
   };
 
-  if (isLoading) return <p className="p-4">Carregando usuários...</p>;
-  if (isError) return <p className="p-4 text-red-600">Erro ao carregar usuários.</p>;
+  if (isLoading) {
+    return (
+      <div>
+        <Navbar />
+        <div className="max-w-4xl mx-auto px-6 py-10">
+          <h1 className="text-xl font-bold mb-4 text-center">Gerenciar Usuários</h1>
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando usuários...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  if (isError) {
+    return (
+      <div>
+        <Navbar />
+        <div className="max-w-4xl mx-auto px-6 py-10">
+          <h1 className="text-xl font-bold mb-4 text-center">Gerenciar Usuários</h1>
+          <div className="flex justify-center items-center py-20">
+            <div className="text-center">
+              <p className="text-red-600 text-lg">❌ Erro ao carregar usuários</p>
+              <p className="text-gray-500 mt-2">Tente recarregar a página</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
