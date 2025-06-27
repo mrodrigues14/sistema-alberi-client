@@ -59,6 +59,8 @@ export async function createChamado(chamadoData: Partial<Chamado>, file?: File) 
 
 // 🔹 Atualizar chamado
 export async function updateChamado(id: number, updates: Partial<Chamado>) {
+  console.log('Enviando PATCH para:', `${API_URL}/report/${id}`, updates);
+  
   const response = await fetch(`${API_URL}/report/${id}`, {
     method: "PATCH",
     headers: {
@@ -67,7 +69,11 @@ export async function updateChamado(id: number, updates: Partial<Chamado>) {
     body: JSON.stringify(updates),
   });
 
-  if (!response.ok) throw new Error("Erro ao atualizar chamado");
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Erro na resposta:', { status: response.status, statusText: response.statusText, body: errorText });
+    throw new Error(`Erro ao atualizar chamado: ${response.status} - ${errorText}`);
+  }
 
   return await response.json();
 }

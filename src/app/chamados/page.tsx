@@ -6,9 +6,10 @@ import ChamadoModal from "./components/chamadosModal/chamadosModal";
 import Navbar from "@/components/Navbar";
 import { FaPlusCircle } from "react-icons/fa";
 import { Chamado } from "../../../types/Chamado";
-import { FaEdit, FaCheck, FaTimes, FaBan } from "react-icons/fa";
+import { FaEdit, FaCheck, FaTimes, FaBan, FaPlay, FaEye } from "react-icons/fa";
 import { useUsuarios } from "@/lib/hooks/useUsuarios";
 import ModalRecusa from "./components/recusaModal/ModalRecusa";
+import AvisoAlerta from "@/components/avisoAlerta/avisoAlerta";
 
 const statusLabels = [
   { label: "Não Iniciado", color: "bg-yellow-400", value: "Não Iniciado" },
@@ -28,14 +29,16 @@ export default function ChamadosPage() {
   const [modalRecusaOpen, setModalRecusaOpen] = useState(false);
   const [chamadoRecusando, setChamadoRecusando] = useState<Chamado | null>(null);
   const { usuarios } = useUsuarios();
+  const [alerta, setAlerta] = useState<{ mensagem: string; tipo: "success" | "danger" | "warning" | "info" } | null>(null);
 
   const handleConcluirChamado = async (id: number) => {
     setLoadingAvaliacao(true);
     try {
       await updateChamado(id, { situacao: "Concluído" });
       await mutate();
+      setAlerta({ mensagem: "Chamado concluído com sucesso!", tipo: "success" });
     } catch (error) {
-      alert("Erro ao concluir chamado");
+      setAlerta({ mensagem: "Erro ao concluir chamado", tipo: "danger" });
       console.error(error);
     } finally {
       setLoadingAvaliacao(false);
@@ -48,8 +51,9 @@ export default function ChamadosPage() {
     try {
       await deleteChamado(id);
       await mutate();
+      setAlerta({ mensagem: "Chamado cancelado com sucesso!", tipo: "success" });
     } catch (error) {
-      alert("Erro ao cancelar chamado.");
+      setAlerta({ mensagem: "Erro ao cancelar chamado", tipo: "danger" });
       console.error(error);
     } finally {
       setLoadingAvaliacao(false);
@@ -59,6 +63,140 @@ export default function ChamadosPage() {
   const handleRecusarChamado = (chamado: Chamado) => {
     setChamadoRecusando(chamado);
     setModalRecusaOpen(true);
+  };
+
+  const handleEmDesenvolvimento = async (id: number) => {
+    setLoadingAvaliacao(true);
+    try {
+      console.log('Alterando para Em Desenvolvimento:', { id, situacao: "Em Desenvolvimento" });
+      await updateChamado(id, { situacao: "Em Desenvolvimento" });
+      await mutate();
+      setAlerta({ mensagem: "Status alterado para Em Desenvolvimento!", tipo: "success" });
+    } catch (error) {
+      console.error('Erro detalhado:', error);
+      setAlerta({ mensagem: "Erro ao alterar status para Em Desenvolvimento", tipo: "danger" });
+    } finally {
+      setLoadingAvaliacao(false);
+    }
+  };
+
+  const handleValidar = async (id: number) => {
+    setLoadingAvaliacao(true);
+    try {
+      console.log('Alterando para Em Validação:', { id, situacao: "Em Validação" });
+      await updateChamado(id, { situacao: "Em Validação" });
+      await mutate();
+      setAlerta({ mensagem: "Status alterado para Em Validação!", tipo: "success" });
+    } catch (error) {
+      console.error('Erro detalhado:', error);
+      setAlerta({ mensagem: "Erro ao alterar status para Em Validação", tipo: "danger" });
+    } finally {
+      setLoadingAvaliacao(false);
+    }
+  };
+
+  const renderBotoesAcao = (chamado: Chamado) => {
+    const situacao = chamado.situacao;
+
+    switch (situacao) {
+      case "Não Iniciado":
+        return (
+          <>
+            <button
+              onClick={() => handleEmDesenvolvimento(chamado.id)}
+              className="flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+            >
+              <FaPlay /> Em Desenvolvimento
+            </button>
+            <button
+              onClick={() => handleCancelarChamado(chamado.id)}
+              className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600"
+            >
+              <FaTimes /> Cancelar
+            </button>
+          </>
+        );
+
+      case "Em Desenvolvimento":
+        return (
+          <>
+            <button
+              onClick={() => handleValidar(chamado.id)}
+              className="flex items-center gap-1 px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+            >
+              <FaEye /> Validar
+            </button>
+            <button
+              onClick={() => handleCancelarChamado(chamado.id)}
+              className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600"
+            >
+              <FaTimes /> Cancelar
+            </button>
+          </>
+        );
+
+      case "Em Validação":
+        return (
+          <>
+            <button
+              onClick={() => handleConcluirChamado(chamado.id)}
+              className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+            >
+              <FaCheck /> Concluir
+            </button>
+            <button
+              onClick={() => handleRecusarChamado(chamado)}
+              className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+            >
+              <FaBan /> Recusar
+            </button>
+            <button
+              onClick={() => handleCancelarChamado(chamado.id)}
+              className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600"
+            >
+              <FaTimes /> Cancelar
+            </button>
+          </>
+        );
+
+      case "Concluído":
+        return (
+          <button
+            onClick={() => handleCancelarChamado(chamado.id)}
+            className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600"
+          >
+            <FaTimes /> Cancelar
+          </button>
+        );
+
+      case "Recusados pelo Usuário":
+        return (
+          <>
+            <button
+              onClick={() => handleValidar(chamado.id)}
+              className="flex items-center gap-1 px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+            >
+              <FaEye /> Validar
+            </button>
+            <button
+              onClick={() => handleCancelarChamado(chamado.id)}
+              className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600"
+            >
+              <FaTimes /> Cancelar
+            </button>
+          </>
+        );
+
+      default:
+        return (
+          <button
+            onClick={() => handleCancelarChamado(chamado.id)}
+            className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600"
+          >
+            <FaTimes /> Cancelar
+          </button>
+        );
+    }
   };
 
 
@@ -95,8 +233,9 @@ export default function ChamadosPage() {
         descricaoRecusa: motivo,
       });
       await mutate();
+      setAlerta({ mensagem: "Chamado recusado com sucesso!", tipo: "success" });
     } catch (error) {
-      alert("Erro ao recusar chamado.");
+      setAlerta({ mensagem: "Erro ao recusar chamado", tipo: "danger" });
       console.error(error);
     } finally {
       setLoadingAvaliacao(false);
@@ -221,8 +360,9 @@ export default function ChamadosPage() {
                     onClick={async () => {
                       try {
                         await downloadReportFile(chamado.id);
+                        setAlerta({ mensagem: "Download iniciado com sucesso!", tipo: "success" });
                       } catch (error: any) {
-                        alert(error.message || "Erro ao baixar o arquivo.");
+                        setAlerta({ mensagem: error.message || "Erro ao baixar o arquivo", tipo: "danger" });
                       }
                     }}
 
@@ -233,25 +373,7 @@ export default function ChamadosPage() {
 
                 {/* Ações */}
                 <div className="mt-4 flex gap-2 justify-end">
-                  <button
-                    onClick={() => handleConcluirChamado(chamado.id)}
-                    className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-                  >
-                    <FaCheck /> Concluir
-                  </button>
-                  <button
-                    onClick={() => handleCancelarChamado(chamado.id)}
-                    className="flex items-center gap-1 px-3 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600"
-                  >
-                    <FaTimes /> Cancelar
-                  </button>
-                  <button
-                    onClick={() => handleRecusarChamado(chamado)}
-                    className="flex items-center gap-1 px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
-                  >
-                    <FaBan /> Recusar
-                  </button>
-
+                  {renderBotoesAcao(chamado)}
                 </div>
               </div>
             ))}
@@ -280,6 +402,14 @@ export default function ChamadosPage() {
               <p className="text-gray-800 font-medium">Processando...</p>
             </div>
           </div>
+        )}
+
+        {alerta && (
+          <AvisoAlerta
+            mensagem={alerta.mensagem}
+            tipo={alerta.tipo}
+            onClose={() => setAlerta(null)}
+          />
         )}
       </div>
     </div>
