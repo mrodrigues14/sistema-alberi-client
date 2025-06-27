@@ -91,7 +91,7 @@ export default function ModalCliente({ open, onClose, onSave, cliente }: Props) 
     const clienteParaSalvar: Cliente = {
       ...formData,
       idcliente: cliente?.idcliente || Math.floor(Math.random() * 10000),
-      ativo: cliente?.ativo ?? true,
+      ativo: cliente?.ativo ?? 1,
     };
 
     onSave(clienteParaSalvar);

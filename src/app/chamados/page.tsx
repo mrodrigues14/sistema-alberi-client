@@ -8,7 +8,7 @@ import { FaPlusCircle } from "react-icons/fa";
 import { Chamado } from "../../../types/Chamado";
 import { FaEdit, FaCheck, FaTimes, FaBan } from "react-icons/fa";
 import { useUsuarios } from "@/lib/hooks/useUsuarios";
-import ModalRecusa from "./components/recusaModal/page";
+import ModalRecusa from "./components/recusaModal/ModalRecusa";
 
 const statusLabels = [
   { label: "Não Iniciado", color: "bg-yellow-400", value: "Não Iniciado" },

@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from 'next/link';
 import { useSession } from "next-auth/react";
 import { useCliente } from "@/lib/hooks/useCliente";
+import { useMeusClientes } from "@/lib/hooks/useMeusClientes";
 import { useClienteContext } from "@/context/ClienteContext";
 import Image from 'next/image';
 import { signOut } from "next-auth/react";
@@ -35,9 +36,11 @@ export interface Cliente {
 export default function Navbar() {
   const { data: session } = useSession();
   const { clientes, isLoading, isError } = useCliente();
+  const { meusClientes, isLoading: isLoadingMeusClientes } = useMeusClientes();
   const [usuario, setUsuario] = useState('Carregando...');
   const [showDropdown, setShowDropdown] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'todos' | 'meus'>('todos'); // Estado para controlar o modo de visualização
   const clienteDropdownRef = useRef<HTMLDivElement | null>(null);
   const usuarioDropdownRef = useRef<HTMLDivElement | null>(null);
   const { idCliente, setIdCliente } = useClienteContext();
@@ -52,9 +55,12 @@ export default function Navbar() {
     }
 
     const savedCliente = sessionStorage.getItem("selectedCliente");
+    const savedViewMode = sessionStorage.getItem("viewMode") as 'todos' | 'meus' || 'todos';
+    
     if (savedCliente) {
       setSelectedCliente(JSON.parse(savedCliente));
     }
+    setViewMode(savedViewMode);
   }, [session]);
 
   useEffect(() => {
@@ -73,9 +79,11 @@ export default function Navbar() {
     return (a.apelido || a.nome).localeCompare(b.apelido || b.nome);
   }) || [];
 
+  // Decidir quais clientes mostrar baseado no modo de visualização
+  const clientesParaMostrar = viewMode === 'meus' ? meusClientes : sortedClientes;
 
   // Filtrar clientes conforme a pesquisa
-  const filteredClientes = sortedClientes.filter((cliente: Cliente) =>
+  const filteredClientes = clientesParaMostrar.filter((cliente: Cliente) =>
     (cliente.apelido || cliente.nome).toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -90,6 +98,19 @@ export default function Navbar() {
     setSelectedCliente({ id: cliente.idcliente, nome: clienteNome }); // 🔥 Atualiza o nome imediatamente
     sessionStorage.setItem("selectedCliente", JSON.stringify({ id: cliente.idcliente, nome: clienteNome }));
     setIdCliente(cliente.idcliente);
+    setShowDropdown(null);
+  };
+
+  const handleMeusClientesSelect = () => {
+    // Define um ID especial para "Meus Clientes" (pode ser -1 ou outro valor especial)
+    const meusClientesId = -1;
+    const meusClientesNome = "Meus Clientes";
+
+    setSelectedCliente({ id: meusClientesId, nome: meusClientesNome });
+    sessionStorage.setItem("selectedCliente", JSON.stringify({ id: meusClientesId, nome: meusClientesNome }));
+    setIdCliente(meusClientesId);
+    setViewMode('meus');
+    sessionStorage.setItem("viewMode", 'meus');
     setShowDropdown(null);
   };
 
@@ -207,10 +228,45 @@ export default function Navbar() {
               onClick={() => toggleDropdown('cliente')}
               className="px-3 py-1 border border-gray-300 rounded bg-gray-100 hover:bg-gray-200 transition shadow-sm w-full sm:w-44"
             >
-              {selectedCliente ? selectedCliente.nome : 'Selecionar Cliente'}
+              {selectedCliente ? 
+                `${viewMode === 'meus' ? '👤 ' : '📋 '}${selectedCliente.nome}` : 
+                'Selecionar Cliente'
+              }
             </button>
             {showDropdown === 'cliente' && (
               <div className="absolute bg-white border rounded shadow-lg mt-2 w-full sm:w-[250px] z-10">
+                {/* Opções de filtro */}
+                <div className="border-b bg-gray-50">
+                  <button
+                    className={`block w-full text-left px-4 py-2 text-sm font-medium ${
+                      viewMode === 'todos' ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100'
+                    }`}
+                    onClick={() => {
+                      // Selecionar "Todos os Clientes" (ID 68)
+                      const todosClientesId = 68;
+                      const todosClientesNome = "Todos Clientes Vinculados ao Perfil!";
+                      
+                      setSelectedCliente({ id: todosClientesId, nome: todosClientesNome });
+                      sessionStorage.setItem("selectedCliente", JSON.stringify({ id: todosClientesId, nome: todosClientesNome }));
+                      setIdCliente(todosClientesId);
+                      setViewMode('todos');
+                      sessionStorage.setItem("viewMode", 'todos');
+                      setSearchQuery('');
+                      setShowDropdown(null);
+                    }}
+                  >
+                    📋 Todos os Clientes
+                  </button>
+                  <button
+                    className={`block w-full text-left px-4 py-2 text-sm font-medium ${
+                      viewMode === 'meus' ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100'
+                    }`}
+                    onClick={handleMeusClientesSelect}
+                  >
+                    👤 Meus Clientes
+                  </button>
+                </div>
+                
                 <input
                   type="text"
                   className="block px-4 py-2 border-b w-full text-sm"
@@ -228,6 +284,11 @@ export default function Navbar() {
                       {cliente.apelido || cliente.nome}
                     </button>
                   ))}
+                  {filteredClientes.length === 0 && (
+                    <div className="px-4 py-2 text-gray-500 text-center">
+                      {viewMode === 'meus' ? 'Nenhum cliente vinculado encontrado' : 'Nenhum cliente encontrado'}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

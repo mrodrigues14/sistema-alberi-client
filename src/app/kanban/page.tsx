@@ -9,6 +9,7 @@ import Board from "./components/Board/Board";
 import Navbar from "@/components/Navbar";
 import "./page.css";
 import { updateTarefa, useTarefas } from "@/lib/hooks/useTarefas";
+import { useTarefasMeusClientes } from "@/lib/hooks/useTarefasMeusClientes";
 import Card from "./components/Card/Card";
 import { useUsuarios } from "@/lib/hooks/useUsuarios";
 import { useClienteContext } from "@/context/ClienteContext";
@@ -36,7 +37,19 @@ const Kanban = () => {
   const { usuarios } = useUsuarios();
   const { idCliente } = useClienteContext();
 
-  const { tarefas, isLoading } = useTarefas(idCliente === 68 ? undefined : idCliente ?? undefined);
+  // Decidir qual hook usar baseado no idCliente
+  const isMeusClientes = idCliente === -1; // ID especial para "Meus Clientes"
+  const isTodosClientes = idCliente === 68; // ID para "Todos os Clientes"
+  
+  const { tarefas: tarefasTodos, isLoading: isLoadingTodos } = useTarefas(
+    isTodosClientes ? undefined : (!isMeusClientes ? idCliente ?? undefined : undefined)
+  );
+  
+  const { tarefas: tarefasMeus, isLoading: isLoadingMeus } = useTarefasMeusClientes();
+  
+  // Usar as tarefas corretas baseado no modo selecionado
+  const tarefas = isMeusClientes ? tarefasMeus : tarefasTodos;
+  const isLoading = isMeusClientes ? isLoadingMeus : isLoadingTodos;
 
   const [data, setData] = useState<BoardData[]>([
     { id: "1", boardName: "Pendente de Dados", card: [] },
