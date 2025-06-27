@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { Calendar, CheckSquare, Clock, MoreHorizontal } from "react-feather";
 import { Menu } from "react-feather"; // Ícone de arraste
@@ -32,32 +32,35 @@ const Card: React.FC<CardProps> = ({
 }) => {
   const [dropdown, setDropdown] = useState(false);
   const [modalShow, setModalShow] = useState(false);
-  const [cardData, setCardData] = useState(card);
   const [clickStart, setClickStart] = useState({ x: 0, y: 0 });
   const { clientes, isLoading, isError } = useCliente();
-  const [empresaNome, setEmpresaNome] = useState<string>("Sem empresa");
 
-  useEffect(() => {
-    if (clientes.length > 0 && cardData.idCliente) {
+  // Directly use card prop instead of maintaining cardData state
+  const cardData = card;
+
+  // Memoize only the client name lookup without dependencies on clientes array
+  const empresaNome = useMemo(() => {
+    if (!cardData?.idCliente || isLoading || !clientes) {
+      return "Sem empresa";
+    }
+    
+    if (Array.isArray(clientes) && clientes.length > 0) {
       const clienteEncontrado = clientes.find(
         (cliente: { idcliente: number }) => cliente.idcliente === cardData.idCliente
       );
-
+      
       if (clienteEncontrado) {
-        setEmpresaNome(clienteEncontrado.apelido || clienteEncontrado.nome);
+        return clienteEncontrado.apelido || clienteEncontrado.nome || "Sem empresa";
       }
     }
-  }, [clientes, cardData.idCliente]);
+    
+    return "Sem empresa";
+  }, [cardData?.idCliente, isLoading]);
 
-
-  useEffect(() => {
-    setCardData(card);
-  }, [card]);
-
-  const handleUpdateCard = (updatedCard: any) => {
-    setCardData(updatedCard);
+  // Simplified handleUpdateCard without useState
+  const handleUpdateCard = useCallback((updatedCard: any) => {
     updateCard(bid, id, updatedCard);
-  };
+  }, [bid, id, updateCard]);
 
   // Configuração do Draggable do @dnd-kit
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id });
@@ -91,13 +94,11 @@ const Card: React.FC<CardProps> = ({
           onClose={() => setModalShow(false)}
           card={{
             ...cardData,
-            autor: cardData.autor || "",
+            autor: cardData?.autor || "",
           }}
           bid={bid}
           removeCard={removeCard}
         />
-
-
       )}
 
       <div className="custom__card" ref={setNodeRef} style={style} onMouseDown={handleMouseDown} onMouseUp={handleMouseUp}>
@@ -107,7 +108,7 @@ const Card: React.FC<CardProps> = ({
             <div className="drag-handle" {...listeners} {...attributes}>
               <i className="bi bi-grip-vertical"></i> {/* Ícone de arraste */}
             </div>
-            <p>{cardData.title}</p>
+            <p>{cardData?.title}</p>
 
           </div>
           <div className="card__tags">
@@ -119,19 +120,19 @@ const Card: React.FC<CardProps> = ({
             {[1, 2, 3, 4, 5].map((star) => (
               <i
                 key={star}
-                className={`bi bi-star${cardData.prioridade >= star ? "-fill" : ""}`}
+                className={`bi bi-star${cardData?.prioridade >= star ? "-fill" : ""}`}
                 style={{
-                  color: cardData.prioridade >= star ? "gold" : "gray",
+                  color: cardData?.prioridade >= star ? "gold" : "gray",
                 }}
               ></i>
             ))}
           </div>
           <div className="card__footer">
-            {cardData.task.length !== 0 && (
+            {cardData?.task?.length !== 0 && (
               <div className="task">
                 <CheckSquare />
                 <span>
-                  {`${cardData.task.filter((item: { completed: any }) => item.completed).length} / ${cardData.task.length}`}
+                  {`${cardData?.task?.filter((item: { completed: any }) => item.completed).length} / ${cardData?.task?.length}`}
                 </span>
               </div>
             )}
