@@ -128,7 +128,7 @@ export default function ConfiguracaoUsuario() {
                       </button>
                       <div className={styles.statusSection}>
                         <span className={styles.statusLabel}>Status:</span>
-                        <FaCheck className={`${styles.statusIcon} ${styles.statusIcon.active}`} />
+                        <FaCheck className={`${styles.statusIcon} ${styles.active}`} />
                         <button
                           className={`${styles.actionButton} ${styles.deactivateButton}`}
                           disabled={loadingId === usuario.idusuarios}
@@ -174,7 +174,7 @@ export default function ConfiguracaoUsuario() {
                       </button>
                       <div className={styles.statusSection}>
                         <span className={styles.statusLabel}>Status:</span>
-                        <FaTimes className={`${styles.statusIcon} ${styles.statusIcon.inactive}`} />
+                        <FaTimes className={`${styles.statusIcon} ${styles.inactive}`} />
                         <button
                           className={`${styles.actionButton} ${styles.activateButton}`}
                           disabled={loadingId === usuario.idusuarios}
