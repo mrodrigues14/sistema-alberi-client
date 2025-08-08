@@ -2,7 +2,7 @@
 .container {
   background-color: #f9fafb;
   min-height: 100vh;
-  padding-top: 120px; /* Espaço para a navbar */
+  padding-top: 80px; /* Espaço para a navbar */
 }
 
 .header {
