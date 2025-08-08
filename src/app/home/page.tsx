@@ -3,7 +3,7 @@
 import { Poppins } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import Image from "next/image";
-import { FaCalendarAlt, FaNewspaper, FaImages, FaChartLine, FaUsers, FaFileAlt, FaCog, FaTasks, FaFileAlt as FaDocument, FaExclamationTriangle } from "react-icons/fa";
+import { FaCalendarAlt, FaNewspaper, FaImages, FaChartLine, FaUsers, FaFileAlt, FaCog, FaTasks, FaFileAlt as FaDocument, FaExclamationTriangle, FaCreditCard } from "react-icons/fa";
 import Link from "next/link";
 import styles from './page.module.css';
 
@@ -55,6 +55,13 @@ export default function Home() {
       href: "/configuracaoUsuario",
       description: "Gerencie usuários e permissões",
       colorClass: styles.purpleModule
+    },
+    {
+      title: "Gestão Asaas",
+      icon: FaCreditCard,
+      href: "/gestaoAssas",
+      description: "Gerencie cobranças e clientes via Asaas",
+      colorClass: styles.orangeModule
     },
     {
       title: "Reportar Falha",

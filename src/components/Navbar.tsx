@@ -289,6 +289,7 @@ export default function Navbar() {
             { href: '/configuracaoCliente', label: 'Configuração de Cliente' },
             { href: '/configuracaoUsuario', label: 'Configuração de Usúario' },
             { href: '/chamados', label: 'Reportar Falha' },
+            { href: '/gestaoAssas', label: 'Gestão Asaas' },
           ].map((item) => (
             <Link
               key={item.href}

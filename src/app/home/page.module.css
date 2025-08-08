@@ -328,6 +328,15 @@
   background-color: #b91c1c;
 }
 
+.orangeModule {
+  background-color: #ea580c;
+}
+
+.orangeModule:hover {
+  background-color: #c2410c;
+  transform: translateY(-2px);
+}
+
 /* Cores para os ícones de estatísticas */
 .blueIcon {
   background-color: #dbeafe;
