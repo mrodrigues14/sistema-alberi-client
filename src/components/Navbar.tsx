@@ -137,36 +137,118 @@ export default function Navbar() {
   }, []);
 
   return (
-    <nav className={`bg-white shadow-md ${font.className}`}>
-      <div className="flex flex-col md:flex-row justify-between items-center px-2 sm:px-4 md:px-6 py-1 md:py-2 space-y-2 md:space-y-0">
-        {/* Lado esquerdo: logo + botão menu mobile */}
+    <nav className={`bg-white shadow-md ${font.className} z-50`}>
+      <div className="flex flex-col md:flex-row justify-between items-center px-2 sm:px-4 md:px-6 py-2 md:py-2 space-y-2 md:space-y-0">
+        {/* Lado esquerdo: logo + seleção de cliente + botão menu mobile */}
         <div className="flex items-center justify-between w-full md:w-auto">
-          <a href="/home" className="p-0 mr-4">
-            <Image
-              src="/icone_imagem.png"
-              alt="Menu inicial"
-              width={70} // Reduzido
-              height={50}
-              className="object-contain"
-            />
-          </a>
+          <div className="flex items-center gap-3">
+            <a href="/home" className="p-0">
+              <Image
+                src="/icone_imagem.png"
+                alt="Menu inicial"
+                width={70}
+                height={50}
+                className="object-contain"
+              />
+            </a>
+            
+            {/* Seleção de Cliente - Visível apenas no mobile */}
+            <div className="md:hidden relative" ref={clienteDropdownRef}>
+              <button
+                onClick={() => toggleDropdown('cliente')}
+                className="px-3 py-2 text-sm text-gray-600 bg-gray-100 rounded border hover:bg-gray-200 transition"
+              >
+                {selectedCliente ? 
+                  `${viewMode === 'meus' ? '👤 ' : '📋 '}${selectedCliente.nome}` : 
+                  'Selecionar Cliente'
+                }
+              </button>
+              {showDropdown === 'cliente' && (
+                <div className="absolute bg-white border rounded shadow-lg mt-1 w-64 z-10 text-sm">
+                  {/* Opções de filtro */}
+                  <div className="border-b bg-gray-50">
+                    <button
+                      className={`block w-full text-left px-4 py-2 text-sm font-medium ${
+                        viewMode === 'todos' ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100'
+                      }`}
+                      onClick={() => {
+                        // Selecionar "Todos os Clientes" (ID 68)
+                        const todosClientesId = 68;
+                        const todosClientesNome = "Todos Clientes Vinculados ao Perfil!";
+                        
+                        setSelectedCliente({ id: todosClientesId, nome: todosClientesNome });
+                        sessionStorage.setItem("selectedCliente", JSON.stringify({ id: todosClientesId, nome: todosClientesNome }));
+                        setIdCliente(todosClientesId);
+                        setViewMode('todos');
+                        sessionStorage.setItem("viewMode", 'todos');
+                        setSearchQuery('');
+                        setShowDropdown(null);
+                      }}
+                    >
+                      📋 Todos os Clientes
+                    </button>
+                    <button
+                      className={`block w-full text-left px-4 py-2 text-sm font-medium ${
+                        viewMode === 'meus' ? 'bg-blue-100 text-blue-800' : 'hover:bg-gray-100'
+                      }`}
+                      onClick={handleMeusClientesSelect}
+                    >
+                      👤 Meus Clientes
+                    </button>
+                  </div>
+                  
+                  <input
+                    type="text"
+                    className="block px-4 py-2 border-b w-full text-sm"
+                    placeholder="Pesquisar cliente"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  <div className="max-h-60 overflow-y-auto text-sm">
+                    {filteredClientes.map((cliente: Cliente) => (
+                      <button
+                        key={cliente.idcliente}
+                        className="block w-full text-left px-4 py-2 hover:bg-gray-200"
+                        onClick={() => handleClienteSelect(cliente)}
+                      >
+                        {cliente.apelido || cliente.nome}
+                      </button>
+                    ))}
+                    {filteredClientes.length === 0 && (
+                      <div className="px-4 py-2 text-gray-500 text-center">
+                        {viewMode === 'meus' ? 'Nenhum cliente vinculado encontrado' : 'Nenhum cliente encontrado'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
           <button
             className="md:hidden ml-4"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
         </div>
 
         {/* Menu principal */}
-        <div className={`w-full md:flex md:items-center md:space-x-2 ${isMobileMenuOpen ? 'block' : 'hidden'}`}>
+        <div className={`w-full md:flex md:items-center md:space-x-2 ${isMobileMenuOpen ? 'block' : 'hidden'} bg-white md:bg-transparent`}>
+          {/* Nome do usuário - Visível apenas no mobile quando menu aberto */}
+          <div className="md:hidden px-3 py-2 text-sm text-gray-600 border-b border-gray-200 mb-2">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Usuário:</span>
+              <span>{usuario}</span>
+            </div>
+          </div>
+
           {/* Tarefas */}
           <Link
             href="/kanban"
-            className="block px-2 sm:px-3 py-1 text-sm sm:text-[13px] border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-1 sm:mt-0"
+            className="block px-3 py-2 text-sm border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-sm mt-1 md:mt-0 text-center md:text-left"
           >
             Tarefas
           </Link>
@@ -175,12 +257,12 @@ export default function Navbar() {
           <div className="relative">
             <button
               onClick={() => toggleDropdown('estudos')}
-              className="block px-2 sm:px-3 py-1 text-sm sm:text-[13px] border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-1 sm:mt-0"
+              className="block w-full px-3 py-2 text-sm border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-sm mt-1 md:mt-0 text-center md:text-left"
             >
               Estudos
             </button>
             {showDropdown === 'estudos' && (
-              <div className="absolute bg-white border rounded shadow-lg mt-2 w-52 z-10 text-sm">
+              <div className="absolute bg-white border rounded shadow-lg mt-1 w-full md:w-52 z-10 text-sm">
                 {[
                   { href: '/estudos/resumoMensal', label: 'Resumo Mensal' },
                   { href: '/estudos/resumo-financeiro', label: 'Resumo Financeiro' },
@@ -211,22 +293,38 @@ export default function Navbar() {
             <Link
               key={item.href}
               href={item.href}
-              className="block px-2 sm:px-3 py-1 text-sm sm:text-[13px] border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-md mt-1 sm:mt-0"
+              className="block px-3 py-2 text-sm border border-gray-300 rounded hover:bg-[#2d3692] hover:text-white transition shadow-sm mt-1 md:mt-0 text-center md:text-left"
             >
               {item.label}
             </Link>
           ))}
+
+          {/* Botão Sair - Visível apenas no mobile quando menu aberto */}
+          <div className="md:hidden">
+            <button
+              className="w-full px-3 py-2 text-sm border border-red-300 rounded bg-red-50 hover:bg-red-100 text-red-700 transition shadow-sm mt-1 text-center"
+              onMouseDown={async (e) => {
+                e.preventDefault();
+                sessionStorage.removeItem("selectedCliente");
+                localStorage.clear();
+                setIdCliente(null);
+                await signOut({ callbackUrl: "/" });
+              }}
+            >
+              Sair
+            </button>
+          </div>
         </div>
 
 
 
         {/* Lado direito: Cliente + Usuário */}
-        <div className="flex flex-col sm:flex-row items-center gap-2 mt-3 md:mt-0 md:ml-4 text-sm sm:text-[13px]">
-          {/* Cliente */}
-          <div className="relative" ref={clienteDropdownRef}>
+        <div className="flex flex-col sm:flex-row items-center gap-2 mt-3 md:mt-0 md:ml-4 text-sm">
+          {/* Cliente - Visível apenas no desktop */}
+          <div className="relative w-full sm:w-auto hidden md:block" ref={clienteDropdownRef}>
             <button
               onClick={() => toggleDropdown('cliente')}
-              className="px-3 py-1 border border-gray-300 rounded bg-gray-100 hover:bg-gray-200 transition shadow-sm w-full sm:w-44"
+              className="px-3 py-2 border border-gray-300 rounded bg-gray-100 hover:bg-gray-200 transition shadow-sm w-full sm:w-44 text-center md:text-left"
             >
               {selectedCliente ? 
                 `${viewMode === 'meus' ? '👤 ' : '📋 '}${selectedCliente.nome}` : 
@@ -234,7 +332,7 @@ export default function Navbar() {
               }
             </button>
             {showDropdown === 'cliente' && (
-              <div className="absolute bg-white border rounded shadow-lg mt-2 w-full sm:w-[250px] z-10">
+              <div className="absolute bg-white border rounded shadow-lg mt-1 w-full sm:w-[250px] z-10">
                 {/* Opções de filtro */}
                 <div className="border-b bg-gray-50">
                   <button
@@ -294,11 +392,11 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Usuário */}
-          <div className="relative" ref={usuarioDropdownRef}>
+          {/* Usuário - Visível apenas no desktop */}
+          <div className="relative w-full sm:w-auto hidden md:block" ref={usuarioDropdownRef}>
             <button
               onClick={() => toggleDropdown("usuario")}
-              className="px-3 py-1 border border-gray-300 rounded bg-white hover:bg-[#8BACAF] transition shadow-sm w-full sm:w-44"
+              className="px-3 py-2 border border-gray-300 rounded bg-white hover:bg-[#2d3692] hover:text-white transition shadow-sm w-full sm:w-44 text-center md:text-left"
             >
               {usuario}
             </button>

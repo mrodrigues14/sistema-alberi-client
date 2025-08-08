@@ -2,7 +2,7 @@
 
 import Navbar from '@/components/Navbar';
 import React, { useEffect, useMemo, useState } from 'react';
-import { FaFilePdf, FaFileExcel, FaPlusCircle, FaUpload, FaDownload } from 'react-icons/fa'; // Ícones de PDF e Excel
+import { FaFilePdf, FaFileExcel, FaPlusCircle, FaUpload, FaDownload } from 'react-icons/fa';
 import InsercaoManual from './components/insercaoManual/insercaoManual';
 import Calendario from './components/calendario/calendario';
 import TabelaExtrato from './components/tabelaExtrato/tabelaExtrato';
@@ -17,6 +17,7 @@ import * as XLSX from "xlsx";
 import PreviewExtrato from './components/previewExtrato/previewExtrato';
 import { useSubextratos } from '@/lib/hooks/useSubextrato';
 import { useBancoContext } from '@/context/BancoContext';
+import styles from './page.module.css';
 
 const Extrato: React.FC = () => {
     const { idCliente } = useClienteContext();
@@ -59,7 +60,6 @@ const Extrato: React.FC = () => {
         shouldFetchData ? anoSelecionado : undefined
     );
 
-
     const { subextratos, isLoading, isError, mutate: mutateSubextratos } = useSubextratos();
 
     const { saldoInicial, definidoManualmente, isLoading: loadingSaldo } = useSaldoInicial(
@@ -80,11 +80,11 @@ const Extrato: React.FC = () => {
         const categoriasFilhas: Categoria[] = categoriasCliente.filter((cat: Categoria) => cat.idCategoriaPai);
 
         return categoriasPai
-            .sort((a, b) => a.nome.localeCompare(b.nome)) // 🔹 Ordenando pais em ordem alfabética
+            .sort((a, b) => a.nome.localeCompare(b.nome))
             .flatMap((pai) => {
                 const subrubricas = categoriasFilhas
                     .filter((filha) => filha.idCategoriaPai === pai.idcategoria)
-                    .sort((a, b) => a.nome.localeCompare(b.nome)) // 🔹 Ordenando filhos em ordem alfabética
+                    .sort((a, b) => a.nome.localeCompare(b.nome))
                     .map((filha) => ({
                         label: `   └ ${filha.nome}`,
                         value: filha.idcategoria,
@@ -92,7 +92,7 @@ const Extrato: React.FC = () => {
                     }));
 
                 return [
-                    { label: pai.nome, value: pai.idcategoria, disabled: subrubricas.length > 0 }, // 🔹 Pai aparece antes dos filhos
+                    { label: pai.nome, value: pai.idcategoria, disabled: subrubricas.length > 0 },
                     ...subrubricas,
                 ];
             });
@@ -102,13 +102,12 @@ const Extrato: React.FC = () => {
         if (!fornecedores?.length) return [];
 
         return fornecedores
-            .sort((a, b) => a.nome.localeCompare(b.nome)) // 🔹 Ordena os fornecedores por nome
+            .sort((a, b) => a.nome.localeCompare(b.nome))
             .map((fornecedor) => ({
                 label: fornecedor?.nome,
                 value: fornecedor?.idfornecedor,
             }));
     }, [fornecedores]);
-
 
     const excelDateToJSDate = (serial: any) => {
         if (typeof serial !== "number" || isNaN(serial)) return "";
@@ -121,7 +120,6 @@ const Extrato: React.FC = () => {
 
         return date_info.toISOString().split("T")[0].split("-").reverse().join("/");
     };
-
 
     const formatarValorFinanceiro = (valor: number | string) => {
         if (typeof valor === "string") valor = parseFloat(valor.replace(",", "."));
@@ -173,12 +171,11 @@ const Extrato: React.FC = () => {
                 tipo: string;
                 valor: string;
             } => item !== null));
-            setMostrarPreview(true); // <- aqui mostra o modal
+            setMostrarPreview(true);
         } catch (error) {
             console.error("Erro ao processar o arquivo:", error);
         }
     };
-
 
     const handleToggleSelecionado = (id: number) => {
         setSelecionados((prev) =>
@@ -198,7 +195,7 @@ const Extrato: React.FC = () => {
         const [ano, mes, dia] = data.split("-");
         return `${dia}/${mes}/${ano}`;
     };
-    /** ✅ Atualiza o banco selecionado e salva no sessionStorage **/
+
     const handleBancoChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedBancoId = Number(event.target.value);
         const banco = bancos?.find(b => b.idbanco === selectedBancoId);
@@ -209,13 +206,9 @@ const Extrato: React.FC = () => {
         }
     };
 
-
-
-    /** ✅ Atualiza o método de inserção **/
     const handleInsercaoChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         setMetodoInsercao(event.target.value);
     };
-
 
     const handleSelectMonth = (mes: string, ano: string) => {
         if (mes !== mesSelecionado || ano !== anoSelecionado) {
@@ -238,8 +231,6 @@ const Extrato: React.FC = () => {
         }
     };
 
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         if (typeof window !== "undefined") {
             const storedBanco = sessionStorage.getItem("bancoSelecionado");
@@ -292,8 +283,6 @@ const Extrato: React.FC = () => {
             }));
     }, [subextratos, extratos]);
 
-
-
     useEffect(() => {
         if (!mesSelecionado || !anoSelecionado) {
             const dataAtual = new Date();
@@ -310,198 +299,205 @@ const Extrato: React.FC = () => {
         }
     }, []);
 
-
     return (
         <>
             <div className="fixed top-0 left-0 w-full z-10">
                 <Navbar />
-                <div className="mt-5 w-full px-10 flex justify-between items-start gap-4 flex-wrap">
-                    <div className="relative">
-                        <button
-                            onClick={() => setDropdownAberto(prev => !prev)}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 transition"
-                        >
-                            Inserir Lançamentos Extrato <FaPlusCircle />
-                        </button>
+            </div>
 
-                        {dropdownAberto && (
-                            <div className="absolute mt-2 bg-white border rounded shadow-md p-4 min-w-[250px] z-50">
+            <div className={styles.container}>
+                {/* Header com controles */}
+                <div className={styles.header}>
+                    <div className={styles.headerContent}>
+                        <div className={styles.controlsRow}>
+                            {/* Controles da esquerda */}
+                            <div className={styles.leftControls}>
+                                <div className={styles.dropdown}>
+                                    <button
+                                        onClick={() => setDropdownAberto(prev => !prev)}
+                                        className={styles.insertButton}
+                                    >
+                                        Inserir Lançamentos Extrato <FaPlusCircle />
+                                    </button>
+
+                                    {dropdownAberto && (
+                                        <div className={styles.dropdownMenu}>
+                                            <select
+                                                className={styles.dropdownSelect}
+                                                value={metodoInsercao}
+                                                onChange={(e) => {
+                                                    handleInsercaoChange(e);
+                                                    setDropdownAberto(false);
+                                                }}
+                                            >
+                                                <option value="">Selecione o Método</option>
+                                                <option value="manual">Inserção Manual</option>
+                                                <option value="importar">Importar Arquivo</option>
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Controles do centro */}
+                            <div className={styles.centerControls}>
                                 <select
-                                    className="w-full px-3 py-2 border rounded mb-2"
-                                    value={metodoInsercao}
-                                    onChange={(e) => {
-                                        handleInsercaoChange(e);
-                                        setDropdownAberto(false);
-                                    }}
+                                    className={styles.bankSelect}
+                                    value={bancoSelecionado || ''}
+                                    onChange={handleBancoChange}
                                 >
-                                    <option value="">Selecione o Método</option>
-                                    <option value="manual">Inserção Manual</option>
-                                    <option value="importar">Importar Arquivo</option>
+                                    <option value="" disabled>Selecione o Banco</option>
+                                    {bancos.map((banco: Banco) => (
+                                        <option key={banco.idbanco} value={banco.idbanco}>
+                                            {banco.nome} - {banco.tipo}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
-                        )}
-                    </div>
 
-                    {/* Centro: Seletor de banco */}
-                    <div className="flex-1 flex justify-center">
-                        <select
-                            className="px-4 py-2 border rounded shadow-md min-w-[250px]"
-                            value={bancoSelecionado || ''}
-                            onChange={handleBancoChange}
-                        >
-                            <option value="" disabled>Selecione o Banco</option>
-                            {bancos.map((banco: Banco) => (
-                                <option key={banco.idbanco} value={banco.idbanco}>
-                                    {banco.nome} - {banco.tipo}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                            {/* Controles da direita */}
+                            <div className={styles.rightControls}>
+                                {/* Botão: Adicionar */}
+                                <div className={styles.dropdown}>
+                                    <button
+                                        onClick={() => {
+                                            setDropdownAdicionarAberto(!dropdownAdicionarAberto);
+                                            setDropdownAcoesAberto(false);
+                                        }}
+                                        className={styles.actionButton}
+                                    >
+                                        Adicionar <FaChevronDown size={14} />
+                                    </button>
 
-                    {/* Direita: Adicionar e Ações */}
-                    <div className="flex items-center gap-4">
-                        {/* Botão: Adicionar */}
-                        <div className="relative">
-                            <button
-                                onClick={() => {
-                                    setDropdownAdicionarAberto(!dropdownAdicionarAberto);
-                                    setDropdownAcoesAberto(false);
-                                }}
-                                className="px-4 py-2 border rounded hover:bg-gray-100 transition flex items-center gap-2"
-                            >
-                                Adicionar <FaChevronDown size={14} />
-                            </button>
-
-                            {dropdownAdicionarAberto && (
-                                <div className="absolute right-0 mt-2 bg-white border rounded shadow-md w-52 z-50">
-                                    <button
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
-                                        onClick={() => {
-                                            setShowModalRubrica(true);
-                                            setDropdownAdicionarAberto(false);
-                                        }}
-                                    >
-                                        Adicionar Rubricas
-                                    </button>
-                                    <button
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
-                                        onClick={() => {
-                                            setShowModalFornecedor(true);
-                                            setDropdownAdicionarAberto(false);
-                                        }}
-                                    >
-                                        Adicionar Fornecedor
-                                    </button>
-                                    <button
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
-                                        onClick={() => {
-                                            setShowModalBanco(true);
-                                            setDropdownAdicionarAberto(false);
-                                        }}
-                                    >
-                                        Adicionar Banco
-                                    </button>
-                                    <button
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
-                                        onClick={() => {
-                                            setShowModalSaldoInicial(true);
-                                            setDropdownAdicionarAberto(false);
-                                        }}
-                                    >
-                                        Adicionar Saldo Inicial
-                                    </button>
+                                    {dropdownAdicionarAberto && (
+                                        <div className={styles.actionDropdown}>
+                                            <button
+                                                className={styles.actionDropdownItem}
+                                                onClick={() => {
+                                                    setShowModalRubrica(true);
+                                                    setDropdownAdicionarAberto(false);
+                                                }}
+                                            >
+                                                Adicionar Rubricas
+                                            </button>
+                                            <button
+                                                className={styles.actionDropdownItem}
+                                                onClick={() => {
+                                                    setShowModalFornecedor(true);
+                                                    setDropdownAdicionarAberto(false);
+                                                }}
+                                            >
+                                                Adicionar Fornecedor
+                                            </button>
+                                            <button
+                                                className={styles.actionDropdownItem}
+                                                onClick={() => {
+                                                    setShowModalBanco(true);
+                                                    setDropdownAdicionarAberto(false);
+                                                }}
+                                            >
+                                                Adicionar Banco
+                                            </button>
+                                            <button
+                                                className={styles.actionDropdownItem}
+                                                onClick={() => {
+                                                    setShowModalSaldoInicial(true);
+                                                    setDropdownAdicionarAberto(false);
+                                                }}
+                                            >
+                                                Adicionar Saldo Inicial
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
 
-                        {/* Botão: Ações */}
-                        <div className="relative">
-                            <button
-                                onClick={() => {
-                                    setDropdownAcoesAberto(!dropdownAcoesAberto);
-                                    setDropdownAdicionarAberto(false);
-                                }}
-                                className="px-4 py-2 border rounded hover:bg-gray-100 transition flex items-center gap-2"
-                            >
-                                Ações <FaChevronDown size={14} />
-                            </button>
-
-                            {dropdownAcoesAberto && (
-                                <div className="absolute right-0 mt-2 bg-white border rounded shadow-md w-64 z-50">
+                                {/* Botão: Ações */}
+                                <div className={styles.dropdown}>
                                     <button
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
                                         onClick={() => {
-                                            handleSelecionarTodos();
-                                            setDropdownAcoesAberto(false);
+                                            setDropdownAcoesAberto(!dropdownAcoesAberto);
+                                            setDropdownAdicionarAberto(false);
                                         }}
+                                        className={styles.actionButton}
                                     >
-                                        {selecionados.length === dadosTabela.length ? "Desmarcar Todos" : "Selecionar Todos"}
-                                    </button>
-                                    <button
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
-                                        onClick={() => {
-                                            handleDeletarSelecionados();
-                                            setDropdownAcoesAberto(false);
-                                        }}
-                                    >
-                                        Deletar Selecionados
+                                        Ações <FaChevronDown size={14} />
                                     </button>
 
-                                    <button
-                                        className="w-full text-left px-4 py-2 hover:bg-gray-100 transition"
-                                        onClick={() => {
-                                            setEditandoLote(true);
-                                            setDropdownAcoesAberto(false);
-                                        }}
-                                    >
-                                        Editar Todas as Linhas
-                                    </button>
-
+                                    {dropdownAcoesAberto && (
+                                        <div className={styles.actionDropdown}>
+                                            <button
+                                                className={styles.actionDropdownItem}
+                                                onClick={() => {
+                                                    handleSelecionarTodos();
+                                                    setDropdownAcoesAberto(false);
+                                                }}
+                                            >
+                                                {selecionados.length === dadosTabela.length ? "Desmarcar Todos" : "Selecionar Todos"}
+                                            </button>
+                                            <button
+                                                className={styles.actionDropdownItem}
+                                                onClick={() => {
+                                                    handleDeletarSelecionados();
+                                                    setDropdownAcoesAberto(false);
+                                                }}
+                                            >
+                                                Deletar Selecionados
+                                            </button>
+                                            <button
+                                                className={styles.actionDropdownItem}
+                                                onClick={() => {
+                                                    setEditandoLote(true);
+                                                    setDropdownAcoesAberto(false);
+                                                }}
+                                            >
+                                                Editar Todas as Linhas
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            </div>
                         </div>
                     </div>
                 </div>
+
+                {/* Seção de importação */}
                 {metodoInsercao === "importar" && (
-                    <div className="flex flex-col gap-4 mt-4">
+                    <div className={styles.importSection}>
+                        <div className={styles.importGrid}>
+                            <a
+                                href="/template.xlsx"
+                                download
+                                className={styles.importButton}
+                            >
+                                <FaDownload />
+                                <span>Baixar Template</span>
+                            </a>
 
-                        {/* Botão de Download */}
-                        <a
-                            href="/template.xlsx"
-                            download
-                            className="flex items-center justify-center gap-3 w-full px-5 py-3 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-100 transition-all"
-                        >
-                            <FaDownload className="text-gray-500 text-lg" />
-                            <span className="text-gray-700 font-medium">Baixar Template</span>
-                        </a>
-
-
-                        {/* Botão de Upload de Arquivo */}
-                        <label
-                            htmlFor="upload-arquivo"
-                            className="flex items-center justify-center gap-3 w-full px-5 py-3 bg-blue-50 border border-blue-300 text-blue-800 rounded-lg shadow-sm hover:bg-blue-100 transition-all cursor-pointer"
-                        >
-                            <FaUpload className="text-blue-600 text-lg" />
-                            <span className="font-medium">Selecionar Arquivo</span>
-                            <input
-                                id="upload-arquivo"
-                                type="file"
-                                accept=".csv,.xlsx"
-                                onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) handleFile(file);
-                                }}
-                                className="hidden"
-                            />
-                        </label>
-
+                            <label
+                                htmlFor="upload-arquivo"
+                                className={styles.importButton}
+                            >
+                                <FaUpload />
+                                <span>Selecionar Arquivo</span>
+                                <input
+                                    id="upload-arquivo"
+                                    type="file"
+                                    accept=".csv,.xlsx"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleFile(file);
+                                    }}
+                                    className="hidden"
+                                />
+                            </label>
+                        </div>
                     </div>
                 )}
 
-
+                {/* Seção de inserção manual */}
                 {metodoInsercao === "manual" && (
-                    <div className="p-6 border rounded shadow-md mt-6">
-                        <h2 className="text-xl font-bold mb-4">Inserção Manual</h2>
+                    <div className={styles.manualSection}>
+                        <h2 className={styles.manualTitle}>Inserção Manual</h2>
                         <InsercaoManual
                             idCliente={idCliente}
                             bancoSelecionado={bancoSelecionado}
@@ -510,13 +506,13 @@ const Extrato: React.FC = () => {
                     </div>
                 )}
 
-
-                <div className="mt-5 flex flex-col items-center space-y-4 px-4">
+                {/* Calendário */}
+                <div className={styles.calendarSection}>
                     <Calendario onSelectMonth={handleSelectMonth} />
                 </div>
 
-                <div className=" w-full px-10 overflow-auto max-h-[80vh]">
-
+                {/* Conteúdo principal */}
+                <div className={styles.mainContent}>
                     <TabelaExtrato
                         dados={dadosTabela}
                         saldoInicial={saldoInicial}
@@ -535,122 +531,155 @@ const Extrato: React.FC = () => {
                         setEditandoLote={setEditandoLote}
                         onAtualizarExtratos={mutateExtratos}
                     />
-
-
                 </div>
+            </div>
 
-                {showModalBanco && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                        <div className="bg-white p-6 rounded shadow-lg w-[800px]">
-                            <h2 className="text-xl font-bold mb-4">Adicionar Banco</h2>
-                            <iframe src="/banco" className="w-full h-[600px] border-none"></iframe>
+            {/* Modais */}
+            {showModalBanco && (
+                <div className={styles.modal}>
+                    <div className={styles.modalContent}>
+                        <div className={styles.modalHeader}>
+                            <h2 className={styles.modalTitle}>Adicionar Banco</h2>
                             <button
-                                className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                                className={styles.modalClose}
+                                onClick={() => setShowModalBanco(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className={styles.modalBody}>
+                            <iframe src="/banco" className={styles.modalIframe} />
+                        </div>
+                        <div className={styles.modalFooter}>
+                            <button
+                                className={styles.closeButton}
                                 onClick={() => setShowModalBanco(false)}
                             >
                                 Fechar
                             </button>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
-                {showModalRubrica && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                        <div className="bg-white p-6 rounded shadow-lg w-[800px]">
-                            <h2 className="text-xl font-bold mb-4">Adicionar Rubrica</h2>
-                            <iframe src="/categoria" className="w-full h-[600px] border-none"></iframe>
+            {showModalRubrica && (
+                <div className={styles.modal}>
+                    <div className={styles.modalContent}>
+                        <div className={styles.modalHeader}>
+                            <h2 className={styles.modalTitle}>Adicionar Rubrica</h2>
                             <button
-                                className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                                className={styles.modalClose}
+                                onClick={() => setShowModalRubrica(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className={styles.modalBody}>
+                            <iframe src="/categoria" className={styles.modalIframe} />
+                        </div>
+                        <div className={styles.modalFooter}>
+                            <button
+                                className={styles.closeButton}
                                 onClick={() => setShowModalRubrica(false)}
                             >
                                 Fechar
                             </button>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
-                {showModalFornecedor && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                        <div className="bg-white p-6 rounded shadow-lg w-[800px]">
-                            <h2 className="text-xl font-bold mb-4">Adicionar Rubrica</h2>
-                            <iframe src="/fornecedor" className="w-full h-[600px] border-none"></iframe>
+            {showModalFornecedor && (
+                <div className={styles.modal}>
+                    <div className={styles.modalContent}>
+                        <div className={styles.modalHeader}>
+                            <h2 className={styles.modalTitle}>Adicionar Fornecedor</h2>
                             <button
-                                className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                                className={styles.modalClose}
+                                onClick={() => setShowModalFornecedor(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className={styles.modalBody}>
+                            <iframe src="/fornecedor" className={styles.modalIframe} />
+                        </div>
+                        <div className={styles.modalFooter}>
+                            <button
+                                className={styles.closeButton}
                                 onClick={() => setShowModalFornecedor(false)}
                             >
                                 Fechar
                             </button>
                         </div>
                     </div>
-                )}
-                {showModalSaldoInicial && (
-                    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                        <div className="bg-white p-6 rounded shadow-lg w-[800px]">
-                            <h2 className="text-xl font-bold mb-4">Adicionar Saldo Inicial</h2>
+                </div>
+            )}
+
+            {showModalSaldoInicial && (
+                <div className={styles.modal}>
+                    <div className={styles.modalContent}>
+                        <div className={styles.modalHeader}>
+                            <h2 className={styles.modalTitle}>Adicionar Saldo Inicial</h2>
+                            <button
+                                className={styles.modalClose}
+                                onClick={() => setShowModalSaldoInicial(false)}
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <div className={styles.modalBody}>
                             <iframe
                                 src={`/saldoInicial?idBanco=${bancoSelecionado}&idCliente=${idCliente}&mes=${mesSelecionado}&ano=${anoSelecionado}`}
-                                className="w-full h-[600px] border-none"
+                                className={styles.modalIframe}
                             />
-
-
-
+                        </div>
+                        <div className={styles.modalFooter}>
                             <button
-                                className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition"
+                                className={styles.closeButton}
                                 onClick={() => setShowModalSaldoInicial(false)}
                             >
                                 Fechar
                             </button>
                         </div>
                     </div>
-                )}
+                </div>
+            )}
 
-            </div>
+            {/* Preview do extrato */}
             {mostrarPreview && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg shadow-lg w-[95%] max-w-5xl h-[90%] overflow-y-auto">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-lg font-semibold">Pré-visualização do Extrato</h2>
+                <div className={styles.modal}>
+                    <div className={styles.modalContent}>
+                        <div className={styles.modalHeader}>
+                            <h2 className={styles.modalTitle}>Pré-visualização do Extrato</h2>
                             <button
+                                className={styles.modalClose}
                                 onClick={() => setMostrarPreview(false)}
-                                className="text-gray-600 hover:text-red-600 text-xl font-bold"
                             >
                                 ×
                             </button>
                         </div>
-
-                        <PreviewExtrato
-                            dados={dados}
-                            idCliente={idCliente!}
-                            idBanco={bancoSelecionado!}
-                            onImportarFinalizado={() => setMostrarPreview(false)}
-                        />
+                        <div className={styles.modalBody}>
+                            <PreviewExtrato
+                                dados={dados}
+                                idCliente={idCliente!}
+                                idBanco={bancoSelecionado!}
+                                onImportarFinalizado={() => setMostrarPreview(false)}
+                            />
+                        </div>
                     </div>
                 </div>
             )}
+
+            {/* Loading overlay */}
             {loadingDeletar && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
-                    <div className="bg-white p-6 rounded shadow-lg flex items-center space-x-3">
-                        <svg className="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24">
-                            <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                                fill="none"
-                            />
-                            <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
-                            />
-                        </svg>
-                        <span className="text-gray-700 font-medium">Deletando selecionados...</span>
+                <div className={styles.loadingOverlay}>
+                    <div className={styles.loadingContent}>
+                        <div className={styles.spinner}></div>
+                        <span>Deletando selecionados...</span>
                     </div>
                 </div>
             )}
-
         </>
     );
 };

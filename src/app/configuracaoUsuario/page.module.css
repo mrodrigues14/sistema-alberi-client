@@ -1,0 +1,309 @@
+/* Estilos específicos para a página de configuração de usuário */
+.container {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  min-height: 100vh;
+  padding-top: 120px;
+}
+
+.mainContent {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.addButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.addButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px -1px rgba(59, 130, 246, 0.4);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.card {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.cardHeader {
+  background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%);
+  color: white;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.cardBody {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.userItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.2s ease;
+}
+
+.userItem:hover {
+  background: #f8fafc;
+}
+
+.userItem:last-child {
+  border-bottom: none;
+}
+
+.userName {
+  font-weight: 500;
+  color: #374151;
+  flex: 1;
+  margin-right: 1rem;
+  font-size: 0.875rem;
+}
+
+.userActions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.editButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.editButton:hover {
+  background: #d97706;
+  transform: scale(1.05);
+}
+
+.statusSection {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+}
+
+.statusLabel {
+  color: #6b7280;
+}
+
+.statusIcon {
+  font-size: 1rem;
+}
+
+.statusIcon.active {
+  color: #059669;
+}
+
+.statusIcon.inactive {
+  color: #dc2626;
+}
+
+.actionButton {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border: none;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.actionButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.activateButton {
+  background: #dcfce7;
+  color: #059669;
+}
+
+.activateButton:hover:not(:disabled) {
+  background: #bbf7d0;
+  transform: translateY(-1px);
+}
+
+.deactivateButton {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.deactivateButton:hover:not(:disabled) {
+  background: #fde68a;
+  transform: translateY(-1px);
+}
+
+.loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.loadingContent {
+  background: white;
+  padding: 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 3rem;
+  height: 3rem;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.errorContent {
+  background: white;
+  padding: 2rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.errorIcon {
+  font-size: 3rem;
+  color: #dc2626;
+  margin-bottom: 1rem;
+}
+
+.errorTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #dc2626;
+  margin-bottom: 0.5rem;
+}
+
+.errorMessage {
+  color: #6b7280;
+}
+
+/* Scrollbar personalizada */
+.cardBody::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cardBody::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.cardBody::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.cardBody::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Responsividade para telas pequenas */
+@media (max-width: 640px) {
+  .mainContent {
+    padding: 1rem 0.5rem;
+  }
+  
+  .title {
+    font-size: 1.25rem;
+  }
+  
+  .userItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .userActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .statusSection {
+    font-size: 0.75rem;
+  }
+  
+  .actionButton {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.5rem;
+  }
+} 
