@@ -117,7 +117,7 @@ class AsaasService {
   }
 
   private getMockData(endpoint: string) {
-    const mockData = {
+    const mockData: Record<string, any> = {
       '/customers': {
         data: [
           {

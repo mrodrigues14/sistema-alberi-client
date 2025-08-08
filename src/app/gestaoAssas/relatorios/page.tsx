@@ -7,8 +7,8 @@ import {
   UsersIcon,
   DocumentDuplicateIcon,
   CalendarIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import Navbar from '@/components/Navbar';
@@ -201,7 +201,7 @@ export default function RelatoriosPage() {
                 <p className="text-sm font-medium text-gray-600">Faturamento Total</p>
                 <p className="text-2xl font-bold text-gray-900">{formatCurrency(reportData.totalRevenue)}</p>
                 <div className="flex items-center text-sm">
-                  <TrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
+                  <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
                   <span className="text-green-600">{formatPercentage(reportData.monthlyGrowth.revenue)}</span>
                 </div>
               </div>
@@ -217,7 +217,7 @@ export default function RelatoriosPage() {
                 <p className="text-sm font-medium text-gray-600">Total de Clientes</p>
                 <p className="text-2xl font-bold text-gray-900">{reportData.totalCustomers}</p>
                 <div className="flex items-center text-sm">
-                  <TrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
+                  <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
                   <span className="text-green-600">{formatPercentage(reportData.monthlyGrowth.customers)}</span>
                 </div>
               </div>
@@ -233,7 +233,7 @@ export default function RelatoriosPage() {
                 <p className="text-sm font-medium text-gray-600">Cobranças Pendentes</p>
                 <p className="text-2xl font-bold text-gray-900">{reportData.pendingPayments}</p>
                 <div className="flex items-center text-sm">
-                  <TrendingDownIcon className="h-4 w-4 text-red-500 mr-1" />
+                  <ArrowTrendingDownIcon className="h-4 w-4 text-red-500 mr-1" />
                   <span className="text-red-600">-10%</span>
                 </div>
               </div>
@@ -249,7 +249,7 @@ export default function RelatoriosPage() {
                 <p className="text-sm font-medium text-gray-600">Cobranças Pagas</p>
                 <p className="text-2xl font-bold text-gray-900">{reportData.receivedPayments}</p>
                 <div className="flex items-center text-sm">
-                  <TrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
+                  <ArrowTrendingUpIcon className="h-4 w-4 text-green-500 mr-1" />
                   <span className="text-green-600">{formatPercentage(reportData.monthlyGrowth.payments)}</span>
                 </div>
               </div>
@@ -339,7 +339,7 @@ export default function RelatoriosPage() {
 
           <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
             <div className="flex items-center">
-              <TrendingUpIcon className="h-8 w-8 mr-3" />
+              <ArrowTrendingUpIcon className="h-8 w-8 mr-3" />
               <div>
                 <h4 className="text-lg font-semibold">Crescimento</h4>
                 <p className="text-2xl font-bold">+25%</p>
