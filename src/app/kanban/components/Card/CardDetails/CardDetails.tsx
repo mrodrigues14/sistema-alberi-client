@@ -48,6 +48,7 @@ interface CardDetailsProps {
   updateCard: (updatedCard: any) => void;
   removeCard: (bid: string, cardId: string) => void;
   onClose: () => void;
+  setError?: (error: string, type?: "success" | "danger" | "warning") => void;
 }
 
 interface ClienteCategoria {
@@ -185,9 +186,10 @@ export default function CardDetails(props: CardDetailsProps) {
       await updateTarefa(Number(values.id), {
         descricoes: JSON.stringify(novasTasks),
       });
+      props.setError?.("✅ Task adicionada com sucesso!", "success");
     } catch (err) {
       console.error("Erro ao salvar nova task:", err);
-      alert("Erro ao adicionar a task. Tente novamente.");
+      props.setError?.("❌ Erro ao adicionar a task. Tente novamente.", "danger");
     }
   };
 
@@ -751,9 +753,10 @@ export default function CardDetails(props: CardDetailsProps) {
                       await deleteTarefa(Number(values.id)); // Deleta no backend
                       props.removeCard(props.bid, values.id); // Remove da UI
                       props.onClose(); // Fecha o modal
+                      props.setError?.("Tarefa excluída com sucesso!", "success");
                     } catch (err) {
                       console.error("Erro ao deletar tarefa:", err);
-                      alert("Erro ao excluir o cartão. Tente novamente.");
+                      props.setError?.("❌ Erro ao excluir o cartão. Tente novamente.", "danger");
                     }
                   }}
                 >

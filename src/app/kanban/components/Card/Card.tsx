@@ -18,6 +18,7 @@ interface CardProps {
   updateCard: (bid: string, cid: string, card: any) => void;
   bid: string;
   removeCard: (boardId: string, cardId: string) => void;
+  setError?: (error: string, type?: "success" | "danger" | "warning") => void;
 }
 
 const Card: React.FC<CardProps> = ({
@@ -29,6 +30,7 @@ const Card: React.FC<CardProps> = ({
   updateCard,
   bid,
   removeCard,
+  setError,
 }) => {
   const [dropdown, setDropdown] = useState(false);
   const [modalShow, setModalShow] = useState(false);
@@ -98,6 +100,7 @@ const Card: React.FC<CardProps> = ({
           }}
           bid={bid}
           removeCard={removeCard}
+          setError={setError}
         />
       )}
 

@@ -2,6 +2,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
 .App {
   height: 100vh;
   width: 100%;
@@ -10,18 +11,76 @@ body {
   background-color: var(--background-color);
   transition: all 350ms;
 }
+
+/* Container principal do Kanban */
+.kanban-container {
+  width: 100%;
+  min-height: calc(100vh - 120px);
+  background-color: #f9fafb;
+  padding: 1rem;
+}
+
+/* Container do scroll horizontal */
+.kanban-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: visible;
+  position: relative;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+/* Container dos boards */
+.kanban-boards {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 1rem;
+  padding: 0.5rem;
+  width: max-content;
+  margin: 0 auto;
+  min-height: calc(100vh - 250px);
+  margin-top: 1rem;
+}
+
+/* Estilização da scrollbar horizontal - sempre visível */
+.kanban-scroll-container::-webkit-scrollbar {
+  height: 20px;
+  background-color: #f1f1f1;
+}
+
+.kanban-scroll-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.kanban-scroll-container::-webkit-scrollbar-thumb {
+  background: #666;
+  border-radius: 10px;
+  border: 2px solid #f1f1f1;
+}
+
+.kanban-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+/* Garantir que o scroll horizontal seja sempre visível */
+.kanban-scroll-container {
+  scrollbar-width: auto;
+  scrollbar-color: #888 #f1f1f1;
+}
+
 .app_outer {
   display: flex;
-  justify-content: center; /* 🔹 Alinha os boards no centro horizontal */
-  height: 100vh; /* 🔹 Ocupa toda a altura da tela */
+  justify-content: center;
+  height: 100vh;
   padding: 20px;
 }
 
 .app_boards {
   display: flex;
-  gap: 20px; /* 🔹 Espaço entre os boards */
-  flex-wrap: wrap; /* 🔹 Permite que quebrem linha caso não caibam */
-  justify-content: center; /* 🔹 Centraliza horizontalmente */
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* p {

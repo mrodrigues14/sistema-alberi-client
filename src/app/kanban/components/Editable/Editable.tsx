@@ -15,12 +15,12 @@ interface EditableProps {
   btnName?: string;
   setHandler?: (value: boolean) => void;
   name?: string;
-  status?: string; // Torne opcional se não for usado em todas as situações
+  status?: string;
   addCardLocal?: (card: any) => void;
   updateCardId?: (oldId: string, newCard: any) => void;
   removeCardLocal?: (id: string) => void;
-  onSubmit?: (value: string) => void; // Nova propriedade para envio de dados
-  setError?: (error: string) => void;
+  onSubmit?: (value: string) => void;
+  setError?: (error: string, type?: "success" | "danger" | "warning") => void;
 }
 
 
@@ -74,7 +74,7 @@ const Editable: FC<EditableProps> = (props) => {
   
     try {
       const tarefaCriada = await createTarefa(novaTarefa);
-  
+
       props.updateCardId?.(tarefaTempId, {
         ...novaTarefaLocal,
         id: tarefaCriada.idtarefa.toString(),
@@ -84,10 +84,11 @@ const Editable: FC<EditableProps> = (props) => {
         prioridade: tarefaCriada.prioridade || 0,
         idCliente: tarefaCriada.idCliente,
       });
-  
+
       mutateTarefas();
+      props.setError?.("Tarefa criada com sucesso!", "success");
     } catch (error) {
-      alert("Erro ao criar tarefa.");
+      props.setError?.("❌ Erro ao criar tarefa. Tente novamente.", "danger");
       props.removeCardLocal?.(tarefaTempId);
     } finally {
       setText("");

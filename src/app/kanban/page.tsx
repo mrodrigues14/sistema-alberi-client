@@ -35,6 +35,7 @@ interface BoardData {
 const Kanban = () => {
   const [activeCard, setActiveCard] = useState<Card | null>(null);
   const [error, setError] = useState<string>("");
+  const [messageType, setMessageType] = useState<"success" | "danger" | "warning">("warning");
   
   // Limpar erro após 5 segundos
   useEffect(() => {
@@ -45,6 +46,12 @@ const Kanban = () => {
       return () => clearTimeout(timer);
     }
   }, [error]);
+
+  // Função para mostrar mensagens com tipo apropriado
+  const showMessage = (message: string, type: "success" | "danger" | "warning" = "warning") => {
+    setError(message);
+    setMessageType(type);
+  };
   
   const { usuarios } = useUsuarios();
   const { idCliente } = useClienteContext();
@@ -214,24 +221,26 @@ const Kanban = () => {
       <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="App">
           <Navbar />
-          <div className="overflow-x-auto w-full xl:flex xl:justify-center lg:h-screen lg:p-5">
-          <div className="flex flex-nowrap space-x-4 px-4 py-2 w-fit" style={{ gap: "2rem", justifyContent: "center" }}>
-              {data.map((item) => (
-                <SortableContext key={item.id} items={item.card.map((c) => c.id)}>
-                  <div className="w-[250px] shrink-0 px-2">
-                    <Board
-                      id={item.id}
-                      name={item.boardName}
-                      card={item.card}
-                      addCard={addCard}
-                      removeCard={removeCard}
-                      updateCard={updateCard}
-                      isLoading={isLoading}
-                      setError={setError}
-                    />
-                  </div>
-                </SortableContext>
-              ))}
+          <div className="w-full min-h-screen bg-gray-50">
+            <div className="kanban-scroll-container">
+              <div className="kanban-boards">
+                {data.map((item) => (
+                  <SortableContext key={item.id} items={item.card.map((c) => c.id)}>
+                    <div className="w-[260px] xl:w-[280px] h-[600px] 2xl:h-auto shrink-0">
+                      <Board
+                        id={item.id}
+                        name={item.boardName}
+                        card={item.card}
+                        addCard={addCard}
+                        removeCard={removeCard}
+                        updateCard={updateCard}
+                        isLoading={isLoading}
+                        setError={showMessage}
+                      />
+                    </div>
+                  </SortableContext>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -252,7 +261,7 @@ const Kanban = () => {
         </DragOverlay>
       </DndContext>
 
-      {error && <AvisoAlerta mensagem={error} tipo="warning" />}
+      {error && <AvisoAlerta mensagem={error} tipo={messageType} />}
     </>
   );
 };

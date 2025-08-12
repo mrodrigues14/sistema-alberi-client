@@ -26,11 +26,11 @@ interface BoardProps {
     autor: string;
     dataLimite?: string;
   }[];
-  isLoading: boolean; // 👈 NOVO
+  isLoading: boolean;
   addCard: (title: string, bid: string) => void;
   removeCard: (boardId: string, cardId: string) => void;
   updateCard: (bid: string, cid: string, card: any) => void;
-  setError: (error: string) => void;
+  setError: (error: string, type?: "success" | "danger" | "warning") => void;
 }
 
 
@@ -69,6 +69,7 @@ const Board: React.FC<BoardProps> = ({ id, name, card, isLoading, removeCard, up
               updateCard={updateCard}
               removeCard={removeCard}
               card={item}
+              setError={setError}
             />
           ))
         )}

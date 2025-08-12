@@ -37,7 +37,7 @@ export default function ConfiguracaoUsuario() {
   if (isLoading) {
     return (
       <>
-        <div className="fixed top-0 left-0 w-full z-10">
+        <div>
           <Navbar />
         </div>
         <div className={styles.container}>
@@ -60,7 +60,7 @@ export default function ConfiguracaoUsuario() {
   if (isError) {
     return (
       <>
-        <div className="fixed top-0 left-0 w-full z-10">
+        <div>
           <Navbar />
         </div>
         <div className={styles.container}>
