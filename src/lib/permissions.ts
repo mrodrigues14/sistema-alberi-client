@@ -227,8 +227,8 @@ export function getNavigationByRole(userRole: string | undefined): NavigationIte
 export function hasModuleAccess(userRole: string | undefined, moduleId: string): boolean {
   if (!userRole) return false;
   
-  const module = AVAILABLE_MODULES.find(m => m.id === moduleId);
-  return module ? module.roles.includes(userRole) && module.visible : false;
+  const foundModule = AVAILABLE_MODULES.find(m => m.id === moduleId);
+  return foundModule ? foundModule.roles.includes(userRole) && foundModule.visible : false;
 }
 
 // Função para verificar se um usuário tem acesso a uma rota específica
@@ -236,9 +236,9 @@ export function hasRouteAccess(userRole: string | undefined, route: string): boo
   if (!userRole) return false;
   
   // Verifica se a rota está nos módulos
-  const module = AVAILABLE_MODULES.find(m => m.href === route);
-  if (module) {
-    return module.roles.includes(userRole) && module.visible;
+  const foundModule = AVAILABLE_MODULES.find(m => m.href === route);
+  if (foundModule) {
+    return foundModule.roles.includes(userRole) && foundModule.visible;
   }
   
   // Verifica se a rota está na navegação

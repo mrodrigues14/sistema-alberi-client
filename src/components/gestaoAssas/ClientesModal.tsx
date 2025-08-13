@@ -327,7 +327,7 @@ export default function ClientesModal({ isOpen, onClose }: ClientesModalProps) {
                   </p>
                   {!searchTerm && (
                     <p className="text-sm text-gray-400 mt-1">
-                      Clique em "Novo Cliente" para começar
+                      Clique em &quot;Novo Cliente&quot; para começar
                     </p>
                   )}
                 </div>

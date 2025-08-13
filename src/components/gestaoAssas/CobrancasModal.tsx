@@ -342,7 +342,7 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
                   </p>
                   {paymentFilter === 'all' && (
                     <p className="text-sm text-gray-400 mt-1">
-                      Clique em "Nova Cobrança" para começar
+                      Clique em &quot;Nova Cobrança&quot; para começar
                     </p>
                   )}
                 </div>
