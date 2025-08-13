@@ -6,19 +6,6 @@ export const config = {
   isDevelopment: process.env.NODE_ENV === 'development',
   isProduction: process.env.NODE_ENV === 'production',
 
-  // Configurações do Asaas
-  asaas: {
-    environment: process.env.ASAAS_ENVIRONMENT || 'sandbox',
-    apiUrl: process.env.ASAAS_ENVIRONMENT === 'production' 
-      ? process.env.ASAAS_API_URL_PRODUCTION 
-      : process.env.ASAAS_API_URL_SANDBOX,
-    apiKey: process.env.ASAAS_ENVIRONMENT === 'production'
-      ? process.env.ASAAS_API_KEY_PRODUCTION
-      : process.env.ASAAS_API_KEY_SANDBOX,
-    isSandbox: process.env.ASAAS_ENVIRONMENT === 'sandbox',
-    isProduction: process.env.ASAAS_ENVIRONMENT === 'production'
-  },
-
   // Configurações do Backend
   api: {
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001'
@@ -64,9 +51,7 @@ export const config = {
 // Função para validar se todas as configurações necessárias estão presentes
 export function validateConfig() {
   const requiredConfigs = [
-    'NEXTAUTH_SECRET',
-    'ASAAS_API_KEY_SANDBOX',
-    'ASAAS_API_KEY_PRODUCTION'
+    'NEXTAUTH_SECRET'
   ];
 
   const missingConfigs = requiredConfigs.filter(key => !process.env[key]);
@@ -77,25 +62,4 @@ export function validateConfig() {
   }
 
   return missingConfigs.length === 0;
-}
-
-// Função para obter a URL da API do Asaas baseada no ambiente
-export function getAsaasApiUrl(): string {
-  if (config.asaas.isProduction) {
-    return config.asaas.apiUrl || 'https://api.asaas.com/';
-  }
-  return config.asaas.apiUrl || 'https://api-sandbox.asaas.com/';
-}
-
-// Função para obter a chave da API do Asaas baseada no ambiente
-export function getAsaasApiKey(): string {
-  if (config.asaas.isProduction) {
-    return config.asaas.apiKey || '';
-  }
-  return config.asaas.apiKey || '';
-}
-
-// Função para verificar se a API do Asaas está configurada
-export function isAsaasConfigured(): boolean {
-  return !!(getAsaasApiUrl() && getAsaasApiKey());
 } 

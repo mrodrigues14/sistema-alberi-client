@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { useCliente } from "@/lib/hooks/useCliente";
 import { useMeusClientes } from "@/lib/hooks/useMeusClientes";
 import { useClienteContext } from "@/context/ClienteContext";
+import { usePermissions } from "@/lib/hooks/usePermissions";
 import Image from 'next/image';
 import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
@@ -46,6 +47,26 @@ const Icons = {
   asaas: () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+    </svg>
+  ),
+  contract: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+    </svg>
+  ),
+  category: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+    </svg>
+  ),
+  supplier: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+    </svg>
+  ),
+  balance: () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
     </svg>
   ),
   chevronDown: () => (
@@ -92,6 +113,7 @@ export default function Navbar() {
   const { data: session } = useSession();
   const { clientes, isLoading, isError } = useCliente();
   const { meusClientes, isLoading: isLoadingMeusClientes } = useMeusClientes();
+  const { userNavigation, userRole, getRoleDescription } = usePermissions();
   const [usuario, setUsuario] = useState('Carregando...');
   const [showDropdown, setShowDropdown] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -348,6 +370,17 @@ export default function Navbar() {
                 </button>
                 {showDropdown === "usuario" && (
                   <div className="absolute top-full right-0 mt-2 w-48 bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-xl z-20 overflow-hidden">
+                    {/* Informações do role */}
+                    {userRole && (
+                      <div className="px-4 py-3 border-b border-slate-200/40 bg-gradient-to-r from-slate-50 to-slate-100/50">
+                        <div className="flex items-center space-x-2">
+                          <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                          <span className="text-xs font-medium text-slate-600">
+                            {getRoleDescription()}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                     <button
                       className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-150 flex items-center space-x-3"
                       onMouseDown={async (e) => {
@@ -381,82 +414,70 @@ export default function Navbar() {
         <div className="bg-white border-b border-slate-200/60 shadow-sm">
           <div className="w-full px-6 sm:px-8 lg:px-10">
             <div className="flex items-center justify-center space-x-3 py-3">
-              {/* Tarefas */}
-              <Link
-                href="/kanban"
-                className={`group flex items-center space-x-3 px-4 py-2.5 text-sm font-medium backdrop-blur-sm border-2 rounded-xl transition-all duration-300 shadow-md hover:scale-105 ${
-                  pathname === '/kanban'
-                    ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white border-slate-600 shadow-lg'
-                    : 'text-slate-700 bg-white/90 border-slate-200/60 hover:bg-gradient-to-r hover:from-slate-100 hover:to-slate-200 hover:text-slate-800 hover:border-slate-300 hover:shadow-lg'
-                }`}
-              >
-                <Icons.tasks />
-                <span>Tarefas</span>
-              </Link>
-
-              {/* Dropdown de Estudos */}
-              <div className="relative">
-                <button
-                  onClick={() => toggleDropdown('estudos')}
-                  className={`group flex items-center space-x-3 px-4 py-2.5 text-sm font-medium backdrop-blur-sm border-2 rounded-xl transition-all duration-300 shadow-md hover:scale-105 ${
-                    pathname.startsWith('/estudos')
-                      ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white border-slate-600 shadow-lg'
-                      : 'text-slate-700 bg-white/90 border-slate-200/60 hover:bg-gradient-to-r hover:from-slate-100 hover:to-slate-200 hover:text-slate-800 hover:border-slate-300 hover:shadow-lg'
-                  }`}
-                >
-                  <Icons.studies />
-                  <span>Estudos</span>
-                  <Icons.chevronDown />
-                </button>
-                {showDropdown === 'estudos' && (
-                  <div className="absolute top-full left-0 mt-2 w-64 bg-white/95 backdrop-blur-md border-2 border-slate-200/60 rounded-2xl shadow-xl z-50 overflow-hidden">
-                    <div className="p-2">
-                      {[
-                        { href: '/estudos/resumoMensal', label: 'Resumo Mensal', icon: '📊' },
-                        { href: '/estudos/resumo-financeiro', label: 'Resumo Financeiro', icon: '💰' },
-                        { href: '/estudos/resumo-anual', label: 'Resumo Anual', icon: '📈' },
-                        { href: '/estudos/resumo-faturamento', label: 'Resumo Faturamento Mensal', icon: '📋' },
-                        { href: '/estudos/resumo-conta', label: 'Resumo da Conta', icon: '🏦' },
-                        { href: '/estudos/metas', label: 'Metas', icon: '🎯' },
-                      ].map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={`flex items-center space-x-3 px-4 py-3 text-sm rounded-lg transition-colors duration-150 ${
-                            pathname === item.href
-                              ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white'
-                              : 'text-slate-700 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100'
-                          }`}
-                        >
-                          <span className="font-medium">{item.label}</span>
-                        </Link>
-                      ))}
+              {/* Renderiza apenas os itens de navegação que o usuário pode acessar */}
+              {userNavigation.map((item) => {
+                // Se for o item de estudos, renderiza com dropdown
+                if (item.href === '/estudos') {
+                  return (
+                    <div key={item.href} className="relative">
+                      <button
+                        onClick={() => toggleDropdown('estudos')}
+                        className={`group flex items-center space-x-3 px-4 py-2.5 text-sm font-medium backdrop-blur-sm border-2 rounded-xl transition-all duration-300 shadow-md hover:scale-105 ${
+                          pathname.startsWith('/estudos')
+                            ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white border-slate-600 shadow-lg'
+                            : 'text-slate-700 bg-white/90 border-slate-200/60 hover:bg-gradient-to-r hover:from-slate-100 hover:to-slate-200 hover:text-slate-800 hover:border-slate-300 hover:shadow-lg'
+                        }`}
+                      >
+                        {getIconComponent(item.icon)()}
+                        <span>{item.label}</span>
+                        <Icons.chevronDown />
+                      </button>
+                      {showDropdown === 'estudos' && (
+                        <div className="absolute top-full left-0 mt-2 w-64 bg-white/95 backdrop-blur-md border-2 border-slate-200/60 rounded-2xl shadow-xl z-50 overflow-hidden">
+                          <div className="p-2">
+                            {[
+                              { href: '/estudos/resumoMensal', label: 'Resumo Mensal', icon: '📊' },
+                              { href: '/estudos/resumo-financeiro', label: 'Resumo Financeiro', icon: '💰' },
+                              { href: '/estudos/resumo-anual', label: 'Resumo Anual', icon: '📈' },
+                              { href: '/estudos/resumo-faturamento', label: 'Resumo Faturamento Mensal', icon: '📋' },
+                              { href: '/estudos/resumo-conta', label: 'Resumo da Conta', icon: '🏦' },
+                              { href: '/estudos/metas', label: 'Metas', icon: '🎯' },
+                            ].map((subItem) => (
+                              <Link
+                                key={subItem.href}
+                                href={subItem.href}
+                                className={`flex items-center space-x-3 px-4 py-3 text-sm rounded-lg transition-colors duration-150 ${
+                                  pathname === subItem.href
+                                    ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white'
+                                    : 'text-slate-700 hover:bg-gradient-to-r hover:from-slate-50 hover:to-slate-100'
+                                }`}
+                              >
+                                <span className="font-medium">{subItem.label}</span>
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Outros links do menu */}
-              {[
-                { href: '/extrato', label: 'Extrato bancário', icon: Icons.bank },
-                { href: '/configuracaoCliente', label: 'Configuração de Cliente', icon: Icons.client },
-                { href: '/configuracaoUsuario', label: 'Configuração de Usuário', icon: Icons.user },
-                { href: '/chamados', label: 'Reportar Falha', icon: Icons.bug },
-                { href: '/gestaoAssas', label: 'Gestão Asaas', icon: Icons.asaas },
-              ].map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`group flex items-center space-x-3 px-4 py-2.5 text-sm font-medium backdrop-blur-sm border-2 rounded-xl transition-all duration-300 shadow-md hover:scale-105 ${
-                    pathname === item.href
-                      ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white border-slate-600 shadow-lg'
-                      : 'text-slate-700 bg-white/90 border-slate-200/60 hover:bg-gradient-to-r hover:from-slate-100 hover:to-slate-200 hover:text-slate-800 hover:border-slate-300 hover:shadow-lg'
-                  }`}
-                >
-                  <item.icon />
-                  <span>{item.label}</span>
-                </Link>
-              ))}
+                  );
+                }
+                
+                // Para outros itens, renderiza como link normal
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`group flex items-center space-x-3 px-4 py-2.5 text-sm font-medium backdrop-blur-sm border-2 rounded-xl transition-all duration-300 shadow-md hover:scale-105 ${
+                      pathname === item.href
+                        ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white border-slate-600 shadow-lg'
+                        : 'text-slate-700 bg-white/90 border-slate-200/60 hover:bg-gradient-to-r hover:from-slate-100 hover:to-slate-200 hover:text-slate-800 hover:border-slate-300 hover:shadow-lg'
+                    }`}
+                  >
+                    {getIconComponent(item.icon)()}
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -570,7 +591,7 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Nome do usuário - Mobile */}
+        {/* Nome do usuário e role - Mobile */}
         <div className="px-4 py-3 text-sm text-slate-600 border-b border-slate-200/60 mb-4 bg-gradient-to-r from-slate-50 to-slate-100/50 rounded-lg">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
@@ -579,72 +600,70 @@ export default function Navbar() {
             <div>
               <span className="font-semibold text-slate-800">Usuário:</span>
               <p className="text-slate-700">{usuario}</p>
+              {userRole && (
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                  <span className="text-xs text-slate-600">{getRoleDescription()}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Menu mobile */}
         <div className="space-y-3">
-          {/* Tarefas */}
-          <Link
-            href="/kanban"
-            className="group flex items-center space-x-3 px-4 py-3 text-sm font-medium text-slate-700 bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent hover:shadow-lg transition-all duration-300 shadow-sm"
-          >
-            <Icons.tasks />
-            <span>Tarefas</span>
-          </Link>
-
-          {/* Dropdown de Estudos */}
-          <div className="relative">
-            <button
-              onClick={() => toggleDropdown('estudos')}
-              className="group flex items-center space-x-3 px-4 py-3 text-sm font-medium text-slate-700 bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent hover:shadow-lg transition-all duration-300 shadow-sm w-full"
-            >
-              <Icons.studies />
-              <span>Estudos</span>
-              <Icons.chevronDown />
-            </button>
-            {showDropdown === 'estudos' && (
-              <div className="mt-2 w-full bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-xl overflow-hidden">
-                <div className="p-2">
-                  {[
-                    { href: '/estudos/resumoMensal', label: 'Resumo Mensal', icon: '📊' },
-                    { href: '/estudos/resumo-financeiro', label: 'Resumo Financeiro', icon: '💰' },
-                    { href: '/estudos/resumo-anual', label: 'Resumo Anual', icon: '📈' },
-                    { href: '/estudos/resumo-faturamento', label: 'Resumo Faturamento Mensal', icon: '📋' },
-                    { href: '/estudos/resumo-conta', label: 'Resumo da Conta', icon: '🏦' },
-                    { href: '/estudos/metas', label: 'Metas', icon: '🎯' },
-                  ].map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors duration-150"
-                    >
-                      <span className="font-medium">{item.label}</span>
-                    </Link>
-                  ))}
+          {/* Renderiza apenas os itens de navegação que o usuário pode acessar */}
+          {userNavigation.map((item) => {
+            // Se for o item de estudos, renderiza com dropdown
+            if (item.href === '/estudos') {
+              return (
+                <div key={item.href} className="relative">
+                  <button
+                    onClick={() => toggleDropdown('estudos')}
+                    className="group flex items-center space-x-3 px-4 py-3 text-sm font-medium text-slate-700 bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent hover:shadow-lg transition-all duration-300 shadow-sm w-full"
+                  >
+                                       {getIconComponent(item.icon)()}
+                   <span>{item.label}</span>
+                   <Icons.chevronDown />
+                  </button>
+                  {showDropdown === 'estudos' && (
+                    <div className="mt-2 w-full bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-xl overflow-hidden">
+                      <div className="p-2">
+                        {[
+                          { href: '/estudos/resumoMensal', label: 'Resumo Mensal', icon: '📊' },
+                          { href: '/estudos/resumo-financeiro', label: 'Resumo Financeiro', icon: '💰' },
+                          { href: '/estudos/resumo-anual', label: 'Resumo Anual', icon: '📈' },
+                          { href: '/estudos/resumo-faturamento', label: 'Resumo Faturamento Mensal', icon: '📋' },
+                          { href: '/estudos/resumo-conta', label: 'Resumo da Conta', icon: '🏦' },
+                          { href: '/estudos/metas', label: 'Metas', icon: '🎯' },
+                        ].map((subItem) => (
+                          <Link
+                            key={subItem.href}
+                            href={subItem.href}
+                            className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors duration-150"
+                          >
+                            <span className="font-medium">{subItem.label}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Outros links do menu mobile */}
-          {[
-            { href: '/extrato', label: 'Extrato bancário', icon: Icons.bank },
-            { href: '/configuracaoCliente', label: 'Configuração de Cliente', icon: Icons.client },
-            { href: '/configuracaoUsuario', label: 'Configuração de Usuário', icon: Icons.user },
-            { href: '/chamados', label: 'Reportar Falha', icon: Icons.bug },
-            { href: '/gestaoAssas', label: 'Gestão Asaas', icon: Icons.asaas },
-          ].map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="group flex items-center space-x-3 px-4 py-3 text-sm font-medium text-slate-700 bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent hover:shadow-lg transition-all duration-300 shadow-sm"
-            >
-              <item.icon />
-              <span>{item.label}</span>
-            </Link>
-          ))}
+              );
+            }
+            
+            // Para outros itens, renderiza como link normal
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group flex items-center space-x-3 px-4 py-3 text-sm font-medium text-slate-700 bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent hover:shadow-lg transition-all duration-300 shadow-sm"
+              >
+                {getIconComponent(item.icon)()}
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
 
           {/* Botão Sair - Mobile */}
           <button
@@ -663,4 +682,23 @@ export default function Navbar() {
       </div>
     </>
   );
+}
+
+// Função auxiliar para obter o componente de ícone baseado no nome
+function getIconComponent(iconName: string) {
+  const iconMap: { [key: string]: () => JSX.Element } = {
+    tasks: Icons.tasks,
+    studies: Icons.studies,
+    bank: Icons.bank,
+    client: Icons.client,
+    user: Icons.user,
+    bug: Icons.bug,
+    asaas: Icons.asaas,
+    contract: Icons.contract,
+    category: Icons.category,
+    supplier: Icons.supplier,
+    balance: Icons.balance,
+  };
+  
+  return iconMap[iconName] || Icons.tasks;
 }
