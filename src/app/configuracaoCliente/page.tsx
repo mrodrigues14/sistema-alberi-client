@@ -15,6 +15,15 @@ export default function ConfiguracaoCliente() {
   const [clienteEditando, setClienteEditando] = useState<Cliente | null>(null);
   const [loadingId, setLoadingId] = useState<number | null>(null);
 
+  // Debug: verificar se o componente está funcionando
+  console.log("ConfiguracaoCliente renderizado:", {
+    isLoading,
+    isError,
+    clientesAtivos: clientesAtivos?.length,
+    clientesInativos: clientesInativos?.length,
+    modalOpen
+  });
+
   const handleSalvarCliente = async (cliente: Cliente) => {
     if (clienteEditando) {
       await updateCliente(cliente.idcliente, cliente);
@@ -77,7 +86,7 @@ export default function ConfiguracaoCliente() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 w-full z-10">
+      <div className=" top-0 left-0 w-full z-10">
         <Navbar />
       </div>
 
@@ -85,8 +94,12 @@ export default function ConfiguracaoCliente() {
         <div className={styles.mainContent}>
           <div className={styles.header}>
             <h1 className={styles.title}>Configuração de Cliente</h1>
+          </div>
+
+          <div className={styles.buttonContainer}>
             <button
               onClick={() => {
+                console.log("Botão clicado - abrindo modal");
                 setClienteEditando(null);
                 setModalOpen(true);
               }}

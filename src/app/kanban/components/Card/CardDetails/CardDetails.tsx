@@ -71,32 +71,6 @@ export default function CardDetails(props: CardDetailsProps) {
   const { updateCard } = props;
   console.log("CardDetails props", props);
   const [values, setValues] = useState(() => {
-    if (typeof window !== "undefined") {
-      const savedCard = localStorage.getItem(`card-${props.card.id}`);
-      if (savedCard) {
-        const parsed = JSON.parse(savedCard);
-        return {
-          ...parsed,
-          dataLimite:
-            parsed.dataLimite && parsed.dataLimite !== "0000-00-00"
-              ? parsed.dataLimite
-              : props.card.dataLimite,
-        };
-      }
-
-      return {
-        ...props.card,
-        autor: props.card.autor || "",
-        company: String(props.card.idCliente) || "",
-        task: props.card.task.map((t, index) => ({
-          id: index + 1,
-          text: t.text,
-          completed: t.completed,
-        })),
-        dataLimite: props.card.dataLimite,
-      };
-    }
-
     return {
       ...props.card,
       autor: props.card.autor || "",
@@ -116,24 +90,34 @@ export default function CardDetails(props: CardDetailsProps) {
   };
 
   const confirmEditTask = async (id: string) => {
-    const updatedTasks = values.task.map((task: Task) =>
-      task.id === id ? { ...task, text: editingTaskText } : task
-    );
-
-    setValues((prev: any) => ({
-      ...prev,
-      task: updatedTasks,
-    }));
-
-    setEditingTaskId(null);
-    setEditingTaskText("");
-
     try {
+      const updatedTasks = values.task.map((task: Task) =>
+        task.id === id ? { ...task, text: editingTaskText } : task
+      );
+
+      // Atualiza no estado local primeiro
+      setValues((prev: any) => ({
+        ...prev,
+        task: updatedTasks,
+      }));
+
+      // Atualiza no backend
       await updateTarefa(Number(values.id), {
         descricoes: JSON.stringify(updatedTasks),
       });
+
+      setEditingTaskId(null);
+      setEditingTaskText("");
+      props.setError?.("✅ Task atualizada com sucesso!", "success");
     } catch (error) {
       console.error("Erro ao atualizar tarefa:", error);
+      props.setError?.("❌ Erro ao atualizar task. Tente novamente.", "danger");
+      
+      // Se falhar, reverte a mudança local
+      setValues((prev: any) => ({
+        ...prev,
+        task: values.task,
+      }));
     }
   };
 
@@ -169,45 +153,77 @@ export default function CardDetails(props: CardDetailsProps) {
   };
 
   const addTask = async (value: string) => {
-    const novaTask = {
-      id: uuidv4(),
-      text: value,
-      completed: false,
-    };
-
-    const novasTasks = [...values.task, novaTask];
-
-    setValues((prev: any) => ({
-      ...prev,
-      task: novasTasks,
-    }));
-
     try {
+      const novaTask = {
+        id: uuidv4(),
+        text: value,
+        completed: false,
+      };
+
+      const novasTasks = [...values.task, novaTask];
+
+      // Atualiza no estado local primeiro
+      setValues((prev: any) => ({
+        ...prev,
+        task: novasTasks,
+      }));
+
+      // Atualiza no backend
       await updateTarefa(Number(values.id), {
         descricoes: JSON.stringify(novasTasks),
       });
+      
       props.setError?.("✅ Task adicionada com sucesso!", "success");
     } catch (err) {
       console.error("Erro ao salvar nova task:", err);
       props.setError?.("❌ Erro ao adicionar a task. Tente novamente.", "danger");
+      
+      // Se falhar, reverte a adição local
+      setValues((prev: any) => ({
+        ...prev,
+        task: values.task,
+      }));
     }
   };
 
 
 
-  const removeTask = (id: string) => {
-    const remaningTask = values.task.filter((item: Task) => item.id !== id);
-    setValues({ ...values, task: remaningTask });
+  const removeTask = async (id: string) => {
+    try {
+      const remaningTask = values.task.filter((item: Task) => item.id !== id);
+      
+      // Atualiza no estado local primeiro
+      setValues({ ...values, task: remaningTask });
+      
+      // Atualiza no backend
+      await updateTarefa(Number(values.id), {
+        descricoes: JSON.stringify(remaningTask),
+      });
+      
+      props.setError?.("✅ Task removida com sucesso!", "success");
+    } catch (error) {
+      console.error("Erro ao remover task:", error);
+      props.setError?.("❌ Erro ao remover a task. Tente novamente.", "danger");
+      
+      // Se falhar, reverte a remoção local
+      setValues({ ...values, task: values.task });
+    }
   };
 
   const updateTitle = useCallback(async (value: string) => {
-    setValues((prevValues: any) => {
-      const updated = { ...prevValues, title: value };
-      atualizarTarefa({ titulo: value }); // ⬅️ Chamada ao backend
-      return updated;
-    });
+    try {
+      setValues((prevValues: any) => {
+        const updated = { ...prevValues, title: value };
+        return updated;
+      });
+      
+      // Atualiza no backend
+      await atualizarTarefa({ titulo: value });
+    } catch (error) {
+      console.error("Erro ao atualizar título:", error);
+      props.setError?.("❌ Erro ao atualizar título. Tente novamente.", "danger");
+    }
   }, []);
-
 
   const calculatePercent = () => {
     const totalTask = values.task.length;
@@ -218,30 +234,51 @@ export default function CardDetails(props: CardDetailsProps) {
     return Math.floor((completedTask * 100) / totalTask) || 0;
   };
 
-  const removeTag = (id: string) => {
-    const tagsFiltradas = values.tags.filter((item: Tag) => item.id !== id);
-
-    setValues({ ...values, tags: tagsFiltradas });
-
-    atualizarTarefa({ labels: tagsFiltradas }); // ✅ Aqui também
+  const removeTag = async (id: string) => {
+    try {
+      const tagsFiltradas = values.tags.filter((item: Tag) => item.id !== id);
+      
+      // Atualiza no estado local primeiro
+      setValues({ ...values, tags: tagsFiltradas });
+      
+      // Atualiza no backend
+      await atualizarTarefa({ labels: tagsFiltradas });
+      
+      props.setError?.("✅ Tag removida com sucesso!", "success");
+    } catch (error) {
+      console.error("Erro ao remover tag:", error);
+      props.setError?.("❌ Erro ao remover a tag. Tente novamente.", "danger");
+      
+      // Se falhar, reverte a remoção local
+      setValues({ ...values, tags: values.tags });
+    }
   };
 
+  const addTag = async (value: string, color: string) => {
+    try {
+      const novaTag = {
+        id: uuidv4(),
+        tagName: value,
+        color: color,
+      };
 
-
-  const addTag = (value: string, color: string) => {
-    const novaTag = {
-      id: uuidv4(),
-      tagName: value,
-      color: color,
-    };
-
-    const tagsAtualizadas = [...values.tags, novaTag];
-
-    setValues((prev: any) => ({ ...prev, tags: tagsAtualizadas }));
-
-    atualizarTarefa({ labels: tagsAtualizadas }); // ✅ Aqui
+      const tagsAtualizadas = [...values.tags, novaTag];
+      
+      // Atualiza no estado local primeiro
+      setValues((prev: any) => ({ ...prev, tags: tagsAtualizadas }));
+      
+      // Atualiza no backend
+      await atualizarTarefa({ labels: tagsAtualizadas });
+      
+      props.setError?.("✅ Tag adicionada com sucesso!", "success");
+    } catch (error) {
+      console.error("Erro ao adicionar tag:", error);
+      props.setError?.("❌ Erro ao adicionar a tag. Tente novamente.", "danger");
+      
+      // Se falhar, reverte a adição local
+      setValues((prev: any) => ({ ...prev, tags: values.tags }));
+    }
   };
-
 
 
   const handelClickListner = useCallback((e: KeyboardEvent) => {
@@ -259,11 +296,7 @@ export default function CardDetails(props: CardDetailsProps) {
   }, [text, values.title, handelClickListner]);
 
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(`card-${values.id}`, JSON.stringify(values));
-    }
-  }, [values, updateCard]);
+
 
   useEffect(() => {
     if (clientes && values.company) {
@@ -289,42 +322,63 @@ export default function CardDetails(props: CardDetailsProps) {
       await updateTarefa(Number(values.id), payload);
     } catch (error) {
       console.error("Erro ao atualizar tarefa:", error);
+      throw error; // Re-lança o erro para ser tratado pela função chamadora
     }
   };
 
   const updateTaskCompleted = async (id: string) => {
-    const updatedTasks = values.task.map((task: Task) =>
-      task.id === id ? { ...task, completed: !task.completed } : task
-    );
-    setValues((prevValues: typeof values) => ({
-      ...prevValues,
-      task: updatedTasks,
-    }));
-
     try {
+      const updatedTasks = values.task.map((task: Task) =>
+        task.id === id ? { ...task, completed: !task.completed } : task
+      );
+      
+      // Atualiza no estado local primeiro
+      setValues((prevValues: typeof values) => ({
+        ...prevValues,
+        task: updatedTasks,
+      }));
+
+      // Atualiza no backend
       await updateTarefa(Number(values.id), {
         descricoes: JSON.stringify(updatedTasks),
       });
     } catch (error) {
       console.error("Erro ao atualizar tarefa:", error);
+      props.setError?.("❌ Erro ao atualizar tarefa. Tente novamente.", "danger");
+      
+      // Se falhar, reverte a mudança local
+      setValues((prevValues: typeof values) => ({
+        ...prevValues,
+        task: values.task,
+      }));
     }
   };
 
   const updateTaskText = async (id: string, newText: string) => {
-    const updatedTasks = values.task.map((task: Task) =>
-      task.id === id ? { ...task, text: newText } : task
-    );
-    setValues((prevValues: typeof values) => ({
-      ...prevValues,
-      task: updatedTasks,
-    }));
-
     try {
+      const updatedTasks = values.task.map((task: Task) =>
+        task.id === id ? { ...task, text: newText } : task
+      );
+      
+      // Atualiza no estado local primeiro
+      setValues((prevValues: typeof values) => ({
+        ...prevValues,
+        task: updatedTasks,
+      }));
+
+      // Atualiza no backend
       await updateTarefa(Number(values.id), {
         descricoes: JSON.stringify(updatedTasks),
       });
     } catch (error) {
       console.error("Erro ao atualizar texto da tarefa:", error);
+      props.setError?.("❌ Erro ao atualizar texto da tarefa. Tente novamente.", "danger");
+      
+      // Se falhar, reverte a mudança local
+      setValues((prevValues: typeof values) => ({
+        ...prevValues,
+        task: values.task,
+      }));
     }
   };
 
@@ -578,12 +632,17 @@ export default function CardDetails(props: CardDetailsProps) {
                       className={values.prioridade >= star ? "star selected" : "star"}
                       fill={values.prioridade >= star ? "gold" : "gray"} // Apenas a estrela será preenchida
                       stroke="none" // Remove o contorno preto
-                      onClick={() => {
-                        setValues((prev: any) => {
-                          atualizarTarefa({ prioridade: String(star) });
-                          return { ...prev, prioridade: star };
-                        });
-                      }}
+                                              onClick={async () => {
+                          try {
+                            setValues((prev: any) => ({ ...prev, prioridade: star }));
+                            await atualizarTarefa({ prioridade: String(star) });
+                          } catch (error) {
+                            console.error("Erro ao atualizar prioridade:", error);
+                            props.setError?.("❌ Erro ao atualizar prioridade. Tente novamente.", "danger");
+                            // Reverte a mudança local se falhar
+                            setValues((prev: any) => ({ ...prev, prioridade: values.prioridade }));
+                          }
+                        }}
                     />
                   ))}
                 </div>
@@ -619,12 +678,17 @@ export default function CardDetails(props: CardDetailsProps) {
                           .map((user: Usuario) => (
                             <li
                               key={user.idusuarios}
-                              onClick={() => {
-                                setValues((prev: any) => {
-                                  atualizarTarefa({ idUsuario: user.idusuarios });
-                                  return { ...prev, autor: user.nomeDoUsuario };
-                                });
-                                setIsDropdownOpen(false);
+                              onClick={async () => {
+                                try {
+                                  setValues((prev: any) => ({ ...prev, autor: user.nomeDoUsuario }));
+                                  await atualizarTarefa({ idUsuario: user.idusuarios });
+                                  setIsDropdownOpen(false);
+                                } catch (error) {
+                                  console.error("Erro ao atualizar responsável:", error);
+                                  props.setError?.("❌ Erro ao atualizar responsável. Tente novamente.", "danger");
+                                  // Reverte a mudança local se falhar
+                                  setValues((prev: any) => ({ ...prev, autor: values.autor }));
+                                }
                               }}
 
                             >
@@ -647,14 +711,19 @@ export default function CardDetails(props: CardDetailsProps) {
                   <select
                     className="select-field"
                     value={values.company}
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       const value = e.target.value;
                       const empresaId = value ? Number(value) : null;
 
-                      setValues((prev: any) => {
-                        atualizarTarefa({ idCliente: empresaId });
-                        return { ...prev, company: value };
-                      });
+                      try {
+                        setValues((prev: any) => ({ ...prev, company: value }));
+                        await atualizarTarefa({ idCliente: empresaId });
+                      } catch (error) {
+                        console.error("Erro ao atualizar empresa:", error);
+                        props.setError?.("❌ Erro ao atualizar empresa. Tente novamente.", "danger");
+                        // Reverte a mudança local se falhar
+                        setValues((prev: any) => ({ ...prev, company: values.company }));
+                      }
                     }}
                   >
                     {/* Opção SEM empresa */}
@@ -710,21 +779,26 @@ export default function CardDetails(props: CardDetailsProps) {
                           dataLimite: formatted,
                         }));
                       }}
-                      onBlur={() => {
+                      onBlur={async () => {
                         const raw = values.dataLimite.replace(/\D/g, "");
 
-                        if (!raw) {
-                          setValues((prev: any) => ({
-                            ...prev,
-                            dataLimite: "",
-                          }));
-                          atualizarTarefa({ dataLimite: "0000-00-00" });
-                        } else if (raw.length === 8) {
-                          const dd = raw.slice(0, 2);
-                          const mm = raw.slice(2, 4);
-                          const yyyy = raw.slice(4);
-                          const formatToDB = `${yyyy}-${mm}-${dd}`;
-                          atualizarTarefa({ dataLimite: formatToDB });
+                        try {
+                          if (!raw) {
+                            setValues((prev: any) => ({
+                              ...prev,
+                              dataLimite: "",
+                            }));
+                            await atualizarTarefa({ dataLimite: "0000-00-00" });
+                          } else if (raw.length === 8) {
+                            const dd = raw.slice(0, 2);
+                            const mm = raw.slice(2, 4);
+                            const yyyy = raw.slice(4);
+                            const formatToDB = `${yyyy}-${mm}-${dd}`;
+                            await atualizarTarefa({ dataLimite: formatToDB });
+                          }
+                        } catch (error) {
+                          console.error("Erro ao atualizar data limite:", error);
+                          props.setError?.("❌ Erro ao atualizar data limite. Tente novamente.", "danger");
                         }
                       }}
                     />

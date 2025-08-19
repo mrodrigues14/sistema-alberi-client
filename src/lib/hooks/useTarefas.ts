@@ -53,6 +53,7 @@ export async function createTarefa(novaTarefa: any) {
 // 🔹 Atualizar uma tarefa
 export async function updateTarefa(id: number, updates: any) {
   try {
+    // Usa PATCH que é o método correto suportado pelo backend
     const res = await fetch(`${BASE_URL}/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },

@@ -28,14 +28,15 @@ interface BoardProps {
   }[];
   isLoading: boolean;
   addCard: (title: string, bid: string) => void;
+  addCardToBoard: (boardId: string, newCard: any) => void;
   removeCard: (boardId: string, cardId: string) => void;
   updateCard: (bid: string, cid: string, card: any) => void;
   setError: (error: string, type?: "success" | "danger" | "warning") => void;
 }
 
-
-const Board: React.FC<BoardProps> = ({ id, name, card, isLoading, removeCard, updateCard, setError }) => {
+const Board: React.FC<BoardProps> = ({ id, name, card, isLoading, removeCard, updateCard, addCardToBoard, setError }) => {
   const { setNodeRef, isOver } = useDroppable({ id });
+  
   return (
     <div className="board">
       <div
@@ -58,7 +59,6 @@ const Board: React.FC<BoardProps> = ({ id, name, card, isLoading, removeCard, up
           <p className="text-center text-sm text-gray-500">Carregando tarefas...</p>
         ) : (
           card.map((item, index) => (
-            
             <Card
               bid={id}
               id={item.id}
@@ -75,7 +75,6 @@ const Board: React.FC<BoardProps> = ({ id, name, card, isLoading, removeCard, up
         )}
       </div>
 
-
       <div className="board__footer">
         <Editable
           name="Adicionar Tarefa"
@@ -83,19 +82,12 @@ const Board: React.FC<BoardProps> = ({ id, name, card, isLoading, removeCard, up
           placeholder="Digite o título da tarefa..."
           status={name}
           addCardLocal={(card) => {
-            updateCard(id, card.id.toString(), card);
-          }}
-          updateCardId={(oldId, newCard) => {
-            removeCard(id, oldId); // remove o fake
-            updateCard(id, newCard.id, newCard); // insere o real
-          }}
-          removeCardLocal={(idTemp) => {
-            removeCard(id, idTemp); // remove se falhar
+            // Adiciona o card diretamente ao board local
+            // O card já foi criado no backend, então só precisamos atualizar a UI
+            addCardToBoard(id, card);
           }}
           setError={setError}
         />
-
-
       </div>
     </div>
   );

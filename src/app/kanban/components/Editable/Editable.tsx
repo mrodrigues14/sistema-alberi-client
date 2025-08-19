@@ -23,7 +23,6 @@ interface EditableProps {
   setError?: (error: string, type?: "success" | "danger" | "warning") => void;
 }
 
-
 const Editable: FC<EditableProps> = (props) => {
   const [show, setShow] = useState<boolean>(props?.handler || false);
   const [text, setText] = useState<string>(props.defaultValue || "");
@@ -40,64 +39,58 @@ const Editable: FC<EditableProps> = (props) => {
       props.setError?.("Por favor, insira um nome para a tarefa!");
       return;
     }
-  
+
     if (props.onSubmit) {
       props.onSubmit(text); 
       setText("");
       setShow(false);
       return;
     }
-  
-    const tarefaTempId = crypto.randomUUID(); 
-  
-    const novaTarefaLocal = {
-      id: tarefaTempId,
-      title: text,
-      tags: [],
-      task: [],
-      prioridade: 0,
-      idCliente: idCliente ?? null,
-      autor: session?.user?.name || "Desconhecido",
-    };
-  
+
     setLoading(true);
-  
-    props.addCardLocal?.(novaTarefaLocal);
-  
-    const novaTarefa: Tarefa = {
-      titulo: text,
-      idCliente: idCliente ?? null,
-      idUsuario: idUsuario ?? null,
-      status: props.status || "A Fazer",
-      dataInicio: new Date().toISOString().split("T")[0],
-    };
-  
+
     try {
+      // Cria a tarefa diretamente no backend
+      const novaTarefa: Tarefa = {
+        titulo: text,
+        idCliente: idCliente ?? null,
+        idUsuario: idUsuario ?? null,
+        status: props.status || "A Fazer",
+        dataInicio: new Date().toISOString().split("T")[0],
+      };
+
       const tarefaCriada = await createTarefa(novaTarefa);
 
-      props.updateCardId?.(tarefaTempId, {
-        ...novaTarefaLocal,
+      // Cria o card local com os dados reais da tarefa criada
+      const novoCard = {
         id: tarefaCriada.idtarefa.toString(),
         title: tarefaCriada.titulo,
         tags: tarefaCriada.labels || [],
         task: JSON.parse(tarefaCriada.descricoes || "[]"),
         prioridade: tarefaCriada.prioridade || 0,
         idCliente: tarefaCriada.idCliente,
-      });
+        autor: session?.user?.name || "Desconhecido",
+        dataLimite: tarefaCriada.dataLimite,
+      };
 
-      mutateTarefas();
+      // Adiciona o card real diretamente
+      props.addCardLocal?.(novoCard);
+
+      // Atualiza o cache do SWR
+      if (mutateTarefas) {
+        mutateTarefas();
+      }
+
       props.setError?.("Tarefa criada com sucesso!", "success");
-    } catch (error) {
-      props.setError?.("❌ Erro ao criar tarefa. Tente novamente.", "danger");
-      props.removeCardLocal?.(tarefaTempId);
-    } finally {
       setText("");
       setShow(false);
+    } catch (error) {
+      console.error("Erro ao criar tarefa:", error);
+      props.setError?.("❌ Erro ao criar tarefa. Tente novamente.", "danger");
+    } finally {
       setLoading(false);
     }
   };
-  
-  
 
   return (
     <div className={`editable ${props.parentClass}`}>

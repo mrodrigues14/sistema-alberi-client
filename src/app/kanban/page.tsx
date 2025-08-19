@@ -9,7 +9,7 @@ import Board from "./components/Board/Board";
 import Navbar from "@/components/Navbar";
 import AvisoAlerta from "@/components/avisoAlerta/avisoAlerta";
 import "./page.css";
-import { updateTarefa, useTarefas } from "@/lib/hooks/useTarefas";
+import { updateTarefa, useTarefas, deleteTarefa } from "@/lib/hooks/useTarefas";
 import { useTarefasMeusClientes } from "@/lib/hooks/useTarefasMeusClientes";
 import Card from "./components/Card/Card";
 import { useUsuarios } from "@/lib/hooks/useUsuarios";
@@ -60,15 +60,16 @@ const Kanban = () => {
   const isMeusClientes = idCliente === -1; // ID especial para "Meus Clientes"
   const isTodosClientes = idCliente === 68; // ID para "Todos os Clientes"
   
-  const { tarefas: tarefasTodos, isLoading: isLoadingTodos } = useTarefas(
+  const { tarefas: tarefasTodos, isLoading: isLoadingTodos, mutateTarefas: mutateTarefasTodos } = useTarefas(
     isTodosClientes ? undefined : (!isMeusClientes ? idCliente ?? undefined : undefined)
   );
   
-  const { tarefas: tarefasMeus, isLoading: isLoadingMeus } = useTarefasMeusClientes();
+  const { tarefas: tarefasMeus, isLoading: isLoadingMeus, mutateTarefas: mutateTarefasMeus } = useTarefasMeusClientes();
   
   // Usar as tarefas corretas baseado no modo selecionado
   const tarefas = isMeusClientes ? tarefasMeus : tarefasTodos;
   const isLoading = isMeusClientes ? isLoadingMeus : isLoadingTodos;
+  const mutateTarefas = isMeusClientes ? mutateTarefasMeus : mutateTarefasTodos;
 
   const [data, setData] = useState<BoardData[]>([
     { id: "1", boardName: "Pendente de Dados", card: [] },
@@ -135,22 +136,56 @@ const Kanban = () => {
   }, [isLoading, tarefas?.length, usuarios?.length]);
 
   const addCard = useCallback((title: string, bid: string) => {
-    setData(prevData => {
-      return prevData.map(board =>
-        board.id === bid ? { ...board, card: [...board.card, { id: uuidv4(), title, tags: [], task: [], autor: "Unknown" }] } : board
-      );
-    });
+    // Esta função não é mais usada para criar tarefas reais
+    // Ela foi substituída pela lógica no componente Editable
+    console.log("addCard chamada com:", { title, bid });
   }, []);
 
-  const removeCard = useCallback((boardId: string, cardId: string) => {
-    setData(prevData => {
-      return prevData.map(board =>
+  const addCardToBoard = useCallback((boardId: string, newCard: any) => {
+    // Função específica para adicionar tarefas recém-criadas
+    setData(prevData =>
+      prevData.map(board =>
         board.id === boardId
-          ? { ...board, card: board.card.filter(card => card.id !== cardId) }
+          ? { ...board, card: [...board.card, newCard] }
           : board
-      );
-    });
+      )
+    );
   }, []);
+
+  const removeCard = useCallback(async (boardId: string, cardId: string) => {
+    try {
+      // Primeiro remove do estado local para feedback imediato
+      setData(prevData => {
+        return prevData.map(board =>
+          board.id === boardId
+            ? { ...board, card: board.card.filter(card => card.id !== cardId) }
+            : board
+        );
+      });
+
+      // Tenta deletar no backend
+      await deleteTarefa(Number(cardId));
+      
+      // Atualiza o cache do SWR
+      if (mutateTarefas) {
+        mutateTarefas();
+      }
+      
+      showMessage("Tarefa removida com sucesso!", "success");
+    } catch (error) {
+      console.error("Erro ao remover tarefa:", error);
+      showMessage("❌ Erro ao remover tarefa. Tente novamente.", "danger");
+      
+      // Se falhar, reverte a remoção local
+      setData(prevData => {
+        return prevData.map(board =>
+          board.id === boardId
+            ? { ...board, card: board.card.filter(card => card.id !== cardId) }
+            : board
+        );
+      });
+    }
+  }, [mutateTarefas]);
 
   const onDragStart = useCallback((event: any) => {
     const { active } = event;
@@ -189,7 +224,22 @@ const Kanban = () => {
 
       const newStatus = updatedBoards[destinationBoardIdx].boardName;
 
-      updateTarefa(Number(card.id), { status: newStatus });
+      // Atualiza no backend
+      updateTarefa(Number(card.id), { status: newStatus })
+        .then(() => {
+          // Atualiza o cache do SWR
+          if (mutateTarefas) {
+            mutateTarefas();
+          }
+          showMessage("Tarefa movida com sucesso!", "success");
+        })
+        .catch((error) => {
+          console.error("Erro ao mover tarefa:", error);
+          showMessage("❌ Erro ao mover tarefa. Tente novamente.", "danger");
+          
+          // Se falhar, reverte a movimentação
+          setData(prevData);
+        });
 
       updatedBoards[destinationBoardIdx].card = [
         ...updatedBoards[destinationBoardIdx].card,
@@ -198,22 +248,68 @@ const Kanban = () => {
 
       return [...updatedBoards];
     });
-  }, []);
+  }, [mutateTarefas]);
 
-  const updateCard = useCallback((boardId: string, cardId: string, updatedCard: any) => {
-    setData(prevData =>
-      prevData.map(board =>
-        board.id === boardId
-          ? {
-            ...board,
-            card: board.card.some(card => card.id === cardId)
-              ? board.card.map(card => (card.id === cardId ? updatedCard : card))
-              : [...board.card, updatedCard],
-          }
-          : board
-      )
-    );
-  }, []);
+  const updateCard = useCallback(async (boardId: string, cardId: string, updatedCard: any) => {
+    try {
+      // Atualiza no estado local primeiro
+      setData(prevData =>
+        prevData.map(board =>
+          board.id === boardId
+            ? {
+                ...board,
+                card: board.card.map(card => (card.id === cardId ? updatedCard : card)),
+              }
+            : board
+        )
+      );
+
+      // Se for uma nova tarefa (não tem ID numérico válido), não tenta atualizar no backend
+      if (isNaN(Number(cardId)) || Number(cardId) <= 0) {
+        return;
+      }
+
+      // Prepara os dados para o backend
+      const backendUpdates: any = {};
+      
+      if (updatedCard.title !== undefined) {
+        backendUpdates.titulo = updatedCard.title;
+      }
+      
+      if (updatedCard.tags !== undefined) {
+        backendUpdates.labels = JSON.stringify(updatedCard.tags);
+      }
+      
+      if (updatedCard.task !== undefined) {
+        backendUpdates.descricoes = JSON.stringify(updatedCard.task);
+      }
+      
+      if (updatedCard.prioridade !== undefined) {
+        backendUpdates.prioridade = updatedCard.prioridade;
+      }
+      
+      if (updatedCard.idCliente !== undefined) {
+        backendUpdates.idCliente = updatedCard.idCliente;
+      }
+      
+      if (updatedCard.dataLimite !== undefined) {
+        backendUpdates.dataLimite = updatedCard.dataLimite;
+      }
+
+      // Só atualiza no backend se houver mudanças
+      if (Object.keys(backendUpdates).length > 0) {
+        await updateTarefa(Number(cardId), backendUpdates);
+        
+        // Atualiza o cache do SWR
+        if (mutateTarefas) {
+          mutateTarefas();
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar tarefa:", error);
+      showMessage("❌ Erro ao atualizar tarefa. Tente novamente.", "danger");
+    }
+  }, [mutateTarefas]);
   
 
   return (
@@ -232,6 +328,7 @@ const Kanban = () => {
                         name={item.boardName}
                         card={item.card}
                         addCard={addCard}
+                        addCardToBoard={addCardToBoard}
                         removeCard={removeCard}
                         updateCard={updateCard}
                         isLoading={isLoading}
