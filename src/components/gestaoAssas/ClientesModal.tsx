@@ -37,13 +37,6 @@ export default function ClientesModal({ isOpen, onClose }: ClientesModalProps) {
     state: ''
   });
 
-  // Carregar clientes quando o modal abrir
-  useEffect(() => {
-    if (isOpen) {
-      loadAsaasClients();
-    }
-  }, [isOpen, loadAsaasClients]);
-
   const loadAsaasClients = useCallback(async () => {
     try {
       setClientsLoading(true);
@@ -81,6 +74,13 @@ export default function ClientesModal({ isOpen, onClose }: ClientesModalProps) {
       setClientsLoading(false);
     }
   }, [getCustomers]);
+
+  // Carregar clientes quando o modal abrir
+  useEffect(() => {
+    if (isOpen) {
+      loadAsaasClients();
+    }
+  }, [isOpen, loadAsaasClients]);
 
   const handleClientAction = (action: string, client?: any) => {
     if (action === 'new') {
