@@ -328,6 +328,7 @@ const TabelaExtrato: React.FC<Props> = ({
     idCliente,
     bancoSelecionado,
     paginaCarregada,
+    mutateSaldoMesSeguinte,
   ]);
   
 
@@ -366,7 +367,7 @@ const TabelaExtrato: React.FC<Props> = ({
     });
 
     setDadosOrdenados(ordenado);
-  }, [ordem, dados]);
+  }, [ordem, dados, filtroFornecedores, filtroRubricas, filtroRubricasContabeis]);
 
 
   console.log(dadosOrdenados);

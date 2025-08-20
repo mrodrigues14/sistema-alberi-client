@@ -39,7 +39,7 @@ export default function CriarSaldoInicial({
     if (anoSelecionado) {
       setAno(String(anoSelecionado));
     }
-  }, [mesSelecionado, anoSelecionado]);
+  }, [mesSelecionado, anoSelecionado, meses]);
 
   const { saldoInicial, isLoading: loadingSaldo } = useSaldoInicial(
     idCliente,

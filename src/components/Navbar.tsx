@@ -146,7 +146,7 @@ export default function Navbar() {
     if (clientes?.length > 0 && savedCliente && !selectedCliente) {
       setSelectedCliente(JSON.parse(savedCliente));
     }
-  }, [clientes]);
+  }, [clientes, selectedCliente]);
 
 
 
@@ -214,7 +214,7 @@ export default function Navbar() {
         setSelectedCliente({ id: idCliente, nome: novoNome });
       }
     }
-  }, [idCliente, clientes]);
+  }, [idCliente, clientes, selectedCliente?.id, selectedCliente?.nome]);
 
   // Removido o useEffect que detectava cliques fora - estava causando problemas
   

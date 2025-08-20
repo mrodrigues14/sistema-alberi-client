@@ -22,7 +22,6 @@ import { Usuario } from "../../../../../../types/Usuario";
 interface Task {
   text: string;
   id: string;
-  task: string;
   completed: boolean;
 }
 
@@ -91,7 +90,7 @@ export default function CardDetails(props: CardDetailsProps) {
 
   const confirmEditTask = async (id: string) => {
     try {
-      const updatedTasks = values.task.map((task: Task) =>
+      const updatedTasks = values.task.map((task) =>
         task.id === id ? { ...task, text: editingTaskText } : task
       );
 
@@ -223,7 +222,7 @@ export default function CardDetails(props: CardDetailsProps) {
       console.error("Erro ao atualizar título:", error);
       props.setError?.("❌ Erro ao atualizar título. Tente novamente.", "danger");
     }
-  }, []);
+  }, [atualizarTarefa, props]);
 
   const calculatePercent = () => {
     const totalTask = values.task.length;

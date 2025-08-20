@@ -133,7 +133,7 @@ const Kanban = () => {
     });
   
     setData(boardsAtualizados);
-  }, [isLoading, tarefas?.length, usuarios?.length]);
+  }, [isLoading, tarefas?.length, usuarios?.length, tarefas, usuarios]);
 
   const addCard = useCallback((title: string, bid: string) => {
     // Esta função não é mais usada para criar tarefas reais

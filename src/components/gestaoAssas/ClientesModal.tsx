@@ -42,7 +42,7 @@ export default function ClientesModal({ isOpen, onClose }: ClientesModalProps) {
     if (isOpen) {
       loadAsaasClients();
     }
-  }, [isOpen]);
+  }, [isOpen, loadAsaasClients]);
 
   const loadAsaasClients = async () => {
     try {

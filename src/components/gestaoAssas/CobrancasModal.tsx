@@ -45,7 +45,7 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
       loadAsaasPayments();
       loadAsaasClients();
     }
-  }, [isOpen]);
+  }, [isOpen, loadAsaasPayments, loadAsaasClients]);
 
   const loadAsaasPayments = async () => {
     try {

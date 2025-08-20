@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { ExtratoAnexo, deleteExtratoAnexo, uploadExtratoAnexo } from "@/lib/hooks/useExtratoAnexos";
 import { FaTrash, FaTimes, FaPlus, FaDownload } from "react-icons/fa";
 
@@ -124,7 +125,13 @@ const Anexos: React.FC<Props> = ({ anexos, onFechar, onAtualizar, idExtrato }) =
               <div key={anexo.idAnexo} className="border rounded p-2 shadow-sm relative">
                 <div className="w-full h-32 mb-2 flex items-center justify-center rounded bg-gray-100">
                   {isImagem(ext) ? (
-                    <img src={`data:;base64,${anexo.caminho}`} alt={anexo.nomeArquivo} className="object-cover h-full w-full rounded" />
+                    <Image 
+                      src={`data:;base64,${anexo.caminho}`} 
+                      alt={anexo.nomeArquivo} 
+                      className="object-cover h-full w-full rounded"
+                      width={200}
+                      height={128}
+                    />
                   ) : isPDF(ext) ? (
                     <span className="text-blue-600 font-semibold">📄 PDF</span>
                   ) : isWord(ext) ? (
@@ -165,7 +172,13 @@ const Anexos: React.FC<Props> = ({ anexos, onFechar, onAtualizar, idExtrato }) =
             <div className="border rounded p-2 shadow-sm flex flex-col items-center justify-between">
               <div className="w-full h-32 mb-2 flex items-center justify-center rounded bg-gray-100">
                 {isImagem(previewFile.name) ? (
-                  <img src={previewURL ?? ""} alt="preview" className="object-cover h-full w-full rounded" />
+                  <Image 
+                    src={previewURL ?? ""} 
+                    alt="preview" 
+                    className="object-cover h-full w-full rounded"
+                    width={200}
+                    height={128}
+                  />
                 ) : isPDF(previewFile.name) ? (
                   <span className="text-blue-600 font-semibold">📄 PDF</span>
                 ) : isWord(previewFile.name) ? (

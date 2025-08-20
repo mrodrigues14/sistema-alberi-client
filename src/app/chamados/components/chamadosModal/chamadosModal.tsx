@@ -45,7 +45,7 @@ export default function ChamadoModal({ open, onClose, chamadoParaEditar, onSucce
       setRemoverAnexo(false);
       setDescricaoRecusa("");
     }
-  }, [open]);
+  }, [open, chamadoParaEditar]);
 
 
   if (!open) return null;

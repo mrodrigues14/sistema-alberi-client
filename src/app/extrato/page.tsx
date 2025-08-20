@@ -248,7 +248,7 @@ const Extrato: React.FC = () => {
                 sessionStorage.setItem("nomeBancoSelecionado", banco.nome);
             }
         }
-    }, [bancoSelecionado, bancos]);
+    }, [bancoSelecionado, bancos, setNomeBancoSelecionado]);
 
     useEffect(() => {
         if (extratos) {
@@ -268,7 +268,7 @@ const Extrato: React.FC = () => {
                 setDadosTabela(novosDados);
             }
         }
-    }, [extratos]);
+    }, [extratos, dadosTabela]);
 
     const subextratosRelacionados = useMemo(() => {
         if (!subextratos || !extratos) return [];
@@ -298,6 +298,22 @@ const Extrato: React.FC = () => {
             setAnoSelecionado(anoAtual);
         }
     }, []);
+
+    useEffect(() => {
+        if (!mesSelecionado || !anoSelecionado) {
+            const dataAtual = new Date();
+            const nomesMeses = [
+                "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+            ];
+
+            const mesAtual = nomesMeses[dataAtual.getMonth()];
+            const anoAtual = dataAtual.getFullYear().toString();
+
+            setMesSelecionado(mesAtual);
+            setAnoSelecionado(anoAtual);
+        }
+    }, [mesSelecionado, anoSelecionado]);
 
     return (
         <>

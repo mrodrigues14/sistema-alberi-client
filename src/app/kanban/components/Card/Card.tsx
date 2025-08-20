@@ -57,7 +57,7 @@ const Card: React.FC<CardProps> = ({
     }
     
     return "Sem empresa";
-  }, [cardData?.idCliente, isLoading]);
+  }, [cardData?.idCliente, isLoading, clientes]);
 
   // Simplified handleUpdateCard without useState
   const handleUpdateCard = useCallback((updatedCard: any) => {
