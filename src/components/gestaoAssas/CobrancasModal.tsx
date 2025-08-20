@@ -40,12 +40,6 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
   });
 
   // Carregar dados quando o modal abrir
-  useEffect(() => {
-    if (isOpen) {
-      loadAsaasPayments();
-      loadAsaasClients();
-    }
-  }, [isOpen, loadAsaasPayments, loadAsaasClients]);
 
   const loadAsaasPayments = useCallback(async () => {
     try {
@@ -76,6 +70,13 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
       setClientsLoading(false);
     }
   }, [getCustomers]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadAsaasPayments();
+      loadAsaasClients();
+    }
+  }, [isOpen, loadAsaasPayments, loadAsaasClients]);
 
   const handlePaymentAction = (action: string, payment?: any) => {
     if (action === 'new') {
