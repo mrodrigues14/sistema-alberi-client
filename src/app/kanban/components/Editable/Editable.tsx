@@ -76,10 +76,8 @@ const Editable: FC<EditableProps> = (props) => {
       // Adiciona o card real diretamente
       props.addCardLocal?.(novoCard);
 
-      // Atualiza o cache do SWR
-      if (mutateTarefas) {
-        mutateTarefas();
-      }
+      // Não precisamos chamar mutateTarefas aqui pois já adicionamos localmente
+      // e o useEffect vai sincronizar quando necessário
 
       props.setError?.("Tarefa criada com sucesso!", "success");
       setText("");

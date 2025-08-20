@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   CreditCardIcon, 
   PlusIcon,
@@ -47,7 +47,7 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
     }
   }, [isOpen, loadAsaasPayments, loadAsaasClients]);
 
-  const loadAsaasPayments = async () => {
+  const loadAsaasPayments = useCallback(async () => {
     try {
       setPaymentsLoading(true);
       const response = await getPayments(1000, 0);
@@ -60,9 +60,9 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
     } finally {
       setPaymentsLoading(false);
     }
-  };
+  }, [getPayments]);
 
-  const loadAsaasClients = async () => {
+  const loadAsaasClients = useCallback(async () => {
     try {
       setClientsLoading(true);
       const response = await getCustomers(1000, 0);
@@ -75,7 +75,7 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
     } finally {
       setClientsLoading(false);
     }
-  };
+  }, [getCustomers]);
 
   const handlePaymentAction = (action: string, payment?: any) => {
     if (action === 'new') {

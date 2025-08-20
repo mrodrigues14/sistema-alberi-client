@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   UsersIcon, 
   PlusIcon,
@@ -44,7 +44,7 @@ export default function ClientesModal({ isOpen, onClose }: ClientesModalProps) {
     }
   }, [isOpen, loadAsaasClients]);
 
-  const loadAsaasClients = async () => {
+  const loadAsaasClients = useCallback(async () => {
     try {
       setClientsLoading(true);
       const response = await getCustomers(1000, 0);
@@ -80,7 +80,7 @@ export default function ClientesModal({ isOpen, onClose }: ClientesModalProps) {
     } finally {
       setClientsLoading(false);
     }
-  };
+  }, [getCustomers]);
 
   const handleClientAction = (action: string, client?: any) => {
     if (action === 'new') {

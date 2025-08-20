@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   CreditCard,
   X,
@@ -12,7 +12,6 @@ import Modal from "../../Modal/Modal";
 import "./CardDetails.css";
 import { v4 as uuidv4 } from "uuid";
 import Label from "../../Label/Label";
-import { useCallback } from "react";
 import { useUsuarios } from "@/lib/hooks/useUsuarios";
 import { useCliente } from "@/lib/hooks/useCliente";
 import { deleteTarefa, updateTarefa } from "@/lib/hooks/useTarefas";
@@ -62,20 +61,21 @@ export default function CardDetails(props: CardDetailsProps) {
   const [editingTaskText, setEditingTaskText] = useState<string>("");
   const [input, setInput] = useState(false);
   const [labelShow, setLabelShow] = useState(false);
-  const { usuarios } = useUsuarios(); // Obtém os usuários do sistema
-  const [searchTerm, setSearchTerm] = useState(""); // Estado da pesquisa no dropdown
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // Controla a abertura do dropdown
-  const { clientes, isLoading, isError } = useCliente(); // 🔹 Obtendo a lista de empresas
-  const [clientName, setClientName] = useState<string>("");
-  const { updateCard } = props;
+  const { usuarios } = useUsuarios();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const { clientes, isLoading, isError } = useCliente();
+  const [displayDate, setDisplayDate] = useState("");
+  
   console.log("CardDetails props", props);
+  
   const [values, setValues] = useState(() => {
     return {
       ...props.card,
       autor: props.card.autor || "",
       company: String(props.card.idCliente) || "",
       task: props.card.task.map((t, index) => ({
-        id: index + 1,
+        id: String(index + 1),
         text: t.text,
         completed: t.completed,
       })),
@@ -90,17 +90,15 @@ export default function CardDetails(props: CardDetailsProps) {
 
   const confirmEditTask = async (id: string) => {
     try {
-      const updatedTasks = values.task.map((task) =>
+      const updatedTasks = values.task.map((task: Task) =>
         task.id === id ? { ...task, text: editingTaskText } : task
       );
 
-      // Atualiza no estado local primeiro
-      setValues((prev: any) => ({
+      setValues((prev) => ({
         ...prev,
         task: updatedTasks,
       }));
 
-      // Atualiza no backend
       await updateTarefa(Number(values.id), {
         descricoes: JSON.stringify(updatedTasks),
       });
@@ -112,44 +110,14 @@ export default function CardDetails(props: CardDetailsProps) {
       console.error("Erro ao atualizar tarefa:", error);
       props.setError?.("❌ Erro ao atualizar task. Tente novamente.", "danger");
       
-      // Se falhar, reverte a mudança local
-      setValues((prev: any) => ({
+      setValues((prev) => ({
         ...prev,
         task: values.task,
       }));
     }
   };
 
-
   const [text, setText] = useState(values.title);
-
-  const Input = (props: { title: string }) => {
-    return (
-      <input
-        autoFocus
-        value={text}
-        type="text"
-        onBlur={() => {
-          if (text !== values.title) {
-            updateTitle(text);
-          }
-          setInput(false);
-        }}
-        onChange={(e) => {
-          setText(e.target.value);
-        }}
-        className="form-control"
-        style={{
-          fontSize: "1.125rem",
-          fontWeight: "600",
-          width: "80%",
-          border: "1px solid #ccc",
-          borderRadius: "6px",
-          padding: "6px 10px",
-        }}
-      />
-    );
-  };
 
   const addTask = async (value: string) => {
     try {
@@ -161,13 +129,11 @@ export default function CardDetails(props: CardDetailsProps) {
 
       const novasTasks = [...values.task, novaTask];
 
-      // Atualiza no estado local primeiro
-      setValues((prev: any) => ({
+      setValues((prev) => ({
         ...prev,
         task: novasTasks,
       }));
 
-      // Atualiza no backend
       await updateTarefa(Number(values.id), {
         descricoes: JSON.stringify(novasTasks),
       });
@@ -177,24 +143,19 @@ export default function CardDetails(props: CardDetailsProps) {
       console.error("Erro ao salvar nova task:", err);
       props.setError?.("❌ Erro ao adicionar a task. Tente novamente.", "danger");
       
-      // Se falhar, reverte a adição local
-      setValues((prev: any) => ({
+      setValues((prev) => ({
         ...prev,
         task: values.task,
       }));
     }
   };
 
-
-
   const removeTask = async (id: string) => {
     try {
       const remaningTask = values.task.filter((item: Task) => item.id !== id);
       
-      // Atualiza no estado local primeiro
       setValues({ ...values, task: remaningTask });
       
-      // Atualiza no backend
       await updateTarefa(Number(values.id), {
         descricoes: JSON.stringify(remaningTask),
       });
@@ -204,25 +165,24 @@ export default function CardDetails(props: CardDetailsProps) {
       console.error("Erro ao remover task:", error);
       props.setError?.("❌ Erro ao remover a task. Tente novamente.", "danger");
       
-      // Se falhar, reverte a remoção local
       setValues({ ...values, task: values.task });
     }
   };
 
   const updateTitle = useCallback(async (value: string) => {
     try {
-      setValues((prevValues: any) => {
+      setValues((prevValues) => {
         const updated = { ...prevValues, title: value };
         return updated;
       });
       
-      // Atualiza no backend
-      await atualizarTarefa({ titulo: value });
+      await atualizarTitulo(value);
+      props.setError?.("✅ Título atualizado com sucesso!", "success");
     } catch (error) {
       console.error("Erro ao atualizar título:", error);
       props.setError?.("❌ Erro ao atualizar título. Tente novamente.", "danger");
     }
-  }, [atualizarTarefa, props]);
+  }, []);
 
   const calculatePercent = () => {
     const totalTask = values.task.length;
@@ -237,18 +197,21 @@ export default function CardDetails(props: CardDetailsProps) {
     try {
       const tagsFiltradas = values.tags.filter((item: Tag) => item.id !== id);
       
-      // Atualiza no estado local primeiro
       setValues({ ...values, tags: tagsFiltradas });
       
-      // Atualiza no backend
-      await atualizarTarefa({ labels: tagsFiltradas });
+      // Converte Tag[] para Label[]
+      const labelsFiltradas = tagsFiltradas.map(tag => ({
+        label: tag.tagName,
+        color: tag.color
+      }));
+      
+      await atualizarTarefa({ labels: labelsFiltradas });
       
       props.setError?.("✅ Tag removida com sucesso!", "success");
     } catch (error) {
       console.error("Erro ao remover tag:", error);
       props.setError?.("❌ Erro ao remover a tag. Tente novamente.", "danger");
       
-      // Se falhar, reverte a remoção local
       setValues({ ...values, tags: values.tags });
     }
   };
@@ -263,22 +226,24 @@ export default function CardDetails(props: CardDetailsProps) {
 
       const tagsAtualizadas = [...values.tags, novaTag];
       
-      // Atualiza no estado local primeiro
-      setValues((prev: any) => ({ ...prev, tags: tagsAtualizadas }));
+      setValues((prev) => ({ ...prev, tags: tagsAtualizadas }));
       
-      // Atualiza no backend
-      await atualizarTarefa({ labels: tagsAtualizadas });
+      // Converte Tag[] para Label[]
+      const labelsAtualizadas = tagsAtualizadas.map(tag => ({
+        label: tag.tagName,
+        color: tag.color
+      }));
+      
+      await atualizarTarefa({ labels: labelsAtualizadas });
       
       props.setError?.("✅ Tag adicionada com sucesso!", "success");
     } catch (error) {
       console.error("Erro ao adicionar tag:", error);
       props.setError?.("❌ Erro ao adicionar a tag. Tente novamente.", "danger");
       
-      // Se falhar, reverte a adição local
-      setValues((prev: any) => ({ ...prev, tags: values.tags }));
+      setValues((prev) => ({ ...prev, tags: values.tags }));
     }
   };
-
 
   const handelClickListner = useCallback((e: KeyboardEvent) => {
     if (e.code === "Enter") {
@@ -294,21 +259,6 @@ export default function CardDetails(props: CardDetailsProps) {
     };
   }, [text, values.title, handelClickListner]);
 
-
-
-
-  useEffect(() => {
-    if (clientes && values.company) {
-      const clienteEncontrado = clientes.find(
-        (cliente: ClienteCategoria) => String(cliente.idcliente) === values.company
-      );
-
-      if (clienteEncontrado) {
-        setClientName(clienteEncontrado.apelido || clienteEncontrado.nome);
-      }
-    }
-  }, [clientes, values.company]);
-
   const atualizarTarefa = async (campoAtualizado: Partial<Tarefa>) => {
     const payload = {
       ...campoAtualizado,
@@ -317,11 +267,53 @@ export default function CardDetails(props: CardDetailsProps) {
         : undefined,
     };
 
+    console.log("Enviando payload para atualizar tarefa:", payload);
+
     try {
       await updateTarefa(Number(values.id), payload);
     } catch (error) {
       console.error("Erro ao atualizar tarefa:", error);
-      throw error; // Re-lança o erro para ser tratado pela função chamadora
+      throw error;
+    }
+  };
+
+  // Função específica para atualizar apenas o título
+  const atualizarTitulo = async (titulo: string) => {
+    try {
+      await updateTarefa(Number(values.id), { titulo });
+    } catch (error) {
+      console.error("Erro ao atualizar título:", error);
+      throw error;
+    }
+  };
+
+  // Função específica para atualizar apenas o responsável
+  const atualizarResponsavel = async (idUsuario: number) => {
+    try {
+      await updateTarefa(Number(values.id), { idUsuario });
+    } catch (error) {
+      console.error("Erro ao atualizar responsável:", error);
+      throw error;
+    }
+  };
+
+  // Função específica para atualizar apenas a empresa
+  const atualizarEmpresa = async (idCliente: number | null) => {
+    try {
+      await updateTarefa(Number(values.id), { idCliente });
+    } catch (error) {
+      console.error("Erro ao atualizar empresa:", error);
+      throw error;
+    }
+  };
+
+  // Função específica para atualizar apenas a data
+  const atualizarData = async (dataLimite: string) => {
+    try {
+      await updateTarefa(Number(values.id), { dataLimite });
+    } catch (error) {
+      console.error("Erro ao atualizar data:", error);
+      throw error;
     }
   };
 
@@ -331,13 +323,11 @@ export default function CardDetails(props: CardDetailsProps) {
         task.id === id ? { ...task, completed: !task.completed } : task
       );
       
-      // Atualiza no estado local primeiro
-      setValues((prevValues: typeof values) => ({
+      setValues((prevValues) => ({
         ...prevValues,
         task: updatedTasks,
       }));
 
-      // Atualiza no backend
       await updateTarefa(Number(values.id), {
         descricoes: JSON.stringify(updatedTasks),
       });
@@ -345,8 +335,7 @@ export default function CardDetails(props: CardDetailsProps) {
       console.error("Erro ao atualizar tarefa:", error);
       props.setError?.("❌ Erro ao atualizar tarefa. Tente novamente.", "danger");
       
-      // Se falhar, reverte a mudança local
-      setValues((prevValues: typeof values) => ({
+      setValues((prevValues) => ({
         ...prevValues,
         task: values.task,
       }));
@@ -359,13 +348,11 @@ export default function CardDetails(props: CardDetailsProps) {
         task.id === id ? { ...task, text: newText } : task
       );
       
-      // Atualiza no estado local primeiro
-      setValues((prevValues: typeof values) => ({
+      setValues((prevValues) => ({
         ...prevValues,
         task: updatedTasks,
       }));
 
-      // Atualiza no backend
       await updateTarefa(Number(values.id), {
         descricoes: JSON.stringify(updatedTasks),
       });
@@ -373,8 +360,7 @@ export default function CardDetails(props: CardDetailsProps) {
       console.error("Erro ao atualizar texto da tarefa:", error);
       props.setError?.("❌ Erro ao atualizar texto da tarefa. Tente novamente.", "danger");
       
-      // Se falhar, reverte a mudança local
-      setValues((prevValues: typeof values) => ({
+      setValues((prevValues) => ({
         ...prevValues,
         task: values.task,
       }));
@@ -386,7 +372,6 @@ export default function CardDetails(props: CardDetailsProps) {
     setEditingTaskText("");
   };
 
-
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -395,10 +380,24 @@ export default function CardDetails(props: CardDetailsProps) {
       textarea.focus();
       textarea.setSelectionRange(0, 0);
 
-      textarea.style.height = "auto"; // reset
+      textarea.style.height = "auto";
       textarea.style.height = textarea.scrollHeight + "px";
     }
   }, [input]);
+
+  // Converte data do banco para formato de exibição
+  useEffect(() => {
+    if (values.dataLimite && values.dataLimite !== "0000-00-00" && values.dataLimite !== "1899-11-30") {
+      const parts = values.dataLimite.split('-');
+      if (parts.length === 3) {
+        setDisplayDate(`${parts[2]}-${parts[1]}-${parts[0]}`);
+      } else {
+        setDisplayDate(values.dataLimite);
+      }
+    } else {
+      setDisplayDate("");
+    }
+  }, [values.dataLimite]);
 
   return (
     <Modal onClose={() => {
@@ -435,7 +434,6 @@ export default function CardDetails(props: CardDetailsProps) {
                       value={text}
                       onChange={(e) => {
                         setText(e.target.value);
-                        // Faz autoResize enquanto digita
                         if (textareaRef.current) {
                           textareaRef.current.style.height = "auto";
                           textareaRef.current.style.height =
@@ -462,8 +460,6 @@ export default function CardDetails(props: CardDetailsProps) {
                     />
                   )}
                 </div>
-
-
               </div>
             </div>
           </div>
@@ -597,7 +593,6 @@ export default function CardDetails(props: CardDetailsProps) {
                             />
                           </>
                         )}
-
                       </div>
                     ))
                   ) : (
@@ -622,31 +617,29 @@ export default function CardDetails(props: CardDetailsProps) {
                   </span>
                   Adicionar Etiqueta
                 </button>
-                {/* Prioridade (estrelas) */}
+                
                 <h6>Prioridade</h6>
                 <div className="prioridade-stars">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
                       key={star}
                       className={values.prioridade >= star ? "star selected" : "star"}
-                      fill={values.prioridade >= star ? "gold" : "gray"} // Apenas a estrela será preenchida
-                      stroke="none" // Remove o contorno preto
-                                              onClick={async () => {
-                          try {
-                            setValues((prev: any) => ({ ...prev, prioridade: star }));
-                            await atualizarTarefa({ prioridade: String(star) });
-                          } catch (error) {
-                            console.error("Erro ao atualizar prioridade:", error);
-                            props.setError?.("❌ Erro ao atualizar prioridade. Tente novamente.", "danger");
-                            // Reverte a mudança local se falhar
-                            setValues((prev: any) => ({ ...prev, prioridade: values.prioridade }));
-                          }
-                        }}
+                      fill={values.prioridade >= star ? "gold" : "gray"}
+                      stroke="none"
+                      onClick={async () => {
+                        try {
+                          setValues((prev) => ({ ...prev, prioridade: star }));
+                          await atualizarTarefa({ prioridade: String(star) });
+                        } catch (error) {
+                          console.error("Erro ao atualizar prioridade:", error);
+                          props.setError?.("❌ Erro ao atualizar prioridade. Tente novamente.", "danger");
+                          setValues((prev) => ({ ...prev, prioridade: values.prioridade }));
+                        }
+                      }}
                     />
                   ))}
                 </div>
 
-                {/* Executor */}
                 <h6>Responsável</h6>
                 <div className="responsavel-dropdown">
                   <div
@@ -657,7 +650,6 @@ export default function CardDetails(props: CardDetailsProps) {
                     {values.autor || "Selecione um responsável"}
                   </div>
 
-                  {/* Dropdown pesquisável */}
                   {isDropdownOpen && (
                     <div className="responsavel-dropdown-list">
                       <input
@@ -668,7 +660,6 @@ export default function CardDetails(props: CardDetailsProps) {
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
 
-                      {/* Lista filtrada de usuários */}
                       <ul>
                         {usuarios
                           .filter((user: Usuario) =>
@@ -679,27 +670,24 @@ export default function CardDetails(props: CardDetailsProps) {
                               key={user.idusuarios}
                               onClick={async () => {
                                 try {
-                                  setValues((prev: any) => ({ ...prev, autor: user.nomeDoUsuario }));
-                                  await atualizarTarefa({ idUsuario: user.idusuarios });
+                                  setValues((prev) => ({ ...prev, autor: user.nomeDoUsuario }));
+                                  await atualizarResponsavel(user.idusuarios);
                                   setIsDropdownOpen(false);
+                                  props.setError?.("✅ Responsável atualizado com sucesso!", "success");
                                 } catch (error) {
                                   console.error("Erro ao atualizar responsável:", error);
                                   props.setError?.("❌ Erro ao atualizar responsável. Tente novamente.", "danger");
-                                  // Reverte a mudança local se falhar
-                                  setValues((prev: any) => ({ ...prev, autor: values.autor }));
+                                  setValues((prev) => ({ ...prev, autor: values.autor }));
                                 }
                               }}
-
                             >
                               {user.nomeDoUsuario}
                             </li>
                           ))}
                       </ul>
-
                     </div>
                   )}
                 </div>
-
 
                 <h6>Empresa</h6>
                 {isLoading ? (
@@ -715,20 +703,17 @@ export default function CardDetails(props: CardDetailsProps) {
                       const empresaId = value ? Number(value) : null;
 
                       try {
-                        setValues((prev: any) => ({ ...prev, company: value }));
-                        await atualizarTarefa({ idCliente: empresaId });
+                        setValues((prev) => ({ ...prev, company: value }));
+                        await atualizarEmpresa(empresaId);
+                        props.setError?.("✅ Empresa atualizada com sucesso!", "success");
                       } catch (error) {
                         console.error("Erro ao atualizar empresa:", error);
                         props.setError?.("❌ Erro ao atualizar empresa. Tente novamente.", "danger");
-                        // Reverte a mudança local se falhar
-                        setValues((prev: any) => ({ ...prev, company: values.company }));
+                        setValues((prev) => ({ ...prev, company: values.company }));
                       }
                     }}
                   >
-                    {/* Opção SEM empresa */}
                     <option value="">Sem empresa vinculada</option>
-
-                    {/* Lista de empresas */}
                     {clientes.map((cliente: ClienteCategoria) => (
                       <option key={cliente.idcliente} value={String(cliente.idcliente)}>
                         {cliente.apelido || cliente.nome}
@@ -736,8 +721,6 @@ export default function CardDetails(props: CardDetailsProps) {
                     ))}
                   </select>
                 )}
-
-
 
                 {labelShow && (
                   <Label
@@ -747,6 +730,7 @@ export default function CardDetails(props: CardDetailsProps) {
                     onClose={setLabelShow}
                   />
                 )}
+                
                 <h6>Data Limite</h6>
                 <div className="d-flex flex-column gap-1">
                   <div className="d-flex align-items-center gap-2">
@@ -756,11 +740,7 @@ export default function CardDetails(props: CardDetailsProps) {
                       className="form-control"
                       placeholder="dd-mm-aaaa"
                       maxLength={10}
-                      value={
-                        values.dataLimite && values.dataLimite !== "0000-00-00" && values.dataLimite !== "1899-11-30"
-                          ? values.dataLimite
-                          : ""
-                      }
+                      value={displayDate}
                       onChange={(e) => {
                         let raw = e.target.value.replace(/\D/g, "");
 
@@ -773,27 +753,39 @@ export default function CardDetails(props: CardDetailsProps) {
                           formatted = `${raw.slice(0, 2)}-${raw.slice(2)}`;
                         }
 
-                        setValues((prev: any) => ({
-                          ...prev,
-                          dataLimite: formatted,
-                        }));
+                        setDisplayDate(formatted);
                       }}
                       onBlur={async () => {
-                        const raw = values.dataLimite.replace(/\D/g, "");
-
                         try {
-                          if (!raw) {
-                            setValues((prev: any) => ({
-                              ...prev,
-                              dataLimite: "",
-                            }));
-                            await atualizarTarefa({ dataLimite: "0000-00-00" });
-                          } else if (raw.length === 8) {
-                            const dd = raw.slice(0, 2);
-                            const mm = raw.slice(2, 4);
-                            const yyyy = raw.slice(4);
-                            const formatToDB = `${yyyy}-${mm}-${dd}`;
-                            await atualizarTarefa({ dataLimite: formatToDB });
+                          const currentValue = displayDate || "";
+                          
+                          // Se está vazio, limpa a data
+                          if (!currentValue || currentValue.trim() === "") {
+                            await atualizarData("0000-00-00");
+                            return;
+                          }
+
+                          // Extrai os números do valor atual (formato dd-mm-yyyy)
+                          const numbers = currentValue.replace(/\D/g, "");
+                          
+                          if (numbers.length === 8) {
+                            const dd = parseInt(numbers.slice(0, 2));
+                            const mm = parseInt(numbers.slice(2, 4));
+                            const yyyy = parseInt(numbers.slice(4));
+                            
+                            // Validação da data
+                            if (dd < 1 || dd > 31 || mm < 1 || mm > 12 || yyyy < 1900 || yyyy > 2100) {
+                              props.setError?.("❌ Data inválida. Use o formato dd-mm-aaaa", "danger");
+                              return;
+                            }
+                            
+                            // Converte para formato do banco (yyyy-mm-dd)
+                            const formatToDB = `${yyyy.toString().padStart(4, '0')}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
+                            
+                            await atualizarData(formatToDB);
+                            props.setError?.("✅ Data limite atualizada com sucesso!", "success");
+                          } else {
+                            props.setError?.("❌ Data incompleta. Use o formato dd-mm-aaaa", "danger");
                           }
                         } catch (error) {
                           console.error("Erro ao atualizar data limite:", error);
@@ -801,14 +793,12 @@ export default function CardDetails(props: CardDetailsProps) {
                         }
                       }}
                     />
-
                   </div>
                 </div>
 
-
                 <button
                   style={{
-                    backgroundColor: "#dc3545", // vermelho estilo Bootstrap
+                    backgroundColor: "#dc3545",
                     color: "#fff",
                     border: "none",
                     padding: "8px 12px",
@@ -823,9 +813,9 @@ export default function CardDetails(props: CardDetailsProps) {
                     if (!confirmacao) return;
 
                     try {
-                      await deleteTarefa(Number(values.id)); // Deleta no backend
-                      props.removeCard(props.bid, values.id); // Remove da UI
-                      props.onClose(); // Fecha o modal
+                      await deleteTarefa(Number(values.id));
+                      props.removeCard(props.bid, values.id);
+                      props.onClose();
                       props.setError?.("Tarefa excluída com sucesso!", "success");
                     } catch (err) {
                       console.error("Erro ao deletar tarefa:", err);
@@ -838,7 +828,6 @@ export default function CardDetails(props: CardDetailsProps) {
                   </span>
                   Excluir Cartão
                 </button>
-
               </div>
             </div>
           </div>
@@ -847,5 +836,3 @@ export default function CardDetails(props: CardDetailsProps) {
     </Modal>
   );
 }
-
-// Removed the conflicting local declaration of useCallback

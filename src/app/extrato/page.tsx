@@ -297,22 +297,6 @@ const Extrato: React.FC = () => {
             setMesSelecionado(mesAtual);
             setAnoSelecionado(anoAtual);
         }
-    }, []);
-
-    useEffect(() => {
-        if (!mesSelecionado || !anoSelecionado) {
-            const dataAtual = new Date();
-            const nomesMeses = [
-                "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-                "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-            ];
-
-            const mesAtual = nomesMeses[dataAtual.getMonth()];
-            const anoAtual = dataAtual.getFullYear().toString();
-
-            setMesSelecionado(mesAtual);
-            setAnoSelecionado(anoAtual);
-        }
     }, [mesSelecionado, anoSelecionado]);
 
     return (

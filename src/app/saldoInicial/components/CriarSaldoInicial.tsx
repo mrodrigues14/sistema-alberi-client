@@ -1,7 +1,7 @@
 'use client';
 
 import { upsertSaldoInicial, useSaldoInicial } from '@/lib/hooks/useSaldoInicial';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 interface Props {
   idBanco: number;
@@ -26,10 +26,10 @@ export default function CriarSaldoInicial({
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
 
-  const meses = [
+  const meses = useMemo(() => [
     'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-  ];
+  ], []);
 
    useEffect(() => {
     if (mesSelecionado && mesSelecionado >= 1 && mesSelecionado <= 12) {

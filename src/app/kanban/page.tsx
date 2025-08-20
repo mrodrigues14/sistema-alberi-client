@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { DndContext, DragEndEvent, DragOverlay } from "@dnd-kit/core";
 import { SortableContext, arrayMove } from "@dnd-kit/sortable";
 import { v4 as uuidv4 } from "uuid";
@@ -80,6 +80,9 @@ const Kanban = () => {
     { id: "6", boardName: "Finalizado", card: [] },
   ]);
 
+  // Ref para armazenar o estado anterior para reverter mudanças
+  const previousDataRef = useRef<BoardData[]>([]);
+
   useEffect(() => {
     if (isLoading || !tarefas || !usuarios) return;
 
@@ -133,7 +136,9 @@ const Kanban = () => {
     });
   
     setData(boardsAtualizados);
-  }, [isLoading, tarefas?.length, usuarios?.length, tarefas, usuarios]);
+    // Salva o estado atual para possível reversão
+    previousDataRef.current = boardsAtualizados;
+  }, [isLoading, tarefas?.length, usuarios?.length]);
 
   const addCard = useCallback((title: string, bid: string) => {
     // Esta função não é mais usada para criar tarefas reais
@@ -154,8 +159,9 @@ const Kanban = () => {
 
   const removeCard = useCallback(async (boardId: string, cardId: string) => {
     try {
-      // Primeiro remove do estado local para feedback imediato
+      // Salva o estado atual antes de fazer mudanças
       setData(prevData => {
+        previousDataRef.current = prevData;
         return prevData.map(board =>
           board.id === boardId
             ? { ...board, card: board.card.filter(card => card.id !== cardId) }
@@ -176,14 +182,8 @@ const Kanban = () => {
       console.error("Erro ao remover tarefa:", error);
       showMessage("❌ Erro ao remover tarefa. Tente novamente.", "danger");
       
-      // Se falhar, reverte a remoção local
-      setData(prevData => {
-        return prevData.map(board =>
-          board.id === boardId
-            ? { ...board, card: board.card.filter(card => card.id !== cardId) }
-            : board
-        );
-      });
+      // Se falhar, reverte para o estado anterior
+      setData(previousDataRef.current);
     }
   }, [mutateTarefas]);
 
