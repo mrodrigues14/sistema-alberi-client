@@ -1,3 +1,4 @@
+const API_URL = "http://localhost:8080";
 
 
 export const fetcher = async (url: string, options?: RequestInit) => {
