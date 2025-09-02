@@ -5,7 +5,11 @@ import {
   CreditCardIcon, 
   PlusIcon,
   TrashIcon,
-  XMarkIcon
+  XMarkIcon,
+  EyeIcon,
+  PencilIcon,
+  ArrowPathIcon,
+  DocumentDuplicateIcon
 } from '@heroicons/react/24/outline';
 import { useAsaas } from '@/lib/hooks/useAsaas';
 
@@ -15,7 +19,7 @@ interface CobrancasModalProps {
 }
 
 export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps) {
-  const { getCustomers, getPayments, createPayment, deletePayment } = useAsaas();
+  const { getCustomers, getPayments, createPayment, deletePayment, getPayment, updatePayment, restorePayment, getBankSlip, getPixQrCode } = useAsaas();
   const [clients, setClients] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
@@ -78,7 +82,7 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
     }
   }, [isOpen, loadAsaasPayments, loadAsaasClients]);
 
-  const handlePaymentAction = (action: string, payment?: any) => {
+  const handlePaymentAction = async (action: string, payment?: any) => {
     if (action === 'new') {
       setNewPayment({
         customer: '',
@@ -93,6 +97,52 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
     } else if (action === 'delete' && payment) {
       if (confirm(`Tem certeza que deseja excluir a cobrança ${payment.description || payment.id}?`)) {
         handleDeletePayment(payment.id);
+      }
+    } else if (action === 'restore' && payment) {
+      if (confirm(`Tem certeza que deseja restaurar a cobrança ${payment.description || payment.id}?`)) {
+        try {
+          await restorePayment(payment.id);
+          await loadAsaasPayments();
+          alert('Cobrança restaurada com sucesso!');
+        } catch (error) {
+          console.error('Erro ao restaurar cobrança:', error);
+          alert('Erro ao restaurar cobrança. Tente novamente.');
+        }
+      }
+    } else if (action === 'view' && payment) {
+      try {
+        const paymentDetails = await getPayment(payment.id);
+        console.log('Detalhes da cobrança:', paymentDetails);
+        alert(`Detalhes da cobrança:\nID: ${paymentDetails.id}\nStatus: ${paymentDetails.status}\nValor: ${formatCurrency(paymentDetails.value)}\nVencimento: ${formatDate(paymentDetails.dueDate)}`);
+      } catch (error) {
+        console.error('Erro ao buscar detalhes da cobrança:', error);
+        alert('Erro ao buscar detalhes da cobrança.');
+      }
+    } else if (action === 'bankSlip' && payment) {
+      try {
+        const bankSlip = await getBankSlip(payment.id);
+        if (bankSlip.encodedImage) {
+          // Abrir boleto em nova aba
+          window.open(bankSlip.encodedImage, '_blank');
+        } else {
+          alert('Boleto não disponível para esta cobrança.');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar boleto:', error);
+        alert('Erro ao buscar boleto.');
+      }
+    } else if (action === 'pixQrCode' && payment) {
+      try {
+        const pixQrCode = await getPixQrCode(payment.id);
+        if (pixQrCode.encodedImage) {
+          // Abrir QR Code em nova aba
+          window.open(pixQrCode.encodedImage, '_blank');
+        } else {
+          alert('QR Code PIX não disponível para esta cobrança.');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar QR Code PIX:', error);
+        alert('Erro ao buscar QR Code PIX.');
       }
     }
   };
@@ -325,12 +375,48 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
                       </div>
                       <div className="flex space-x-2 ml-4">
                         <button
-                          onClick={() => handlePaymentAction('delete', payment)}
-                          className="text-red-600 hover:text-red-800 p-1"
-                          title="Excluir cobrança"
+                          onClick={() => handlePaymentAction('view', payment)}
+                          className="text-blue-600 hover:text-blue-800 p-1"
+                          title="Ver detalhes"
                         >
-                          <TrashIcon className="h-4 w-4" />
+                          <EyeIcon className="h-4 w-4" />
                         </button>
+                        {payment.billingType === 'BOLETO' && (
+                          <button
+                            onClick={() => handlePaymentAction('bankSlip', payment)}
+                            className="text-green-600 hover:text-green-800 p-1"
+                            title="Ver boleto"
+                          >
+                            <DocumentDuplicateIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                        {payment.billingType === 'PIX' && (
+                          <button
+                            onClick={() => handlePaymentAction('pixQrCode', payment)}
+                            className="text-purple-600 hover:text-purple-800 p-1"
+                            title="Ver QR Code PIX"
+                          >
+                            <DocumentDuplicateIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                        {payment.deleted && (
+                          <button
+                            onClick={() => handlePaymentAction('restore', payment)}
+                            className="text-orange-600 hover:text-orange-800 p-1"
+                            title="Restaurar cobrança"
+                          >
+                            <ArrowPathIcon className="h-4 w-4" />
+                          </button>
+                        )}
+                        {!payment.deleted && (
+                          <button
+                            onClick={() => handlePaymentAction('delete', payment)}
+                            className="text-red-600 hover:text-red-800 p-1"
+                            title="Excluir cobrança"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

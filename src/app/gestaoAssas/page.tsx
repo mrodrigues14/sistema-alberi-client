@@ -9,18 +9,23 @@ import {
   BanknotesIcon,
   ClockIcon,
   CheckCircleIcon,
-  ExclamationTriangleIcon
+  ExclamationTriangleIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/outline';
 import { useAsaasDashboard } from '@/lib/hooks/useAsaas';
 import ConfigStatus from '@/components/ConfigStatus';
 import Navbar from '@/components/Navbar';
 import ClientesModal from '@/components/gestaoAssas/ClientesModal';
 import CobrancasModal from '@/components/gestaoAssas/CobrancasModal';
+import AssinaturasModal from '@/components/gestaoAssas/AssinaturasModal';
+import NotasFiscaisModal from '@/components/gestaoAssas/NotasFiscaisModal';
 
 export default function GestaoAssasPage() {
   const { dashboardStats, recentActivities, apiStatus, loading, refreshData } = useAsaasDashboard();
   const [showClientModal, setShowClientModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showNotasFiscaisModal, setShowNotasFiscaisModal] = useState(false);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -63,28 +68,28 @@ export default function GestaoAssasPage() {
       value: dashboardStats.totalCustomers.toLocaleString('pt-BR'),
       icon: UsersIcon,
       color: 'bg-blue-500',
-      change: `+${dashboardStats.monthlyGrowth.customers}%`
+      change: `+${dashboardStats.monthlyGrowth?.customers ?? 0}%`
     },
     {
       label: 'Faturamento do Mês',
       value: formatCurrency(dashboardStats.totalRevenue),
       icon: BanknotesIcon,
       color: 'bg-green-500',
-      change: `+${dashboardStats.monthlyGrowth.revenue}%`
+      change: `+${dashboardStats.monthlyGrowth?.revenue ?? 0}%`
     },
     {
       label: 'Cobranças Pendentes',
       value: dashboardStats.pendingPayments.toLocaleString('pt-BR'),
       icon: ClockIcon,
       color: 'bg-yellow-500',
-      change: `${dashboardStats.monthlyGrowth.pendingPayments >= 0 ? '+' : ''}${dashboardStats.monthlyGrowth.pendingPayments}%`
+      change: `${(dashboardStats.monthlyGrowth?.pendingPayments ?? 0) >= 0 ? '+' : ''}${dashboardStats.monthlyGrowth?.pendingPayments ?? 0}%`
     },
     {
       label: 'Cobranças Pagas',
       value: dashboardStats.receivedPayments.toLocaleString('pt-BR'),
       icon: CheckCircleIcon,
       color: 'bg-emerald-500',
-      change: `+${dashboardStats.monthlyGrowth.receivedPayments}%`
+      change: `+${dashboardStats.monthlyGrowth?.receivedPayments ?? 0}%`
     }
   ] : [
     {
@@ -120,10 +125,24 @@ export default function GestaoAssasPage() {
   const quickActions = [
     {
       title: 'Gerenciar Cobranças',
-      description: 'Criar e gerenciar cobranças',
+      description: 'Criar e gerenciar cobranças avulsas',
       icon: CreditCardIcon,
       color: 'bg-blue-600 hover:bg-blue-700',
       action: 'openPaymentModal'
+    },
+    {
+      title: 'Gerenciar Assinaturas',
+      description: 'Criar e gerenciar assinaturas recorrentes',
+      icon: DocumentDuplicateIcon,
+      color: 'bg-green-600 hover:bg-green-700',
+      action: 'openSubscriptionModal'
+    },
+    {
+      title: 'Gerenciar Notas Fiscais',
+      description: 'Emitir e gerenciar notas fiscais dos clientes',
+      icon: DocumentTextIcon,
+      color: 'bg-orange-600 hover:bg-orange-700',
+      action: 'openNotasFiscaisModal'
     },
     {
       title: 'Gerenciar Clientes',
@@ -138,21 +157,23 @@ export default function GestaoAssasPage() {
       icon: ChartBarIcon,
       color: 'bg-indigo-600 hover:bg-indigo-700',
       href: '/gestaoAssas/relatorios'
-    },
-    {
-      title: 'Clientes Inadimplentes',
-      description: 'Gerenciar clientes em atraso',
-      icon: ExclamationTriangleIcon,
-      color: 'bg-red-600 hover:bg-red-700',
-      href: '/gestaoAssas/inadimplentes'
     }
   ];
 
   const handleQuickAction = (action: string) => {
-    if (action === 'openClientModal') {
-      setShowClientModal(true);
-    } else if (action === 'openPaymentModal') {
-      setShowPaymentModal(true);
+    switch (action) {
+      case 'openPaymentModal':
+        setShowPaymentModal(true);
+        break;
+      case 'openSubscriptionModal':
+        setShowSubscriptionModal(true);
+        break;
+      case 'openNotasFiscaisModal':
+        setShowNotasFiscaisModal(true);
+        break;
+      case 'openClientModal':
+        setShowClientModal(true);
+        break;
     }
   };
 
@@ -291,13 +312,49 @@ export default function GestaoAssasPage() {
 
           {/* Quick Stats */}
           <div className="bg-white rounded-lg shadow-lg p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Status do Sistema</h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Informações Rápidas</h3>
             <div className="space-y-4">
+              {/* Taxa de Conversão */}
+              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                <div>
+                  <span className="text-sm font-medium text-gray-900">Taxa de Conversão</span>
+                  <p className="text-xs text-gray-600">Cobranças pagas vs. enviadas</p>
+                </div>
+                <span className="text-lg font-bold text-green-600">
+                  {dashboardStats ? `${((dashboardStats.receivedPayments / (dashboardStats.receivedPayments + dashboardStats.pendingPayments)) * 100).toFixed(1)}%` : '0%'}
+                </span>
+              </div>
+
+              {/* Ticket Médio */}
+              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <div>
+                  <span className="text-sm font-medium text-gray-900">Ticket Médio</span>
+                  <p className="text-xs text-gray-600">Valor médio por cobrança</p>
+                </div>
+                <span className="text-lg font-bold text-blue-600">
+                  {dashboardStats && dashboardStats.receivedPayments > 0 
+                    ? formatCurrency(dashboardStats.totalRevenue / dashboardStats.receivedPayments)
+                    : 'R$ 0,00'}
+                </span>
+              </div>
+
+              {/* Crescimento Mensal */}
+              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                <div>
+                  <span className="text-sm font-medium text-gray-900">Crescimento Mensal</span>
+                  <p className="text-xs text-gray-600">Comparado ao mês anterior</p>
+                </div>
+                <span className={`text-lg font-bold ${(dashboardStats?.monthlyGrowth?.revenue ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {dashboardStats ? `${(dashboardStats.monthlyGrowth?.revenue ?? 0) >= 0 ? '+' : ''}${dashboardStats.monthlyGrowth?.revenue ?? 0}%` : '0%'}
+                </span>
+              </div>
+
+              {/* Status da API */}
               <div className={`flex items-center justify-between p-3 rounded-lg ${
-                apiStatus?.status === true ? 'bg-green-50' : 
-                apiStatus?.status === false ? 'bg-red-50' : 'bg-yellow-50'
+                apiStatus?.status === true ? 'bg-green-50 border border-green-200' : 
+                apiStatus?.status === false ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'
               }`}>
-                <span className="text-sm font-medium text-gray-900">API Asaas</span>
+                <span className="text-sm font-medium text-gray-900">Status da API</span>
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                   apiStatus?.status === true ? 'bg-green-100 text-green-800' :
                   apiStatus?.status === false ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
@@ -310,35 +367,25 @@ export default function GestaoAssasPage() {
                    apiStatus?.status === false ? 'Offline' : 'Verificando...'}
                 </span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-900">Banco de Dados</span>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mr-1"></div>
-                  Conectado
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-900">Última Sincronização</span>
-                <span className="text-sm text-gray-600">
-                  {loading ? 'Carregando...' : 'Agora mesmo'}
-                </span>
-              </div>
-              
-              <div className="mt-4 p-4 border rounded-lg bg-blue-50 border-blue-200">
-                <h4 className="font-semibold mb-2 text-blue-800">
-                  ℹ️ Dados em Tempo Real
-                </h4>
-                <p className="text-sm text-blue-700">
-                  Esta página está conectada diretamente com a API do Asaas. Os dados são atualizados em tempo real.
-                </p>
-              </div>
             </div>
 
-            <div className="mt-6 p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg text-white">
-              <h4 className="font-semibold mb-2">💡 Dica do Dia</h4>
-              <p className="text-sm opacity-90">
-                Use cobranças recorrentes para automatizar pagamentos mensais e aumentar sua eficiência!
-              </p>
+            {/* Dicas e Insights */}
+            <div className="mt-6 space-y-3">
+              <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg text-white">
+                <h4 className="font-semibold mb-2">💡 Dica do Dia</h4>
+                <p className="text-sm opacity-90">
+                  Use assinaturas recorrentes para automatizar pagamentos mensais e aumentar sua eficiência! Crie cobranças avulsas para pagamentos únicos.
+                </p>
+              </div>
+
+              <div className="p-4 bg-gradient-to-r from-green-500 to-teal-600 rounded-lg text-white">
+                <h4 className="font-semibold mb-2">📊 Insight</h4>
+                <p className="text-sm opacity-90">
+                  {dashboardStats && dashboardStats.pendingPayments > 0 
+                    ? `Você tem ${dashboardStats.pendingPayments} cobranças pendentes. Considere enviar lembretes!`
+                    : 'Parabéns! Todas as suas cobranças estão em dia.'}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -354,6 +401,16 @@ export default function GestaoAssasPage() {
       <CobrancasModal 
         isOpen={showPaymentModal} 
         onClose={() => setShowPaymentModal(false)} 
+      />
+
+      <AssinaturasModal 
+        isOpen={showSubscriptionModal} 
+        onClose={() => setShowSubscriptionModal(false)} 
+      />
+
+      <NotasFiscaisModal
+        isOpen={showNotasFiscaisModal}
+        onClose={() => setShowNotasFiscaisModal(false)}
       />
     </>
   );

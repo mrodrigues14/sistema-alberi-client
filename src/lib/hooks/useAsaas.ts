@@ -54,6 +54,54 @@ export interface Payment {
   lastBankSlipViewedDate?: string;
 }
 
+export interface Subscription {
+  id: string;
+  customer: string;
+  value: number;
+  nextDueDate: string;
+  cycle: 'WEEKLY' | 'BIWEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'SEMIANNUALLY' | 'YEARLY';
+  description?: string;
+  status: 'ACTIVE' | 'INACTIVE' | 'OVERDUE' | 'CANCELLED';
+  billingType: 'BOLETO' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'TRANSFER' | 'DEPOSIT' | 'PIX';
+  endDate?: string;
+  maxPayments?: number;
+  fine: {
+    value: number;
+  };
+  interest: {
+    value: number;
+  };
+  discount: {
+    value: number;
+    dueDateLimitDays: number;
+  };
+  dateCreated: string;
+  deleted: boolean;
+}
+
+export interface Invoice {
+  id: string;
+  customer: string;
+  payment: string;
+  value: number;
+  netValue: number;
+  originalValue?: number;
+  interestValue?: number;
+  fineValue?: number;
+  discountValue?: number;
+  description?: string;
+  status: 'SCHEDULED' | 'ISSUED' | 'CANCELLED';
+  issueDate?: string;
+  dueDate: string;
+  dateCreated: string;
+  deleted: boolean;
+  municipalServiceId?: string;
+  municipalServiceCode?: string;
+  municipalServiceName?: string;
+  observations?: string;
+  externalReference?: string;
+}
+
 export interface DashboardStats {
   totalCustomers: number;
   totalRevenue: number;
@@ -260,6 +308,307 @@ export function useAsaas() {
     }
   }, []);
 
+  // Métodos para Assinaturas
+  const getSubscriptions = useCallback(async (limit = 100, offset = 0, status?: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const statusParam = status ? `&status=${status}` : '';
+      const data = await fetcher(`/asaas/subscriptions?limit=${limit}&offset=${offset}${statusParam}`);
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao buscar assinaturas';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const getSubscription = useCallback(async (id: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const data = await fetcher(`/asaas/subscriptions/${id}`);
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao buscar assinatura';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const createSubscription = useCallback(async (subscriptionData: any) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetcher('/asaas/subscriptions', { 
+        method: 'POST', 
+        body: JSON.stringify(subscriptionData) 
+      });
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao criar assinatura';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateSubscription = useCallback(async (id: string, subscriptionData: any) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetcher(`/asaas/subscriptions/${id}`, { 
+        method: 'POST', 
+        body: JSON.stringify(subscriptionData) 
+      });
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao atualizar assinatura';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const deleteSubscription = useCallback(async (id: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetcher(`/asaas/subscriptions/${id}`, { 
+        method: 'DELETE' 
+      });
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao deletar assinatura';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Métodos adicionais para cobranças
+  const getPayment = useCallback(async (id: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const data = await fetcher(`/asaas/payments/${id}`);
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao buscar cobrança';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updatePayment = useCallback(async (id: string, paymentData: any) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetcher(`/asaas/payments/${id}`, { 
+        method: 'POST', 
+        body: JSON.stringify(paymentData) 
+      });
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao atualizar cobrança';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const restorePayment = useCallback(async (id: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetcher(`/asaas/payments/${id}/restore`, { 
+        method: 'POST' 
+      });
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao restaurar cobrança';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const getBankSlip = useCallback(async (id: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const data = await fetcher(`/asaas/payments/${id}/bankSlip`);
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao buscar boleto';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const getPixQrCode = useCallback(async (id: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const data = await fetcher(`/asaas/payments/${id}/pixQrCode`);
+      return data;
+    } catch (err: any) {
+      const errorMessage = err.message || 'Erro ao buscar QR Code PIX';
+      setError(errorMessage);
+      throw new Error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Notas Fiscais
+  const getInvoices = useCallback(async (limit: number = 100, offset: number = 0, filters?: any) => {
+    try {
+      const response = await fetcher(`/asaas/invoices?limit=${limit}&offset=${offset}${filters?.customer ? `&customer=${filters.customer}` : ''}${filters?.status ? `&status=${filters.status}` : ''}`);
+      return response;
+    } catch (error) {
+      console.error('Erro ao buscar notas fiscais:', error);
+      throw error;
+    }
+  }, [fetcher]);
+
+  const getInvoice = useCallback(async (invoiceId: string) => {
+    try {
+      const response = await fetcher(`/asaas/invoices/${invoiceId}`);
+      return response;
+    } catch (error) {
+      console.error('Erro ao buscar nota fiscal:', error);
+      throw error;
+    }
+  }, [fetcher]);
+
+  const createInvoice = useCallback(async (invoiceData: any) => {
+    try {
+      const response = await fetcher('/asaas/invoices', {
+        method: 'POST',
+        body: JSON.stringify(invoiceData),
+      });
+      return response;
+    } catch (error) {
+      console.error('Erro ao criar nota fiscal:', error);
+      throw error;
+    }
+  }, [fetcher]);
+
+  const updateInvoice = useCallback(async (invoiceId: string, invoiceData: any) => {
+    try {
+      const response = await fetcher(`/asaas/invoices/${invoiceId}`, {
+        method: 'PUT',
+        body: JSON.stringify(invoiceData),
+      });
+      return response;
+    } catch (error) {
+      console.error('Erro ao atualizar nota fiscal:', error);
+      throw error;
+    }
+  }, [fetcher]);
+
+  const issueInvoice = useCallback(async (invoiceId: string) => {
+    try {
+      const response = await fetcher(`/asaas/invoices/${invoiceId}/issue`, {
+        method: 'POST',
+      });
+      return response;
+    } catch (error) {
+      console.error('Erro ao emitir nota fiscal:', error);
+      throw error;
+    }
+  }, [fetcher]);
+
+  const cancelInvoice = useCallback(async (invoiceId: string) => {
+    try {
+      const response = await fetcher(`/asaas/invoices/${invoiceId}/cancel`, {
+        method: 'POST',
+      });
+      return response;
+    } catch (error) {
+      console.error('Erro ao cancelar nota fiscal:', error);
+      throw error;
+    }
+  }, [fetcher]);
+
+  const getCustomerInvoices = useCallback(async (customerId: string, limit: number = 100, offset: number = 0) => {
+    try {
+      const response = await fetcher(`/asaas/invoices?limit=${limit}&offset=${offset}&customer=${customerId}`);
+      return response;
+    } catch (error) {
+      console.error('Erro ao buscar notas fiscais do cliente:', error);
+      throw error;
+    }
+  }, [fetcher]);
+
+  // Configurações de Notas Fiscais das Assinaturas
+  const getSubscriptionInvoiceSettings = useCallback(async (subscriptionId: string) => {
+    try {
+      const response = await fetcher(`/asaas/subscriptions/${subscriptionId}/invoiceSettings`);
+      return response;
+    } catch (error) {
+      console.error('Erro ao buscar configurações de NF da assinatura:', error);
+      throw error;
+    }
+  }, []);
+
+  const createSubscriptionInvoiceSettings = useCallback(async (subscriptionId: string, settings: any) => {
+    try {
+      const response = await fetcher(`/asaas/subscriptions/${subscriptionId}/invoiceSettings`, {
+        method: 'POST',
+        body: JSON.stringify(settings)
+      });
+      return response;
+    } catch (error) {
+      console.error('Erro ao criar configurações de NF da assinatura:', error);
+      throw error;
+    }
+  }, []);
+
+  const updateSubscriptionInvoiceSettings = useCallback(async (subscriptionId: string, settings: any) => {
+    try {
+      const response = await fetcher(`/asaas/subscriptions/${subscriptionId}/invoiceSettings`, {
+        method: 'PUT',
+        body: JSON.stringify(settings)
+      });
+      return response;
+    } catch (error) {
+      console.error('Erro ao atualizar configurações de NF da assinatura:', error);
+      throw error;
+    }
+  }, []);
+
+  const deleteSubscriptionInvoiceSettings = useCallback(async (subscriptionId: string) => {
+    try {
+      const response = await fetcher(`/asaas/subscriptions/${subscriptionId}/invoiceSettings`, {
+        method: 'DELETE'
+      });
+      return response;
+    } catch (error) {
+      console.error('Erro ao remover configurações de NF da assinatura:', error);
+      throw error;
+    }
+  }, []);
+
   return {
     loading,
     error,
@@ -273,7 +622,27 @@ export function useAsaas() {
     updateCustomer,
     deleteCustomer,
     createPayment,
-    deletePayment
+    deletePayment,
+    getSubscriptions,
+    getSubscription,
+    createSubscription,
+    updateSubscription,
+    deleteSubscription,
+    getPayment,
+    updatePayment,
+    restorePayment,
+    getBankSlip,
+    getPixQrCode,
+    getInvoices,
+    getInvoice,
+    createInvoice,
+    issueInvoice,
+    cancelInvoice,
+    getCustomerInvoices,
+    getSubscriptionInvoiceSettings,
+    createSubscriptionInvoiceSettings,
+    updateSubscriptionInvoiceSettings,
+    deleteSubscriptionInvoiceSettings
   };
 }
 
