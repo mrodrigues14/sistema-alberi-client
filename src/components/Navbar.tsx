@@ -138,8 +138,11 @@ export default function Navbar() {
     if (savedCliente) {
       setSelectedCliente(JSON.parse(savedCliente));
     }
-    setViewMode(savedViewMode);
-  }, [session]);
+    
+    // Se o usuário tem role "usuario", sempre usa o modo "meus"
+    const initialViewMode = userRole === 'usuario' ? 'meus' : savedViewMode;
+    setViewMode(initialViewMode);
+  }, [session, userRole]);
 
   useEffect(() => {
     const savedCliente = sessionStorage.getItem("selectedCliente");
@@ -157,8 +160,15 @@ export default function Navbar() {
     return (a.apelido || a.nome).localeCompare(b.apelido || b.nome);
   }) || [];
 
-  // Decidir quais clientes mostrar baseado no modo de visualização
-  const clientesParaMostrar = viewMode === 'meus' ? meusClientes : sortedClientes;
+  // Decidir quais clientes mostrar baseado no modo de visualização e role do usuário
+  const clientesParaMostrar = (() => {
+    // Se o usuário tem role "usuario", sempre mostra apenas seus clientes
+    if (userRole === 'usuario') {
+      return meusClientes;
+    }
+    // Para outros roles, usa o modo de visualização normal
+    return viewMode === 'meus' ? meusClientes : sortedClientes;
+  })();
 
   // Filtrar clientes conforme a pesquisa
   const filteredClientes = clientesParaMostrar.filter((cliente: Cliente) =>
@@ -182,7 +192,7 @@ export default function Navbar() {
   const handleMeusClientesSelect = () => {
     // Define um ID especial para "Meus Clientes" (pode ser -1 ou outro valor especial)
     const meusClientesId = -1;
-    const meusClientesNome = "Meus Clientes";
+    const meusClientesNome = userRole === 'usuario' ? "Minhas Empresas" : "Meus Clientes";
 
     setSelectedCliente({ id: meusClientesId, nome: meusClientesNome });
     sessionStorage.setItem("selectedCliente", JSON.stringify({ id: meusClientesId, nome: meusClientesNome }));
@@ -264,39 +274,41 @@ export default function Navbar() {
                 </button>
                 {showDropdown === 'cliente' && (
                   <div className="absolute top-full right-0 mt-2 w-80 bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-xl z-50 overflow-hidden">
-                    {/* Opções de filtro */}
-                    <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 p-3 border-b border-slate-200/40">
-                      <div className="flex space-x-2">
-                        <button
-                          className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                            viewMode === 'todos' 
-                              ? 'bg-blue-500 text-white shadow-md' 
-                              : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm'
-                          }`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleTodosClientesSelect();
-                          }}
-                        >
-                          Todos os Clientes
-                        </button>
-                        <button
-                          className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                            viewMode === 'meus' 
-                              ? 'bg-blue-500 text-white shadow-md' 
-                              : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm'
-                          }`}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleMeusClientesSelect();
-                          }}
-                        >
-                          Meus Clientes
-                        </button>
+                    {/* Opções de filtro - ocultas para usuários com role "usuario" */}
+                    {userRole !== 'usuario' && (
+                      <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 p-3 border-b border-slate-200/40">
+                        <div className="flex space-x-2">
+                          <button
+                            className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                              viewMode === 'todos' 
+                                ? 'bg-blue-500 text-white shadow-md' 
+                                : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm'
+                            }`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleTodosClientesSelect();
+                            }}
+                          >
+                            Todos os Clientes
+                          </button>
+                          <button
+                            className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                              viewMode === 'meus' 
+                                ? 'bg-blue-500 text-white shadow-md' 
+                                : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm'
+                            }`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleMeusClientesSelect();
+                            }}
+                          >
+                            {userRole === 'usuario' ? 'Minhas Empresas' : 'Meus Clientes'}
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    )}
                     
                     <div className="p-3 border-b border-slate-200/40">
                       <div className="relative">
@@ -344,7 +356,12 @@ export default function Navbar() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
                           <p className="text-sm">
-                            {viewMode === 'meus' ? 'Nenhum cliente vinculado encontrado' : 'Nenhum cliente encontrado'}
+                            {userRole === 'usuario' 
+                              ? 'Nenhuma empresa vinculada encontrada' 
+                              : viewMode === 'meus' 
+                                ? 'Nenhum cliente vinculado encontrado' 
+                                : 'Nenhum cliente encontrado'
+                            }
                           </p>
                         </div>
                       )}
@@ -502,39 +519,41 @@ export default function Navbar() {
           </button>
           {showDropdown === 'cliente' && (
             <div className="absolute top-full left-0 mt-2 w-full bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-xl z-50 overflow-hidden">
-              {/* Opções de filtro */}
-              <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 p-3 border-b border-slate-200/40">
-                <div className="flex space-x-2">
-                  <button
-                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                      viewMode === 'todos' 
-                        ? 'bg-blue-500 text-white shadow-md' 
-                        : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm'
-                    }`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleTodosClientesSelect();
-                    }}
-                  >
-                    Todos os Clientes
-                  </button>
-                  <button
-                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                      viewMode === 'meus' 
-                        ? 'bg-blue-500 text-white shadow-md' 
-                        : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm'
-                    }`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleMeusClientesSelect();
-                    }}
-                  >
-                    Meus Clientes
-                  </button>
+              {/* Opções de filtro - ocultas para usuários com role "usuario" */}
+              {userRole !== 'usuario' && (
+                <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 p-3 border-b border-slate-200/40">
+                  <div className="flex space-x-2">
+                    <button
+                      className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                        viewMode === 'todos' 
+                          ? 'bg-blue-500 text-white shadow-md' 
+                          : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm'
+                      }`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleTodosClientesSelect();
+                      }}
+                    >
+                      Todos os Clientes
+                    </button>
+                    <button
+                      className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                        viewMode === 'meus' 
+                          ? 'bg-blue-500 text-white shadow-md' 
+                          : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm'
+                      }`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleMeusClientesSelect();
+                      }}
+                    >
+                      {userRole === 'usuario' ? 'Minhas Empresas' : 'Meus Clientes'}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
               
               <div className="p-3 border-b border-slate-200/40">
                 <div className="relative">
@@ -582,7 +601,12 @@ export default function Navbar() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     <p className="text-sm">
-                      {viewMode === 'meus' ? 'Nenhum cliente vinculado encontrado' : 'Nenhum cliente encontrado'}
+                      {userRole === 'usuario' 
+                        ? 'Nenhuma empresa vinculada encontrada' 
+                        : viewMode === 'meus' 
+                          ? 'Nenhum cliente vinculado encontrado' 
+                          : 'Nenhum cliente encontrado'
+                      }
                     </p>
                   </div>
                 )}
