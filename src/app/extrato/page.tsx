@@ -322,18 +322,72 @@ const Extrato: React.FC = () => {
 
                                     {dropdownAberto && (
                                         <div className={styles.dropdownMenu}>
-                                            <select
-                                                className={styles.dropdownSelect}
-                                                value={metodoInsercao}
-                                                onChange={(e) => {
-                                                    handleInsercaoChange(e);
-                                                    setDropdownAberto(false);
+                                            {/* Styled options list to replace the native select for a nicer UI */}
+                                            <ul
+                                                role="menu"
+                                                aria-label="Métodos de inserção"
+                                                style={{
+                                                    listStyle: 'none',
+                                                    margin: 0,
+                                                    padding: '6px 0',
+                                                    minWidth: 220,
+                                                    background: '#ffffff',
+                                                    borderRadius: 8,
+                                                    boxShadow: '0 6px 18px rgba(0,0,0,0.08)',
+                                                    border: '1px solid rgba(0,0,0,0.06)'
                                                 }}
                                             >
-                                                <option value="">Selecione o Método</option>
-                                                <option value="manual">Inserção Manual</option>
-                                                <option value="importar">Importar Arquivo</option>
-                                            </select>
+                                                {[
+                                                    { value: '', label: 'Selecione o Método' },
+                                                    { value: 'manual', label: 'Inserção Manual' },
+                                                    { value: 'importar', label: 'Importar Arquivo' }
+                                                ].map((opt) => {
+                                                    const isPlaceholder = opt.value === '';
+                                                    const isSelected = metodoInsercao === opt.value && !isPlaceholder;
+
+                                                    return (
+                                                        <li
+                                                            key={opt.value ?? 'empty'}
+                                                            role="menuitem"
+                                                            tabIndex={0}
+                                                            onClick={() => {
+                                                                if (isPlaceholder) {
+                                                                    setDropdownAberto(false);
+                                                                    return;
+                                                                }
+                                                                setMetodoInsercao(opt.value);
+                                                                setDropdownAberto(false);
+                                                            }}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                                    e.preventDefault();
+                                                                    if (isPlaceholder) {
+                                                                        setDropdownAberto(false);
+                                                                        return;
+                                                                    }
+                                                                    setMetodoInsercao(opt.value);
+                                                                    setDropdownAberto(false);
+                                                                }
+                                                            }}
+                                                            style={{
+                                                                padding: '8px 14px',
+                                                                cursor: isPlaceholder ? 'default' : 'pointer',
+                                                                color: isPlaceholder ? '#6B7280' : isSelected ? '#0b5cff' : '#111827',
+                                                                background: isSelected ? 'rgba(11,92,255,0.06)' : 'transparent'
+                                                            }}
+                                                            onMouseEnter={(e) => {
+                                                                if (isPlaceholder) e.currentTarget.style.background = 'rgba(0,0,0,0.02)';
+                                                                else e.currentTarget.style.background = isSelected ? 'rgba(11,92,255,0.06)' : 'rgba(0,0,0,0.03)';
+                                                            }}
+                                                            onMouseLeave={(e) => {
+                                                                e.currentTarget.style.background = isSelected ? 'rgba(11,92,255,0.06)' : 'transparent';
+                                                            }}
+                                                        >
+                                                            {opt.label}
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
                                         </div>
                                     )}
                                 </div>

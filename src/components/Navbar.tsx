@@ -409,9 +409,9 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Submenu de navegação - Todos os links */}
+      {/* Submenu de navegação - Todos os links (oculto no mobile) */}
       {pathname !== '/' && (
-        <div className="bg-white border-b border-slate-200/60 shadow-sm">
+        <div className="hidden md:block bg-white border-b border-slate-200/60 shadow-sm">
           <div className="w-full px-6 sm:px-8 lg:px-10">
             <div className="flex items-center justify-center space-x-3 py-3">
               {/* Renderiza apenas os itens de navegação que o usuário pode acessar */}
@@ -484,7 +484,7 @@ export default function Navbar() {
       )}
 
       {/* Menu mobile expandido */}
-      <div className={`w-full md:hidden ${isMobileMenuOpen ? 'block' : 'hidden'} bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/60 shadow-lg p-4 mx-4 mt-4`}>
+  <div className={`md:hidden ${isMobileMenuOpen ? 'block' : 'hidden'} bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/60 shadow-lg p-4 mt-4 mx-auto max-w-[94%]`}>
         {/* Seleção de Cliente - Mobile */}
         <div className="relative mb-4" ref={clienteDropdownRef}>
           <button
@@ -618,14 +618,18 @@ export default function Navbar() {
             if (item.href === '/estudos') {
               return (
                 <div key={item.href} className="relative">
-                  <button
-                    onClick={() => toggleDropdown('estudos')}
-                    className="group flex items-center space-x-3 px-4 py-3 text-sm font-medium text-slate-700 bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent hover:shadow-lg transition-all duration-300 shadow-sm w-full"
-                  >
-                                       {getIconComponent(item.icon)()}
-                   <span>{item.label}</span>
-                   <Icons.chevronDown />
-                  </button>
+                        <button
+                          onClick={() => toggleDropdown('estudos')}
+                          className={`group flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 shadow-sm w-full ${
+                            pathname.startsWith('/estudos')
+                              ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white border-transparent'
+                              : 'text-slate-700 bg-white/80 backdrop-blur-sm border border-slate-200/60 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent'
+                          }`}
+                        >
+                          {getIconComponent(item.icon)()}
+                          <span>{item.label}</span>
+                          <Icons.chevronDown />
+                        </button>
                   {showDropdown === 'estudos' && (
                     <div className="mt-2 w-full bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-xl overflow-hidden">
                       <div className="p-2">
@@ -640,7 +644,11 @@ export default function Navbar() {
                           <Link
                             key={subItem.href}
                             href={subItem.href}
-                            className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 rounded-lg transition-colors duration-150"
+                            className={`flex items-center space-x-3 px-4 py-3 text-sm rounded-lg transition-colors duration-150 ${
+                              pathname === subItem.href
+                                ? 'bg-gradient-to-r from-slate-700 to-slate-800 text-white'
+                                : 'text-slate-700 hover:bg-slate-50'
+                            }`}
                           >
                             <span className="font-medium">{subItem.label}</span>
                           </Link>
@@ -657,7 +665,11 @@ export default function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className="group flex items-center space-x-3 px-4 py-3 text-sm font-medium text-slate-700 bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent hover:shadow-lg transition-all duration-300 shadow-sm"
+                className={`group flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-300 shadow-sm w-full ${
+                  pathname === item.href
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white border-transparent'
+                    : 'text-slate-700 bg-white/80 backdrop-blur-sm border border-slate-200/60 hover:bg-gradient-to-r hover:from-blue-500 hover:to-purple-600 hover:text-white hover:border-transparent'
+                }`}
               >
                 {getIconComponent(item.icon)()}
                 <span>{item.label}</span>

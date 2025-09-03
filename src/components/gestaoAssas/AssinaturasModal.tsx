@@ -19,6 +19,11 @@ interface AssinaturasModalProps {
 }
 
 export default function AssinaturasModal({ isOpen, onClose }: AssinaturasModalProps) {
+  // Função para buscar o nome do cliente pelo id
+  const getClientName = (customerId: string) => {
+    const client = clients.find((c) => c.id === customerId);
+    return client ? client.name : customerId;
+  };
   const { 
     getCustomers, 
     getSubscriptions, 
@@ -452,7 +457,7 @@ export default function AssinaturasModal({ isOpen, onClose }: AssinaturasModalPr
                           </div>
                           <div className="grid grid-cols-4 gap-4 text-sm text-gray-600">
                             <div>
-                              <span className="font-medium">Cliente:</span> {subscription.customer}
+                              <span className="font-medium">Cliente:</span> {getClientName(subscription.customer)}
                             </div>
                             <div>
                               <span className="font-medium">Valor:</span> {formatCurrency(subscription.value)}

@@ -1,15 +1,12 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { ClipboardIcon } from '@heroicons/react/24/outline';
 import { 
   CreditCardIcon, 
   PlusIcon,
   TrashIcon,
-  XMarkIcon,
-  EyeIcon,
-  PencilIcon,
-  ArrowPathIcon,
-  DocumentDuplicateIcon
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useAsaas } from '@/lib/hooks/useAsaas';
 
@@ -19,7 +16,13 @@ interface CobrancasModalProps {
 }
 
 export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps) {
-  const { getCustomers, getPayments, createPayment, deletePayment, getPayment, updatePayment, restorePayment, getBankSlip, getPixQrCode } = useAsaas();
+  const [copiedPaymentId, setCopiedPaymentId] = useState<string | null>(null);
+  // Função para buscar o nome do cliente pelo id
+  const getClientName = (customerId: string) => {
+    const client = clients.find((c) => c.id === customerId);
+    return client ? client.name : customerId;
+  };
+  const { getCustomers, getPayments, createPayment, deletePayment } = useAsaas();
   const [clients, setClients] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
@@ -82,7 +85,7 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
     }
   }, [isOpen, loadAsaasPayments, loadAsaasClients]);
 
-  const handlePaymentAction = async (action: string, payment?: any) => {
+  const handlePaymentAction = (action: string, payment?: any) => {
     if (action === 'new') {
       setNewPayment({
         customer: '',
@@ -97,52 +100,6 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
     } else if (action === 'delete' && payment) {
       if (confirm(`Tem certeza que deseja excluir a cobrança ${payment.description || payment.id}?`)) {
         handleDeletePayment(payment.id);
-      }
-    } else if (action === 'restore' && payment) {
-      if (confirm(`Tem certeza que deseja restaurar a cobrança ${payment.description || payment.id}?`)) {
-        try {
-          await restorePayment(payment.id);
-          await loadAsaasPayments();
-          alert('Cobrança restaurada com sucesso!');
-        } catch (error) {
-          console.error('Erro ao restaurar cobrança:', error);
-          alert('Erro ao restaurar cobrança. Tente novamente.');
-        }
-      }
-    } else if (action === 'view' && payment) {
-      try {
-        const paymentDetails = await getPayment(payment.id);
-        console.log('Detalhes da cobrança:', paymentDetails);
-        alert(`Detalhes da cobrança:\nID: ${paymentDetails.id}\nStatus: ${paymentDetails.status}\nValor: ${formatCurrency(paymentDetails.value)}\nVencimento: ${formatDate(paymentDetails.dueDate)}`);
-      } catch (error) {
-        console.error('Erro ao buscar detalhes da cobrança:', error);
-        alert('Erro ao buscar detalhes da cobrança.');
-      }
-    } else if (action === 'bankSlip' && payment) {
-      try {
-        const bankSlip = await getBankSlip(payment.id);
-        if (bankSlip.encodedImage) {
-          // Abrir boleto em nova aba
-          window.open(bankSlip.encodedImage, '_blank');
-        } else {
-          alert('Boleto não disponível para esta cobrança.');
-        }
-      } catch (error) {
-        console.error('Erro ao buscar boleto:', error);
-        alert('Erro ao buscar boleto.');
-      }
-    } else if (action === 'pixQrCode' && payment) {
-      try {
-        const pixQrCode = await getPixQrCode(payment.id);
-        if (pixQrCode.encodedImage) {
-          // Abrir QR Code em nova aba
-          window.open(pixQrCode.encodedImage, '_blank');
-        } else {
-          alert('QR Code PIX não disponível para esta cobrança.');
-        }
-      } catch (error) {
-        console.error('Erro ao buscar QR Code PIX:', error);
-        alert('Erro ao buscar QR Code PIX.');
       }
     }
   };
@@ -245,7 +202,8 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
       default: return billingType;
     }
   };
-
+  console.log(payments)
+  console.log(clients)
   const filteredPayments = payments.filter(payment => {
     if (paymentFilter !== 'all' && payment.status !== paymentFilter) {
         return false;
@@ -256,8 +214,8 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header do Modal */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div>
@@ -273,9 +231,9 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
         </div>
 
         {/* Conteúdo do Modal */}
-        <div className="flex h-[calc(90vh-120px)]">
+        <div className="flex flex-col sm:flex-row h-[calc(90vh-120px)]">
           {/* Lista de Cobranças */}
-          <div className="w-2/3 border-r border-gray-200 p-6 overflow-y-auto">
+          <div className="w-full sm:w-2/3 border-b sm:border-b-0 sm:border-r border-gray-200 p-4 sm:p-6 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Cobranças</h3>
               <button
@@ -288,7 +246,7 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
             </div>
 
             {/* Filtros */}
-            <div className="flex space-x-2 mb-4">
+            <div className="flex flex-wrap space-x-2 space-y-2 mb-4">
               <button
                 onClick={() => setPaymentFilter('all')}
                 className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
@@ -348,9 +306,9 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
                     key={payment.id}
                     className="p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
+                        <div className="flex flex-wrap items-center space-x-2 space-y-1 mb-2">
                           <h4 className="font-medium text-gray-900">
                             {payment.description || 'Cobrança'}
                           </h4>
@@ -361,9 +319,9 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
                             {getBillingTypeText(payment.billingType)}
                           </span>
                         </div>
-                        <div className="grid grid-cols-3 gap-4 text-sm text-gray-600">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 text-sm text-gray-600">
                           <div>
-                            <span className="font-medium">Cliente:</span> {payment.customer}
+                            <span className="font-medium">Cliente:</span> {getClientName(payment.customer)}
                           </div>
                           <div>
                             <span className="font-medium">Valor:</span> {formatCurrency(payment.value)}
@@ -371,52 +329,57 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
                           <div>
                             <span className="font-medium">Vencimento:</span> {formatDate(payment.dueDate)}
                           </div>
+                        <div className="col-span-1 sm:col-span-3 flex flex-wrap gap-2 mt-2">
+                          {payment.invoiceUrl && (
+                            <div className="flex items-center gap-1 relative">
+                              <a
+                                href={payment.invoiceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 transition-colors"
+                              >
+                                Link para pagamento
+                              </a>
+                              <button
+                                type="button"
+                                className="p-1 bg-gray-100 rounded hover:bg-gray-200"
+                                title="Copiar link de pagamento"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(payment.invoiceUrl);
+                                  setCopiedPaymentId(payment.id);
+                                  setTimeout(() => setCopiedPaymentId(null), 1500);
+                                }}
+                              >
+                                <ClipboardIcon className="h-4 w-4 text-gray-600" />
+                              </button>
+                              {copiedPaymentId === payment.id && (
+                                <div className="absolute left-1/2 -translate-x-1/2 top-10 bg-black text-white text-xs rounded px-2 py-1 shadow-lg z-10 whitespace-nowrap">
+                                  Link copiado para a área de transferência
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {payment.bankSlipUrl && (
+                            <a
+                              href={payment.bankSlipUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3 py-1 bg-green-600 text-white rounded-lg text-xs hover:bg-green-700 transition-colors"
+                            >
+                              Baixar boleto
+                            </a>
+                          )}
+                        </div>
                         </div>
                       </div>
-                      <div className="flex space-x-2 ml-4">
+                      <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 sm:ml-4 mt-4 sm:mt-0">
                         <button
-                          onClick={() => handlePaymentAction('view', payment)}
-                          className="text-blue-600 hover:text-blue-800 p-1"
-                          title="Ver detalhes"
+                          onClick={() => handlePaymentAction('delete', payment)}
+                          className="text-red-600 hover:text-red-800 p-1 self-end sm:self-auto"
+                          title="Excluir cobrança"
                         >
-                          <EyeIcon className="h-4 w-4" />
+                          <TrashIcon className="h-4 w-4" />
                         </button>
-                        {payment.billingType === 'BOLETO' && (
-                          <button
-                            onClick={() => handlePaymentAction('bankSlip', payment)}
-                            className="text-green-600 hover:text-green-800 p-1"
-                            title="Ver boleto"
-                          >
-                            <DocumentDuplicateIcon className="h-4 w-4" />
-                          </button>
-                        )}
-                        {payment.billingType === 'PIX' && (
-                          <button
-                            onClick={() => handlePaymentAction('pixQrCode', payment)}
-                            className="text-purple-600 hover:text-purple-800 p-1"
-                            title="Ver QR Code PIX"
-                          >
-                            <DocumentDuplicateIcon className="h-4 w-4" />
-                          </button>
-                        )}
-                        {payment.deleted && (
-                          <button
-                            onClick={() => handlePaymentAction('restore', payment)}
-                            className="text-orange-600 hover:text-orange-800 p-1"
-                            title="Restaurar cobrança"
-                          >
-                            <ArrowPathIcon className="h-4 w-4" />
-                          </button>
-                        )}
-                        {!payment.deleted && (
-                          <button
-                            onClick={() => handlePaymentAction('delete', payment)}
-                            className="text-red-600 hover:text-red-800 p-1"
-                            title="Excluir cobrança"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -438,7 +401,7 @@ export default function CobrancasModal({ isOpen, onClose }: CobrancasModalProps)
           </div>
 
           {/* Formulário de Nova Cobrança */}
-          <div className="w-1/3 p-6 overflow-y-auto">
+          <div className="w-full sm:w-1/3 p-4 sm:p-6 overflow-y-auto border-t sm:border-t-0">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Nova Cobrança</h3>
               <button

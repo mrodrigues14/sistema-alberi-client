@@ -68,28 +68,24 @@ export default function GestaoAssasPage() {
       value: dashboardStats.totalCustomers.toLocaleString('pt-BR'),
       icon: UsersIcon,
       color: 'bg-blue-500',
-      change: `+${dashboardStats.monthlyGrowth?.customers ?? 0}%`
     },
     {
       label: 'Faturamento do Mês',
       value: formatCurrency(dashboardStats.totalRevenue),
       icon: BanknotesIcon,
       color: 'bg-green-500',
-      change: `+${dashboardStats.monthlyGrowth?.revenue ?? 0}%`
     },
     {
       label: 'Cobranças Pendentes',
       value: dashboardStats.pendingPayments.toLocaleString('pt-BR'),
       icon: ClockIcon,
       color: 'bg-yellow-500',
-      change: `${(dashboardStats.monthlyGrowth?.pendingPayments ?? 0) >= 0 ? '+' : ''}${dashboardStats.monthlyGrowth?.pendingPayments ?? 0}%`
     },
     {
       label: 'Cobranças Pagas',
       value: dashboardStats.receivedPayments.toLocaleString('pt-BR'),
       icon: CheckCircleIcon,
       color: 'bg-emerald-500',
-      change: `+${dashboardStats.monthlyGrowth?.receivedPayments ?? 0}%`
     }
   ] : [
     {
@@ -97,7 +93,6 @@ export default function GestaoAssasPage() {
       value: loading ? '...' : '0',
       icon: UsersIcon,
       color: 'bg-blue-500',
-      change: '+0%'
     },
     {
       label: 'Faturamento do Mês',  
@@ -202,15 +197,15 @@ export default function GestaoAssasPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
             <div key={index} className="bg-white rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
-              <div className="flex items-center">
-                <div className={`p-3 rounded-full ${stat.color}`}>
-                  <stat.icon className="h-6 w-6 text-white" />
+              <div className="flex flex-col items-center sm:flex-row sm:items-center">
+                <div className={`p-3 rounded-full ${stat.color} mb-3 sm:mb-0 sm:mr-4`}>
+                  <stat.icon className="h-8 w-8 text-white" />
                 </div>
-                <div className="ml-4 flex-1">
+                <div className="text-center sm:text-left flex-1">
                   <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                  <div className="flex items-center">
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <span className="ml-2 text-sm font-medium text-green-600">{stat.change}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-start items-center justify-center">
+                    <p className="text-2xl sm:text-2xl font-bold text-gray-900 break-words">{stat.value}</p>
+                    <span className="sm:ml-2 text-sm font-medium text-green-600">{stat.change}</span>
                   </div>
                 </div>
               </div>
@@ -329,42 +324,12 @@ export default function GestaoAssasPage() {
               <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
                 <div>
                   <span className="text-sm font-medium text-gray-900">Ticket Médio</span>
-                  <p className="text-xs text-gray-600">Valor médio por cobrança</p>
+                  <p className="text-xs text-gray-600">Valor médio por cobrança recebida</p>
                 </div>
                 <span className="text-lg font-bold text-blue-600">
                   {dashboardStats && dashboardStats.receivedPayments > 0 
                     ? formatCurrency(dashboardStats.totalRevenue / dashboardStats.receivedPayments)
                     : 'R$ 0,00'}
-                </span>
-              </div>
-
-              {/* Crescimento Mensal */}
-              <div className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
-                <div>
-                  <span className="text-sm font-medium text-gray-900">Crescimento Mensal</span>
-                  <p className="text-xs text-gray-600">Comparado ao mês anterior</p>
-                </div>
-                <span className={`text-lg font-bold ${(dashboardStats?.monthlyGrowth?.revenue ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {dashboardStats ? `${(dashboardStats.monthlyGrowth?.revenue ?? 0) >= 0 ? '+' : ''}${dashboardStats.monthlyGrowth?.revenue ?? 0}%` : '0%'}
-                </span>
-              </div>
-
-              {/* Status da API */}
-              <div className={`flex items-center justify-between p-3 rounded-lg ${
-                apiStatus?.status === true ? 'bg-green-50 border border-green-200' : 
-                apiStatus?.status === false ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'
-              }`}>
-                <span className="text-sm font-medium text-gray-900">Status da API</span>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                  apiStatus?.status === true ? 'bg-green-100 text-green-800' :
-                  apiStatus?.status === false ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
-                }`}>
-                  <div className={`w-2 h-2 rounded-full mr-1 ${
-                    apiStatus?.status === true ? 'bg-green-400' :
-                    apiStatus?.status === false ? 'bg-red-400' : 'bg-yellow-400'
-                  }`}></div>
-                  {apiStatus?.status === true ? 'Online' : 
-                   apiStatus?.status === false ? 'Offline' : 'Verificando...'}
                 </span>
               </div>
             </div>
