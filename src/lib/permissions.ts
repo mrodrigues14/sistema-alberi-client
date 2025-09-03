@@ -155,14 +155,14 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     href: '/estudos',
     label: 'Estudos',
     icon: 'studies',
-    roles: ['administrador', 'gerente', 'analista'],
+    roles: ['administrador', 'gerente', 'analista', 'usuarioExterno'],
     visible: true
   },
   {
     href: '/extrato',
     label: 'Extrato bancário',
     icon: 'bank',
-    roles: ['administrador', 'gerente', 'usuario', 'analista'],
+    roles: ['administrador', 'gerente', 'usuario', 'analista', 'usuarioExterno'],
     visible: true
   },
   {
@@ -183,7 +183,8 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     href: '/chamados',
     label: 'Reportar Falha',
     icon: 'bug',
-    roles: ['administrador', 'gerente', 'usuario', 'analista'],
+    roles: ['administrador', 'gerente', 'usuario', 'analista', 'usuarioExterno'
+    ],
     visible: true
   },
   {
@@ -260,7 +261,8 @@ export const AVAILABLE_ROLES = [
   'administrador',      // Administrador - acesso total
   'gerente',    // Gerente - acesso a maioria dos módulos
   'analista',   // Analista - acesso a módulos de análise
-  'usuario'     // Usuário básico - acesso limitado
+  'usuario',
+  'usuario externo'     // Usuário básico - acesso limitado
 ];
 
 // Descrições dos roles
@@ -268,5 +270,6 @@ export const ROLE_DESCRIPTIONS = {
   administrador: 'Administrador - Acesso total ao sistema',
   gerente: 'Gerente - Acesso à maioria dos módulos',
   analista: 'Analista - Acesso a módulos de análise e relatórios',
-  usuario: 'Usuário - Acesso básico limitado'
+  usuario: 'Usuário - Acesso básico limitado',
+  usuarioExterno: 'Usuário externo - Acesso a módulos de análise e relatórios'
 };
