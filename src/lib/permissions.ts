@@ -148,7 +148,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     href: '/kanban',
     label: 'Tarefas',
     icon: 'tasks',
-    roles: ['administrador', 'gerente', 'usuario', 'analista'],
+    roles: ['administrador', 'gerente', 'analista'],
     visible: true
   },
   {
