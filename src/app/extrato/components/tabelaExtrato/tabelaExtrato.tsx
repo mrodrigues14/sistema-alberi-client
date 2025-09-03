@@ -589,8 +589,8 @@ const TabelaExtrato: React.FC<Props> = ({
                         <CustomDropdown
                           label="Selecione uma rubrica"
                           options={categoriasFormatadas}
-                          selectedValue={editData.rubricaSelecionada}
-                          onSelect={(value) => handleChange({ target: { value } } as any, "rubricaSelecionada")}
+                          selectedValue={categoriasFormatadas.find(opt => opt.label === editData.rubricaSelecionada) || { label: "", value: "" }}
+                          onSelect={(value) => handleChange({ target: { value: value.label } } as any, "rubricaSelecionada")}
                           type="rubrica"
                         />
 
@@ -611,8 +611,8 @@ const TabelaExtrato: React.FC<Props> = ({
                         <CustomDropdown
                           label="Fornecedor"
                           options={fornecedoresFormatados}
-                          selectedValue={editData.fornecedorSelecionado}
-                          onSelect={(value) => handleChange({ target: { value } } as any, "fornecedorSelecionado")}
+                          selectedValue={fornecedoresFormatados.find(opt => opt.label === editData.fornecedorSelecionado) || { label: "", value: "" }}
+                          onSelect={(value) => handleChange({ target: { value: value.label } } as any, "fornecedorSelecionado")}
                           type="fornecedor"
                         />
 
@@ -748,19 +748,6 @@ const TabelaExtrato: React.FC<Props> = ({
                           </>
                         ) : (
                           <>
-
-
-                            <button
-                              className={`text-black text-lg ${subdividindoIndex === index ? "text-blue-600" : ""}`}
-                              title="Subdividir"
-                              onClick={() => {
-                                setSubdividindoIndex(index === subdividindoIndex ? null : index);
-                                setNovoSubextrato({ data: row.data, tipoDeTransacao: "", valor: "", categoria: "", fornecedor: "" });
-                              }}
-                            >
-                              <FaDivide size={20} />
-                            </button>
-
                             <button className="text-blue-500 hover:text-blue-700" onClick={() => handleEdit(index)}>
                               <FaEdit size={20} />
                             </button>
@@ -807,7 +794,7 @@ const TabelaExtrato: React.FC<Props> = ({
                         <CustomDropdown
                           label="Rubrica"
                           options={categoriasFormatadas}
-                          selectedValue={novoSubextrato.categoria}
+                          selectedValue={categoriasFormatadas.find(opt => opt.value === novoSubextrato.categoria) || { label: "", value: "" }}
                           onSelect={(rubricaSelecionada) => setNovoSubextrato({ ...novoSubextrato, categoria: rubricaSelecionada.value })}
                           type="rubrica"
                         />
@@ -816,7 +803,7 @@ const TabelaExtrato: React.FC<Props> = ({
                         <CustomDropdown
                           label="Fornecedor"
                           options={fornecedoresFormatados}
-                          selectedValue={novoSubextrato.fornecedor}
+                          selectedValue={fornecedoresFormatados.find(opt => opt.value === novoSubextrato.fornecedor) || { label: "", value: "" }}
                           onSelect={(fornecedorSelecionado) => setNovoSubextrato({ ...novoSubextrato, fornecedor: fornecedorSelecionado.value })}
                           type="fornecedor"
                         />
