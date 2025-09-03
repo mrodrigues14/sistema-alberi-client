@@ -68,15 +68,26 @@ export async function updateExtrato(
   idExtrato: number,
   updates: Partial<Extrato>
 ) {
+  console.log("Debug - updateExtrato chamado:", { idExtrato, updates, API_URL });
+  
   const response = await fetch(`${API_URL}/extratos/${idExtrato}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updates),
   });
 
-  if (!response.ok) throw new Error("Erro ao atualizar extrato");
+  console.log("Debug - Response status:", response.status);
+  console.log("Debug - Response ok:", response.ok);
 
-  return response.json();
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Debug - Erro response:", errorText);
+    throw new Error(`Erro ao atualizar extrato: ${response.status} - ${errorText}`);
+  }
+
+  const result = await response.json();
+  console.log("Debug - Resultado da API:", result);
+  return result;
 }
 
 // 🔹 Deletar um extrato pelo ID

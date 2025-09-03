@@ -106,6 +106,13 @@ const TabelaExtrato: React.FC<Props> = ({
         (opt) => opt.label === editData.fornecedorSelecionado
       );
 
+      console.log("Debug - Dados para atualização:", {
+        editData,
+        categoriaSelecionada,
+        fornecedorSelecionado,
+        rowId: row.id
+      });
+
       const payload: Partial<Extrato> = {
         data: formatarDataParaISO(editData.data),
         nomeNoExtrato: editData.nomeNoExtrato,
@@ -117,17 +124,26 @@ const TabelaExtrato: React.FC<Props> = ({
         valor: parseFloat(editData.entrada || editData.saida || "0"),
       };
 
-      await updateExtrato(row.id, payload);
+      console.log("Debug - Payload enviado:", payload);
 
+      const result = await updateExtrato(row.id, payload);
+      console.log("Debug - Resultado da atualização:", result);
+
+      // Atualiza os dados locais
       dados[index] = {
         ...editData,
         idCategoria: categoriaSelecionada?.value ?? null,
         idFornecedor: fornecedorSelecionado?.value ?? null,
       };
 
+      // Força atualização da tabela
+      onAtualizarExtratos();
+
       setEditIndex(null);
+      alert("Extrato atualizado com sucesso!");
     } catch (err) {
       console.error("Erro ao atualizar extrato:", err);
+      alert("Erro ao atualizar extrato: " + (err as Error).message);
     }
   };
 
