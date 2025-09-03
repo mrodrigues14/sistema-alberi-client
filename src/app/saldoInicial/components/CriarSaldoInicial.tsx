@@ -48,17 +48,22 @@ export default function CriarSaldoInicial({
     ano
   );
   const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let raw = e.target.value;
-    const cleaned = raw.replace(/\D/g, '');
-    const numberValue = parseInt(cleaned || '0', 10);
-    const valorFinal = numberValue / 100;
-
-    const formatado = valorFinal.toLocaleString('pt-BR', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    });
-
-    setValorFormatado(formatado);
+    const raw = e.target.value;
+    
+    // Permite apenas números, vírgula, ponto e sinal negativo no início
+    const cleaned = raw.replace(/[^\d,.-]/g, '');
+    
+    // Se tem sinal negativo, só permite no início
+    const isNegative = cleaned.startsWith('-');
+    const withoutSign = isNegative ? cleaned.substring(1) : cleaned;
+    
+    // Remove pontos extras (separadores de milhares) mas mantém vírgula decimal
+    const withoutThousands = withoutSign.replace(/\./g, '');
+    
+    // Reconstrói o valor
+    const finalValue = isNegative ? '-' + withoutThousands : withoutThousands;
+    
+    setValorFormatado(finalValue);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,7 +81,8 @@ export default function CriarSaldoInicial({
     }[mes] || '01';
 
     const mesAno = `${ano}-${mesNumerico}`;
-    const valorNumerico = parseFloat(valorFormatado.replace(/\./g, '').replace(',', '.'));
+    // Converte o valor formatado para número, tratando vírgula como decimal
+    const valorNumerico = parseFloat(valorFormatado.replace(',', '.'));
 
     try {
       setLoading(true);
@@ -136,20 +142,24 @@ export default function CriarSaldoInicial({
         />
       </div>
 
-      {!loadingSaldo && saldoInicial > 0 && (
-  <div className="text-green-700 font-semibold bg-green-50 border border-green-300 rounded p-2 mb-2">
+      {!loadingSaldo && saldoInicial !== 0 && (
+  <div className={`font-semibold border rounded p-2 mb-2 ${
+    saldoInicial >= 0 
+      ? "text-green-700 bg-green-50 border-green-300" 
+      : "text-red-700 bg-red-50 border-red-300"
+  }`}>
     Saldo já definido: R$ {saldoInicial.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
   </div>
 )}
 
 <div>
   <label className="block text-sm font-medium text-gray-700 mb-1">
-    {saldoInicial > 0 ? "Novo Saldo" : "Valor do Saldo"}
+    {saldoInicial !== 0 ? "Novo Saldo" : "Valor do Saldo"}
   </label>
   <input
     type="text"
     inputMode="numeric"
-    placeholder="0,00"
+    placeholder="0,00 (use - para valores negativos)"
     className="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
     value={valorFormatado}
     onChange={handleValorChange}

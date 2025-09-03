@@ -568,7 +568,7 @@ const TabelaExtrato: React.FC<Props> = ({
                 <React.Fragment key={index}>
 
                   <tr
-                    className={`odd:bg-white even:bg-gray-100 transition ${selecionados.includes(row.id) ? "bg-green-100 border-2 border-green-500" : ""
+                    className={`odd:bg-white even:bg-gray-100 transition-all duration-200 ${selecionados.includes(row.id) ? "bg-green-200 border-2 border-green-600 shadow-md" : "hover:bg-gray-50"
                       }`}
                   >
                     <td className="border px-2 py-2 whitespace-nowrap">
@@ -766,8 +766,8 @@ const TabelaExtrato: React.FC<Props> = ({
                             </button>
 
                             <button
-                              className={`hover:text-green-700 ${selecionados.includes(row.id) ? "text-green-700" : "text-gray-400"}`}
-                              title="Selecionar linha"
+                              className={`hover:text-green-700 transition-colors duration-200 ${selecionados.includes(row.id) ? "text-green-700 bg-green-100 rounded-full p-1" : "text-gray-400"}`}
+                              title={selecionados.includes(row.id) ? "Desmarcar linha" : "Selecionar linha"}
                               onClick={() => onToggleSelecionado(row.id)}
                             >
                               <FaHandPointer size={20} />
