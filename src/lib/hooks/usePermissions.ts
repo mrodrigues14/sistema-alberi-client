@@ -61,19 +61,13 @@ export function usePermissions() {
   };
   
   // Verifica se o usuário é administrador
-  const isAdmin = (): boolean => {
-    return userRole === 'admin';
-  };
-  
-  // Verifica se o usuário é gerente ou administrador
-  const isManagerOrAdmin = (): boolean => {
-    return ['admin', 'gerente'].includes(userRole || '');
-  };
-  
-  // Verifica se o usuário é analista, gerente ou administrador
-  const isAnalystOrHigher = (): boolean => {
-    return ['admin', 'gerente', 'analista'].includes(userRole || '');
-  };
+  const isAdmin = (): boolean => userRole === 'administrador';
+
+  // Verifica se o usuário é interno (níveis internos, incluindo restrito)
+  const isInternal = (): boolean => ['usuario interno', 'usuario interno (restrito)'].includes(userRole || '');
+
+  // Verifica se o usuário é externo
+  const isExternal = (): boolean => ['usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole || '');
   
   // Filtra uma lista de itens baseado nas permissões do usuário
   const filterByPermissions = <T extends { roles?: string[] }>(items: T[]): T[] => {
@@ -86,7 +80,7 @@ export function usePermissions() {
     return {
       totalModules: AVAILABLE_MODULES.length,
       accessibleModules: userModules.length,
-      totalNavigation: getNavigationByRole('admin').length, // Compara com admin
+  totalNavigation: getNavigationByRole('administrador').length, // Compara com administrador
       accessibleNavigation: userNavigation.length,
       role: userRole,
       roleDescription: getRoleDescription()
@@ -115,8 +109,8 @@ export function usePermissions() {
     
     // Verificações de nível de acesso
     isAdmin,
-    isManagerOrAdmin,
-    isAnalystOrHigher,
+  isInternal,
+  isExternal,
     
     // Utilitários
     filterByPermissions,

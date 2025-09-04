@@ -27,7 +27,7 @@ export const AVAILABLE_MODULES: ModulePermission[] = [
     description: 'Organize suas tarefas e projetos',
     icon: 'tasks',
     colorClass: 'greenModule',
-    roles: ['administrador', 'gerente', 'usuario', 'analista'],
+  roles: ['administrador', 'usuario interno', 'usuario interno (restrito)'],
     visible: true
   },
   {
@@ -37,7 +37,7 @@ export const AVAILABLE_MODULES: ModulePermission[] = [
     description: 'Acesse relatórios e estudos financeiros',
     icon: 'studies',
     colorClass: 'blueModule',
-    roles: ['administrador', 'gerente', 'analista'],
+  roles: ['administrador', 'usuario interno', 'usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'],
     visible: true
   },
   {
@@ -47,7 +47,7 @@ export const AVAILABLE_MODULES: ModulePermission[] = [
     description: 'Gerencie extratos e lançamentos',
     icon: 'bank',
     colorClass: 'purpleModule',
-    roles: ['administrador', 'gerente', 'usuario', 'analista'],
+  roles: ['administrador', 'usuario interno', 'usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'],
     visible: true
   },
   {
@@ -57,7 +57,7 @@ export const AVAILABLE_MODULES: ModulePermission[] = [
     description: 'Configure clientes e suas informações',
     icon: 'client',
     colorClass: 'greenModule',
-    roles: ['administrador', 'gerente'],
+  roles: ['administrador', 'usuario interno'],
     visible: true
   },
   {
@@ -67,7 +67,7 @@ export const AVAILABLE_MODULES: ModulePermission[] = [
     description: 'Gerencie usuários e permissões',
     icon: 'user',
     colorClass: 'purpleModule',
-    roles: ['administrador'],
+  roles: ['administrador'],
     visible: true
   },
   {
@@ -77,7 +77,7 @@ export const AVAILABLE_MODULES: ModulePermission[] = [
     description: 'Reporte problemas e solicite suporte',
     icon: 'bug',
     colorClass: 'redModule',
-    roles: ['administrador', 'gerente', 'usuario', 'analista'],
+  roles: ['administrador', 'usuario interno', 'usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'],
     visible: true
   },
   {
@@ -87,7 +87,7 @@ export const AVAILABLE_MODULES: ModulePermission[] = [
     description: 'Gerencie cobranças e clientes Asaas',
     icon: 'asaas',
     colorClass: 'orangeModule',
-    roles: ['administrador', 'gerente'],
+    roles: ['administrador', 'usuario interno'],
     visible: true
   },
   {
@@ -97,7 +97,7 @@ export const AVAILABLE_MODULES: ModulePermission[] = [
     description: 'Gerencie contratos e documentos',
     icon: 'contract',
     colorClass: 'blueModule',
-    roles: ['administrador', 'gerente', 'analista'],
+  roles: ['administrador', 'usuario interno', 'usuario interno (restrito)'],
     visible: true
   },
   {
@@ -107,7 +107,7 @@ export const AVAILABLE_MODULES: ModulePermission[] = [
     description: 'Gerencie bancos e contas',
     icon: 'bank',
     colorClass: 'blueModule',
-    roles: ['administrador', 'gerente'],
+  roles: ['administrador', 'usuario interno'],
     visible: true
   },
   {
@@ -117,7 +117,7 @@ export const AVAILABLE_MODULES: ModulePermission[] = [
     description: 'Gerencie categorias contábeis',
     icon: 'category',
     colorClass: 'greenModule',
-    roles: ['administrador', 'gerente'],
+  roles: ['administrador', 'usuario interno'],
     visible: true
   },
   {
@@ -127,7 +127,7 @@ export const AVAILABLE_MODULES: ModulePermission[] = [
     description: 'Gerencie fornecedores',
     icon: 'supplier',
     colorClass: 'purpleModule',
-    roles: ['administrador', 'gerente'],
+  roles: ['administrador', 'usuario interno'],
     visible: true
   },
   {
@@ -137,7 +137,7 @@ export const AVAILABLE_MODULES: ModulePermission[] = [
     description: 'Configure saldos iniciais',
     icon: 'balance',
     colorClass: 'yellowModule',
-    roles: ['administrador', 'gerente'],
+  roles: ['administrador', 'usuario interno'],
     visible: true
   }
 ];
@@ -148,28 +148,28 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     href: '/kanban',
     label: 'Tarefas',
     icon: 'tasks',
-    roles: ['administrador', 'gerente', 'analista'],
+  roles: ['administrador', 'usuario interno', 'usuario interno (restrito)'],
     visible: true
   },
   {
     href: '/estudos',
     label: 'Estudos',
     icon: 'studies',
-    roles: ['administrador', 'gerente', 'analista', 'usuarioExterno'],
+  roles: ['administrador', 'usuario interno', 'usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'],
     visible: true
   },
   {
     href: '/extrato',
     label: 'Extrato bancário',
     icon: 'bank',
-    roles: ['administrador', 'gerente', 'usuario', 'analista', 'usuarioExterno'],
+  roles: ['administrador', 'usuario interno', 'usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'],
     visible: true
   },
   {
     href: '/configuracaoCliente',
     label: 'Configuração de Cliente',
     icon: 'client',
-    roles: ['administrador', 'gerente'],
+  roles: ['administrador', 'usuario interno'],
     visible: true
   },
   {
@@ -183,7 +183,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     href: '/chamados',
     label: 'Reportar Falha',
     icon: 'bug',
-    roles: ['administrador', 'gerente', 'usuario', 'analista', 'usuarioExterno'
+  roles: ['administrador', 'usuario interno', 'usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'
     ],
     visible: true
   },
@@ -191,7 +191,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
     href: '/gestaoAssas',
     label: 'Gestão Asaas',
     icon: 'asaas',
-    roles: ['administrador', 'gerente'],
+  roles: ['administrador', 'usuario interno'],
     visible: true
   }
 ];
@@ -250,7 +250,7 @@ export function hasRouteAccess(userRole: string | undefined, route: string): boo
   
   // Verifica rotas de estudos
   if (route.startsWith('/estudos/')) {
-    return ['administrador', 'gerente', 'analista'].includes(userRole);
+  return ['administrador', 'usuario interno', 'usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole);
   }
   
   return false;
@@ -258,18 +258,18 @@ export function hasRouteAccess(userRole: string | undefined, route: string): boo
 
 // Roles disponíveis no sistema
 export const AVAILABLE_ROLES = [
-  'administrador',      // Administrador - acesso total
-  'gerente',    // Gerente - acesso a maioria dos módulos
-  'analista',   // Analista - acesso a módulos de análise
-  'usuario',
-  'usuario externo'     // Usuário básico - acesso limitado
+  'administrador',
+  'usuario interno',
+  'usuario interno (restrito)',
+  'usuario externo (consulta)',
+  'usuario externo (financeiro)'
 ];
 
 // Descrições dos roles
 export const ROLE_DESCRIPTIONS = {
   administrador: 'Administrador - Acesso total ao sistema',
-  gerente: 'Gerente - Acesso à maioria dos módulos',
-  analista: 'Analista - Acesso a módulos de análise e relatórios',
-  usuario: 'Usuário - Acesso básico limitado',
-  usuarioExterno: 'Usuário externo - Acesso a módulos de análise e relatórios'
+  'usuario interno': 'Usuário Interno - Acesso operacional aos módulos principais',
+  'usuario interno (restrito)': 'Usuário Interno (Restrito) - Acesso limitado a módulos essenciais',
+  'usuario externo (consulta)': 'Usuário Externo (Consulta) - Acesso de visualização a estudos e extratos',
+  'usuario externo (financeiro)': 'Usuário Externo (Financeiro) - Acesso financeiro'
 };

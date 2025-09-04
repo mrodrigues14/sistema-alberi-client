@@ -22,16 +22,16 @@ export default function ConfiguracaoUsuario() {
   const [loadingId, setLoadingId] = useState<number | null>(null);
 
   const handleSalvarUsuario = async (usuario: Usuario) => {
-    if (usuarioEditando) {
-      await updateUsuario(usuario.idusuarios, usuario);
-    } else {
-      await createUsuario(usuario);
-    }
+    // Retorna o usuário salvo (com ID) para que o modal possa vincular empresas
+    const saved = usuarioEditando
+      ? await updateUsuario(usuario.idusuarios, usuario)
+      : await createUsuario(usuario);
 
     await mutateUsuarios();
     await mutateInativos();
     setModalOpen(false);
     setUsuarioEditando(null);
+    return saved as Usuario;
   };
 
   if (isLoading) {

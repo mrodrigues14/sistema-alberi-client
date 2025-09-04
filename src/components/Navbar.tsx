@@ -139,8 +139,9 @@ export default function Navbar() {
       setSelectedCliente(JSON.parse(savedCliente));
     }
     
-    // Se o usuário tem role "usuario", sempre usa o modo "meus"
-    const initialViewMode = userRole === 'usuario' ? 'meus' : savedViewMode;
+  // Para usuários internos restritos e externos, sempre usa o modo "meus"
+  const rolesLimitados = ['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'];
+  const initialViewMode = rolesLimitados.includes(userRole || '') ? 'meus' : savedViewMode;
     setViewMode(initialViewMode);
   }, [session, userRole]);
 
@@ -162,8 +163,9 @@ export default function Navbar() {
 
   // Decidir quais clientes mostrar baseado no modo de visualização e role do usuário
   const clientesParaMostrar = (() => {
-    // Se o usuário tem role "usuario", sempre mostra apenas seus clientes
-    if (userRole === 'usuario') {
+    // Para usuários internos restritos e externos, sempre mostra apenas seus clientes
+    const rolesLimitados = ['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'];
+    if (rolesLimitados.includes(userRole || '')) {
       return meusClientes;
     }
     // Para outros roles, usa o modo de visualização normal
@@ -267,15 +269,15 @@ export default function Navbar() {
                   <span className="truncate">
                     {selectedCliente ? 
                       `${selectedCliente.nome}` : 
-                      'Selecionar Cliente'
+                      'Selecionar Empresa'
                     }
                   </span>
                   <Icons.chevronDown />
                 </button>
                 {showDropdown === 'cliente' && (
                   <div className="absolute top-full right-0 mt-2 w-80 bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-xl z-50 overflow-hidden">
-                    {/* Opções de filtro - ocultas para usuários com role "usuario" */}
-                    {userRole !== 'usuario' && (
+                    {/* Opções de filtro - ocultas para usuários com roles limitados */}
+                    {!['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole || '') && (
                       <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 p-3 border-b border-slate-200/40">
                         <div className="flex space-x-2">
                           <button
@@ -304,7 +306,7 @@ export default function Navbar() {
                               handleMeusClientesSelect();
                             }}
                           >
-                            {userRole === 'usuario' ? 'Minhas Empresas' : 'Meus Clientes'}
+                            {['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole || '') ? 'Minhas Empresas' : 'Meus Clientes'}
                           </button>
                         </div>
                       </div>
@@ -315,7 +317,7 @@ export default function Navbar() {
                         <input
                           type="text"
                           className="w-full px-4 py-2 pl-10 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                          placeholder="🔍 Pesquisar cliente..."
+                          placeholder="🔍 Pesquisar empresa..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                           onClick={(e) => {
@@ -356,7 +358,7 @@ export default function Navbar() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
                           <p className="text-sm">
-                            {userRole === 'usuario' 
+                            {['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole || '') 
                               ? 'Nenhuma empresa vinculada encontrada' 
                               : viewMode === 'meus' 
                                 ? 'Nenhum cliente vinculado encontrado' 
@@ -405,7 +407,7 @@ export default function Navbar() {
                         sessionStorage.removeItem("selectedCliente");
                         localStorage.clear();
                         setIdCliente(null);
-                        await signOut({ callbackUrl: "/" });
+                        await signOut({ callbackUrl: "https://www.albericonsult.com.br" });
                       }}
                     >
                       <span className="font-medium">Sair</span>
@@ -512,15 +514,15 @@ export default function Navbar() {
             <span className="font-medium">
               {selectedCliente ? 
                 `${selectedCliente.nome.length > 20 ? selectedCliente.nome.substring(0, 20) + '...' : selectedCliente.nome}` : 
-                'Selecionar Cliente'
+                'Selecionar Empresa'
               }
             </span>
             <Icons.chevronDown />
           </button>
           {showDropdown === 'cliente' && (
             <div className="absolute top-full left-0 mt-2 w-full bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-xl z-50 overflow-hidden">
-              {/* Opções de filtro - ocultas para usuários com role "usuario" */}
-              {userRole !== 'usuario' && (
+              {/* Opções de filtro - ocultas para usuários com roles limitados */}
+              {!['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole || '') && (
                 <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 p-3 border-b border-slate-200/40">
                   <div className="flex space-x-2">
                     <button
@@ -549,7 +551,7 @@ export default function Navbar() {
                         handleMeusClientesSelect();
                       }}
                     >
-                      {userRole === 'usuario' ? 'Minhas Empresas' : 'Meus Clientes'}
+                      {['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole || '') ? 'Minhas Empresas' : 'Meus Clientes'}
                     </button>
                   </div>
                 </div>
@@ -560,7 +562,7 @@ export default function Navbar() {
                   <input
                     type="text"
                     className="w-full px-4 py-2 pl-10 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="🔍 Pesquisar cliente..."
+                    placeholder="🔍 Pesquisar empresa..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onClick={(e) => {
@@ -601,7 +603,7 @@ export default function Navbar() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     <p className="text-sm">
-                      {userRole === 'usuario' 
+                      {['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole || '') 
                         ? 'Nenhuma empresa vinculada encontrada' 
                         : viewMode === 'meus' 
                           ? 'Nenhum cliente vinculado encontrado' 
@@ -709,7 +711,7 @@ export default function Navbar() {
               sessionStorage.removeItem("selectedCliente");
               localStorage.clear();
               setIdCliente(null);
-              await signOut({ callbackUrl: "/" });
+              await signOut({ callbackUrl: "https://www.albericonsult.com.br" });
             }}
           >
             🚪 Sair

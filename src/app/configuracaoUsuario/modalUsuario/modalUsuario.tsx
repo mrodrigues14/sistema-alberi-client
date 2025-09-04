@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { FaEye, FaEyeSlash, FaTimes } from "react-icons/fa";
 import { Usuario } from "../../../../types/Usuario";
 import { Cliente } from "../../../../types/Cliente";
-import { remove as removeAccents } from "diacritics"; // instalar com: npm install diacritics
 import { useCliente } from "@/lib/hooks/useCliente";
+import { AVAILABLE_ROLES, ROLE_DESCRIPTIONS } from "@/lib/permissions";
 import { useClientesDoUsuario, updateClientesDoUsuario } from "@/lib/hooks/useRelacaoUsuarioCliente";
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSave: (usuario: Usuario) => void;
+  onSave: (usuario: Usuario | any) => Promise<Usuario>;
   usuario?: Usuario | null;
 }
 
@@ -33,12 +33,11 @@ export default function ModalUsuario({ open, onClose, onSave, usuario }: Props) 
 
   useEffect(() => {
     if (usuario) {
-      const roleNormalizado = removeAccents(usuario.role?.toLowerCase() || "");
       setFormData({
         nomeDoUsuario: usuario.nomeDoUsuario || "",
         cpf: usuario.cpf || "",
         usuarioEmail: usuario.usuarioEmail || "",
-        role: roleNormalizado,
+        role: usuario.role || "usuario interno",
         senha: "", // senha não vem preenchida
         confirmarSenha: "",
       });
@@ -49,7 +48,7 @@ export default function ModalUsuario({ open, onClose, onSave, usuario }: Props) 
         nomeDoUsuario: "",
         cpf: "",
         usuarioEmail: "",
-        role: "usuario",
+  role: "usuario interno",
         senha: "",
         confirmarSenha: "",
       });
@@ -72,7 +71,7 @@ export default function ModalUsuario({ open, onClose, onSave, usuario }: Props) 
       nomeDoUsuario: "",
       cpf: "",
       usuarioEmail: "",
-      role: "usuario",
+      role: "usuario interno",
       senha: "",
       confirmarSenha: "",
     });
@@ -117,42 +116,42 @@ export default function ModalUsuario({ open, onClose, onSave, usuario }: Props) 
     }
 
     // Preparar dados do usuário (só incluir senha se foi preenchida)
-    const usuarioParaSalvar: Usuario = {
+    const isEditing = Boolean(usuario?.idusuarios);
+    const usuarioParaSalvar: any = {
       nomeDoUsuario: formData.nomeDoUsuario,
       cpf: formData.cpf,
       usuarioEmail: formData.usuarioEmail,
       role: formData.role,
-      idusuarios: usuario?.idusuarios || Math.floor(Math.random() * 10000),
       usuarioLogin: "", // se necessário, pode ser preenchido com base no nome/email
     };
-
+    if (isEditing && usuario?.idusuarios) {
+      usuarioParaSalvar.idusuarios = usuario.idusuarios;
+    }
     // Só incluir senha se foi preenchida
     if (formData.senha) {
-      (usuarioParaSalvar as any).senha = formData.senha;
+      usuarioParaSalvar.senha = formData.senha;
     }
 
     try {
-      // Primeiro salva o usuário
-      await onSave(usuarioParaSalvar);
-      
-      // Para usuários existentes, verifica se houve mudanças nos clientes
-      if (usuario?.idusuarios) {
-        const clientesMudaram = JSON.stringify([...clientesSelecionados].sort()) !== 
-                              JSON.stringify([...clientesOriginais].sort());
-        
-        if (clientesMudaram) {
-          console.log("Atualizando relações de clientes...");
-          await updateClientesDoUsuario(usuario.idusuarios, clientesSelecionados);
+      // Salva (cria/atualiza) o usuário e obtém o registro salvo (com ID)
+      const saved = await onSave(usuarioParaSalvar);
+      const savedUserId = saved?.idusuarios || usuario?.idusuarios;
+
+      // Se houver ID válido, atualiza vínculos sempre que necessário
+      if (savedUserId) {
+        // Para edição, só envia se mudou; para criação, sempre envia o estado atual
+        const clientesMudaram = JSON.stringify([...clientesSelecionados].sort()) !==
+          JSON.stringify([...clientesOriginais].sort());
+
+        if (!isEditing || clientesMudaram) {
+          await updateClientesDoUsuario(savedUserId, clientesSelecionados);
           await mutateClientesVinculados();
-          console.log("Relações atualizadas com sucesso!");
-        } else {
-          console.log("Nenhuma mudança nos clientes detectada.");
         }
       }
-      
+
       // Fechar modal após sucesso
       onClose();
-      
+
     } catch (error) {
       console.error("Erro ao salvar usuário e relações:", error);
       alert("Erro ao salvar usuário. Tente novamente.");
@@ -230,11 +229,11 @@ export default function ModalUsuario({ open, onClose, onSave, usuario }: Props) 
               value={formData.role}
               onChange={(e) => handleChange("role", e.target.value)}
             >
-              <option value="administrador">Administrador</option>
-              <option value="usuario interno">Usuário Interno</option>
-              <option value="usuario externo">Usuário Externo</option>
-              <option value="cliente">Cliente</option>
-              <option value="configurador">Configurador</option>
+              {AVAILABLE_ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {ROLE_DESCRIPTIONS[role as keyof typeof ROLE_DESCRIPTIONS] || role}
+                </option>
+              ))}
             </select>
           </div>
         </div>

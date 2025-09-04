@@ -14,8 +14,8 @@ export default function TestePermissoesPage() {
     canAccessModule,
     canAccessRoute,
     isAdmin,
-    isManagerOrAdmin,
-    isAnalystOrHigher
+  isInternal,
+  isExternal
   } = usePermissions();
 
   const stats = getPermissionStats();
@@ -78,16 +78,16 @@ export default function TestePermissoesPage() {
                   {isAdmin() ? '✅ Sim' : '❌ Não'}
                 </p>
               </div>
-              <div className={`p-4 rounded-lg ${isManagerOrAdmin() ? 'bg-green-50' : 'bg-red-50'}`}>
-                <p className="text-sm font-medium mb-2">É Gerente ou Admin?</p>
-                <p className={`text-lg font-bold ${isManagerOrAdmin() ? 'text-green-900' : 'text-red-900'}`}>
-                  {isManagerOrAdmin() ? '✅ Sim' : '❌ Não'}
+              <div className={`p-4 rounded-lg ${isInternal() ? 'bg-green-50' : 'bg-red-50'}`}>
+                <p className="text-sm font-medium mb-2">É Usuário Interno?</p>
+                <p className={`text-lg font-bold ${isInternal() ? 'text-green-900' : 'text-red-900'}`}>
+                  {isInternal() ? '✅ Sim' : '❌ Não'}
                 </p>
               </div>
-              <div className={`p-4 rounded-lg ${isAnalystOrHigher() ? 'bg-green-50' : 'bg-red-50'}`}>
-                <p className="text-sm font-medium mb-2">É Analista ou Superior?</p>
-                <p className={`text-lg font-bold ${isAnalystOrHigher() ? 'text-green-900' : 'text-red-900'}`}>
-                  {isAnalystOrHigher() ? '✅ Sim' : '❌ Não'}
+              <div className={`p-4 rounded-lg ${isExternal() ? 'bg-green-50' : 'bg-red-50'}`}>
+                <p className="text-sm font-medium mb-2">É Usuário Externo?</p>
+                <p className={`text-lg font-bold ${isExternal() ? 'text-green-900' : 'text-red-900'}`}>
+                  {isExternal() ? '✅ Sim' : '❌ Não'}
                 </p>
               </div>
             </div>
