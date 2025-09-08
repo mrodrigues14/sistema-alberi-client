@@ -6,6 +6,7 @@ import { createExtrato } from "@/lib/hooks/useExtrato";
 import { useCategoriasPorCliente } from "@/lib/hooks/useCategoria";
 import { useFornecedoresPorCliente } from "@/lib/hooks/useFornecedor";
 import { useRubricasContabeis } from "@/lib/hooks/useRubricaContabil";
+import { FaTimes } from "react-icons/fa";
 
 interface Categoria {
     idcategoria: number;
@@ -97,7 +98,8 @@ const InsercaoManual: React.FC<{
         nomeNoExtrato: "",
         rubricaContabil: "",
         entrada: "",
-        saida: "",
+    saida: "",
+    lancamentoFuturo: false,
     });
 
 
@@ -146,6 +148,7 @@ const InsercaoManual: React.FC<{
           idFornecedor: entrada.fornecedorSelecionado?.value ?? null,
           rubricaContabil: entrada.rubricaContabil || null,
           idContabil: rubricaContabilSelecionada?.value ?? null, 
+          lancamentoFuturo: entrada.lancamentoFuturo,
         };
       
         try {
@@ -162,6 +165,7 @@ const InsercaoManual: React.FC<{
             rubricaContabil: "",
             entrada: "",
             saida: "",
+            lancamentoFuturo: false,
           });
       
           setCategoriaSelecionada(null);
@@ -186,6 +190,17 @@ const InsercaoManual: React.FC<{
 
     return (
         <div className="w-full p-4">
+            <div className="flex justify-end mb-2">
+                <button
+                    type="button"
+                    onClick={onFechar}
+                    title="Fechar"
+                    aria-label="Fechar inserção manual"
+                    className="text-gray-500 hover:text-gray-700"
+                >
+                    <FaTimes size={18} />
+                </button>
+            </div>
             <table className="w-full border-collapse border">
                 <thead className="bg-blue-700 text-white">
                     <tr>
@@ -197,6 +212,7 @@ const InsercaoManual: React.FC<{
                         <th className="border px-4 py-2">Rubrica Contábil</th>
                         <th className="border px-4 py-2">Entrada</th>
                         <th className="border px-4 py-2">Saída</th>
+                        <th className="border px-4 py-2">Lançamento futuro</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -284,6 +300,14 @@ const InsercaoManual: React.FC<{
                                 placeholder="Saída"
                                 value={entrada.saida}
                                 onChange={(e) => handleInputChange("saida", formatarMoeda(e.target.value))}
+                            />
+                        </td>
+                        <td className="border px-4 py-2 text-center">
+                            <input
+                                type="checkbox"
+                                checked={entrada.lancamentoFuturo}
+                                onChange={(e) => handleInputChange("lancamentoFuturo", e.target.checked)}
+                                title="Marcar como lançamento futuro"
                             />
                         </td>
                     </tr>

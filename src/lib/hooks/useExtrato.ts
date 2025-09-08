@@ -90,3 +90,16 @@ export async function deleteExtrato(idExtrato: number) {
 
   if (!response.ok) throw new Error("Erro ao deletar extrato");
 }
+
+// 🔹 Reordenar extratos em lote
+export async function reorderExtratos(ordens: { idextrato: number; ordem: number }[]) {
+  const response = await fetch(`${API_URL}/extratos/reorder`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(ordens),
+  });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Erro ao reordenar extratos: ${text}`);
+  }
+}

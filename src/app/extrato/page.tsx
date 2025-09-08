@@ -262,6 +262,7 @@ const Extrato: React.FC = () => {
                 rubricaContabil: extrato.rubricaContabilRelacionada?.nome || "Não definida",
                 entrada: extrato.tipoDeTransacao === "ENTRADA" ? extrato.valor.toFixed(2) : "",
                 saida: extrato.tipoDeTransacao === "SAIDA" ? extrato.valor.toFixed(2) : "",
+                lancamentoFuturo: !!extrato.lancamentoFuturo,
             }));
 
             if (JSON.stringify(novosDados) !== JSON.stringify(dadosTabela)) {

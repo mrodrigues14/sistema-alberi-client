@@ -13,5 +13,6 @@ export interface Extrato {
     extratoAnexo?: string | null;
     idSubextrato?: number | null;
     rubricaDoMes?: boolean | null;
+    lancamentoFuturo?: boolean | null;
   }
   

@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { FaDivide, FaEdit, FaHandPointer, FaPaperclip, FaSave, FaTrash, FaTimes, FaSort, FaSortUp, FaSortDown, FaFilter } from "react-icons/fa";
+import { FaDivide, FaEdit, FaHandPointer, FaPaperclip, FaSave, FaTrash, FaTimes, FaSort, FaSortUp, FaSortDown, FaFilter, FaCheck, FaGripVertical } from "react-icons/fa";
 import CustomDropdown from "../dropdown/CustomDropdown";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { Subextrato } from "../../../../../types/Subextrato";
 import { criarSubextrato } from "@/lib/hooks/useSubextrato";
-import { deleteExtrato, updateExtrato } from "@/lib/hooks/useExtrato";
+import { deleteExtrato, updateExtrato, reorderExtratos } from "@/lib/hooks/useExtrato";
 import { Extrato } from "../../../../../types/Extrato";
 import Anexos from "../anexos/Anexos";
 import { useExtratoAnexos } from "@/lib/hooks/useExtratoAnexos";
@@ -56,6 +56,10 @@ const TabelaExtrato: React.FC<Props> = ({
   onAtualizarExtratos,
 }) => {
   const [saldoFinal, setSaldoFinal] = useState(saldoInicial);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const dragOverIndex = useRef<number | null>(null);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [insertIndex, setInsertIndex] = useState<number | null>(null);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>({});
   const [ordem, setOrdem] = useState<{ coluna: string; direcao: "asc" | "desc" } | null>(null);
@@ -70,6 +74,7 @@ const TabelaExtrato: React.FC<Props> = ({
   const [extratoSelecionado, setExtratoSelecionado] = useState<number | null>(null);
   const [dadosEditadosLote, setDadosEditadosLote] = useState<Record<number, any>>({});
   const [deletandoId, setDeletandoId] = useState<number | null>(null);
+  const [confirmandoId, setConfirmandoId] = useState<number | null>(null);
   const { anexos, mutate } = useExtratoAnexos();
   const { idCliente } = useClienteContext();
   const { bancoSelecionado, nomeBancoSelecionado, setBancoSelecionado, setNomeBancoSelecionado } = useBancoContext();
@@ -140,6 +145,19 @@ const TabelaExtrato: React.FC<Props> = ({
       alert("Erro ao deletar extrato.");
     } finally {
       setDeletandoId(null);
+    }
+  };
+
+  const handleConfirmarLancamento = async (id: number) => {
+    setConfirmandoId(id);
+    try {
+      await updateExtrato(id, { lancamentoFuturo: false });
+      onAtualizarExtratos();
+    } catch (error) {
+      console.error("Erro ao confirmar lançamento:", error);
+      alert("Erro ao confirmar lançamento.");
+    } finally {
+      setConfirmandoId(null);
     }
   };
 
@@ -532,9 +550,10 @@ const TabelaExtrato: React.FC<Props> = ({
 
 
         {/* Tabela */}
-        <table className="table-auto w-full border-collapse border border-gray-300 text-sm">
+    <table className="table-auto w-full border-collapse border border-gray-300 text-sm">
           <thead>
             <tr className="bg-blue-700 text-white">
+              <th className="border px-2 py-2 w-8"></th>
               {renderTh("data", "Data")}
               {renderTh("rubricaSelecionada", "Rubrica Financeira")}
               {renderTh("fornecedorSelecionado", "Fornecedor")}
@@ -543,6 +562,7 @@ const TabelaExtrato: React.FC<Props> = ({
               {renderTh("rubricaContabil", "Rubrica Contábil")}
               {renderTh("entrada", "Entrada")}
               {renderTh("saida", "Saída")}
+              <th className="border px-2 py-2">Futuro?</th>
               <th className="border px-2 py-2">Saldo</th>
               <th className="border px-2 py-2">Anexos</th>
               <th className="border px-2 py-2">Ferramentas</th>
@@ -566,10 +586,72 @@ const TabelaExtrato: React.FC<Props> = ({
 
                 <React.Fragment key={index}>
 
+                  {insertIndex === index && (
+                    <tr>
+                      <td className="p-0" colSpan={13}>
+                        <div className="h-2 bg-blue-300/50 rounded" />
+                      </td>
+                    </tr>
+                  )}
+
                   <tr
-                    className={`odd:bg-white even:bg-gray-100 transition-all duration-200 ${selecionados.includes(row.id) ? "bg-green-200 border-2 border-green-600 shadow-md" : "hover:bg-gray-50"
-                      }`}
+                    className={`transition-all duration-200 ease-out ${
+                      selecionados.includes(row.id)
+                        ? "bg-green-200 border-2 border-green-600 shadow-md"
+                        : row.lancamentoFuturo
+                        ? "bg-red-100 border border-red-300 ring-2 ring-red-300"
+                        : "odd:bg-white even:bg-gray-100 hover:bg-gray-50"
+                    } ${dragIndex === index ? "opacity-70 bg-blue-50 scale-[0.995] shadow-md" : (dragOverIndex.current === index ? "ring-2 ring-blue-400" : "")}`}
+                    draggable
+                    onDragStart={() => setDragIndex(index)}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      dragOverIndex.current = index;
+                      try {
+                        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+                      } catch {}
+                      const rect = (e.currentTarget as HTMLTableRowElement).getBoundingClientRect();
+                      const offsetY = e.clientY - rect.top;
+                      const insertPos = offsetY < rect.height / 2 ? index : index + 1;
+                      if (insertIndex !== insertPos) setInsertIndex(insertPos);
+                    }}
+                    onDragEnd={() => {
+                      setDragIndex(null);
+                      dragOverIndex.current = null;
+                      setInsertIndex(null);
+                    }}
+                    onDrop={async (e) => {
+                      e.preventDefault();
+                      if (dragIndex === null || insertIndex === null) return;
+                      const list = [...dadosOrdenados];
+                      const [moved] = list.splice(dragIndex, 1);
+                      const targetIndex = insertIndex > dragIndex ? insertIndex - 1 : insertIndex;
+                      list.splice(targetIndex, 0, moved);
+                      setDadosOrdenados(list);
+
+                      // Persistir ordem: ordem sequencial 1..N
+                      try {
+                        setIsSavingOrder(true);
+                        const ordens = list.map((item, i) => ({ idextrato: item.id, ordem: i + 1 }));
+                        await reorderExtratos(ordens);
+                        onAtualizarExtratos();
+                      } catch (err) {
+                        console.error("Erro ao salvar ordem:", err);
+                        alert("Erro ao salvar nova ordem");
+                      } finally {
+                        setIsSavingOrder(false);
+                      }
+
+                      setDragIndex(null);
+                      dragOverIndex.current = null;
+                      setInsertIndex(null);
+                    }}
                   >
+                    <td className="border px-2 py-2 text-center select-none" title="Arraste para reordenar">
+                      <span className="inline-flex items-center justify-center text-gray-500 hover:text-gray-700 cursor-grab active:cursor-grabbing">
+                        <FaGripVertical size={16} />
+                      </span>
+                    </td>
                     <td className="border px-2 py-2 whitespace-nowrap">
                       {editIndex === index ? (
                         <input
@@ -718,6 +800,9 @@ const TabelaExtrato: React.FC<Props> = ({
                       )}
                     </td>
 
+                    <td className="border px-2 py-2 text-center">
+                      {row.lancamentoFuturo ? "Sim" : "Não"}
+                    </td>
                     <td className="border px-2 py-2 text-right whitespace-nowrap">
                       {saldoAcumulado.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
@@ -751,6 +836,21 @@ const TabelaExtrato: React.FC<Props> = ({
                               <FaEdit size={20} />
                             </button>
 
+                            {row.lancamentoFuturo && (
+                              <button
+                                className="text-green-600 hover:text-green-700"
+                                title="Confirmar lançamento (remove o status de futuro)"
+                                onClick={() => handleConfirmarLancamento(row.id)}
+                                disabled={confirmandoId === row.id}
+                              >
+                                {confirmandoId === row.id ? (
+                                  <span className="animate-spin inline-block w-5 h-5 border-2 border-green-600 border-t-transparent rounded-full"></span>
+                                ) : (
+                                  <FaCheck size={20} />
+                                )}
+                              </button>
+                            )}
+
                             <button
                               className={`hover:text-green-700 transition-colors duration-200 ${selecionados.includes(row.id) ? "text-green-700 bg-green-100 rounded-full p-1" : "text-gray-400"}`}
                               title={selecionados.includes(row.id) ? "Desmarcar linha" : "Selecionar linha"}
@@ -780,6 +880,7 @@ const TabelaExtrato: React.FC<Props> = ({
 
                   {subdividindoIndex === index && (
                     <tr className="bg-blue-50 text-xs">
+                      <td className="border px-2 py-2 text-center">—</td>
                       <td className="border px-2 py-2 whitespace-nowrap">
                         <input
                           type="date"
@@ -887,6 +988,7 @@ const TabelaExtrato: React.FC<Props> = ({
                           }}
                         />
                       </td>
+                      <td className="border px-2 py-2 text-center">—</td>
                       <td className="border px-2 py-2 text-right">—</td>
                       <td className="border px-2 py-2 text-center">—</td>
                       <td className="border px-2 py-2 text-center">
@@ -919,6 +1021,7 @@ const TabelaExtrato: React.FC<Props> = ({
                   {subextratosDoExtrato && subextratosDoExtrato.length > 0 && (
                     subextratosDoExtrato.map((sub) => (
                       <tr key={`subextrato-${sub.idSubextrato}`} className="bg-yellow-100 text-xs">
+                        <td className="border px-2 py-2 text-center">—</td>
                         <td className="border px-2 py-2 whitespace-nowrap">{sub.data}</td>
 
                         <td className="border px-2 py-2 whitespace-nowrap">
@@ -954,6 +1057,7 @@ const TabelaExtrato: React.FC<Props> = ({
                             : ""}
                         </td>
 
+                        <td className="border px-2 py-2 text-center whitespace-nowrap">—</td>
                         <td className="border px-2 py-2 text-right whitespace-nowrap">—</td>
                         <td className="border px-2 py-2 text-center">—</td>
                         <td className="border px-2 py-2 text-center">—</td>
@@ -961,6 +1065,13 @@ const TabelaExtrato: React.FC<Props> = ({
                     ))
                   )}
 
+                  {index === dadosOrdenados.length - 1 && insertIndex === dadosOrdenados.length && (
+                    <tr>
+                      <td className="p-0" colSpan={13}>
+                        <div className="h-2 bg-blue-300/50 rounded" />
+                      </td>
+                    </tr>
+                  )}
 
                 </React.Fragment>
 
@@ -976,6 +1087,11 @@ const TabelaExtrato: React.FC<Props> = ({
             onFechar={() => setAnexosVisiveis(false)}
             onAtualizar={() => mutate()}
           />
+        )}
+        {isSavingOrder && (
+          <div className="fixed bottom-4 right-4 bg-white shadow-lg rounded px-3 py-2 text-sm border">
+            Salvando nova ordem...
+          </div>
         )}
         {isLoadingSetSaldo && (
           <div className="fixed inset-0 z-[9999] bg-black bg-opacity-40 flex items-center justify-center">
