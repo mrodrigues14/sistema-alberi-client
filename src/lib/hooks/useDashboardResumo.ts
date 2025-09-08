@@ -11,9 +11,16 @@ export interface ResumoMes {
 }
 
 export function useDashboardResumo(idCliente?: number, mes?: string, ano?: string) {
-  if (!idCliente) return { resumo: null, isLoading: false, isError: null, mutate: () => {} } as any;
-  let query = `/extratos/resumo/cliente/${idCliente}`;
-  if (mes && ano) query += `?mes=${mes}&ano=${ano}`;
+  const query = idCliente
+    ? `/extratos/resumo/cliente/${idCliente}${mes && ano ? `?mes=${mes}&ano=${ano}` : ''}`
+    : null;
+
   const { data, error, isLoading, mutate } = useSWR<ResumoMes>(query, fetcher);
-  return { resumo: data, isLoading, isError: error, mutate };
+
+  return {
+    resumo: data ?? null,
+    isLoading: Boolean(idCliente) && Boolean(isLoading),
+    isError: idCliente ? error : null,
+    mutate,
+  } as const;
 }
