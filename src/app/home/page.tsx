@@ -5,7 +5,12 @@ import Navbar from "@/components/Navbar";
 import Image from "next/image";
 import Link from "next/link";
 import styles from './page.module.css';
+import { useClienteContext } from "@/context/ClienteContext";
+import { useDashboardResumo } from "@/lib/hooks/useDashboardResumo";
 import { usePermissions } from "@/lib/hooks/usePermissions";
+import React, { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useCliente } from "@/lib/hooks/useCliente";
 
 const font = Poppins({
   subsets: ["latin"],
@@ -89,6 +94,147 @@ const iconMap: { [key: string]: () => JSX.Element } = {
 
 export default function Home() {
   const { userModules, userRole, getRoleDescription, getPermissionStats } = usePermissions();
+  const { idCliente } = useClienteContext();
+  const [mes, setMes] = useState<string>(() => String(new Date().getMonth() + 1).padStart(2, '0'));
+  const [ano, setAno] = useState<string>(() => String(new Date().getFullYear()));
+  const { resumo, isLoading } = useDashboardResumo(idCliente ?? undefined, mes, ano);
+  const roleLc = (userRole || '').toLowerCase();
+  const isUsuarioExterno = roleLc.includes('usuario externo');
+  const isAdminOrInterno = roleLc === 'administrador' || roleLc === 'usuario interno';
+  // Somente passa ID válido (evita -1 "Meus" e 68 "Todos")
+  const idClienteValido = typeof idCliente === 'number' && idCliente > 0 && idCliente !== 68 ? idCliente : undefined;
+  const { cliente } = useCliente(idClienteValido);
+  // Fallback para nome via sessionStorage caso ainda não tenha carregado o cliente pelo ID
+  let nomeEmpresa = cliente?.apelido || cliente?.nome || '';
+  if (!nomeEmpresa && typeof window !== 'undefined') {
+    try {
+      const saved = sessionStorage.getItem('selectedCliente');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.nome) nomeEmpresa = parsed.nome;
+      }
+    } catch {}
+  }
+  const { data: session } = useSession();
+  const firstName = session?.user?.name?.split(' ')[0] || '';
+
+  // Utils
+  const formatCurrency = (val?: number | null) =>
+    val == null
+      ? '—'
+      : val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  const palette = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#a855f7', '#06b6d4'];
+  const light = (hex: string, amount = 0.18) => {
+    // simple lighten utility for gradients
+    const c = hex.replace('#', '');
+    const num = parseInt(c, 16);
+    let r = (num >> 16) & 0xff;
+    let g = (num >> 8) & 0xff;
+    let b = num & 0xff;
+    r = Math.min(255, Math.floor(r + (255 - r) * amount));
+    g = Math.min(255, Math.floor(g + (255 - g) * amount));
+    b = Math.min(255, Math.floor(b + (255 - b) * amount));
+    return `rgb(${r} ${g} ${b})`;
+  };
+
+  // Donut (pizza) chart using pure SVG
+  const DonutChart: React.FC<{
+    data: { label: string; value: number; color?: string }[];
+    size?: number;
+    thickness?: number;
+    centerLabel?: string;
+    centerValue?: string;
+  }> = ({ data, size = 220, thickness = 22, centerLabel, centerValue }) => {
+    const total = data.reduce((s, d) => s + (isFinite(d.value) ? d.value : 0), 0) || 1;
+    const radius = (size - thickness) / 2;
+    const circumference = 2 * Math.PI * radius;
+    let offset = 0;
+
+    return (
+      <div className="flex flex-col items-center">
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
+          <g transform={`translate(${size / 2}, ${size / 2})`}>
+            {/* background ring */}
+            <circle r={radius} fill="transparent" stroke="#e5e7eb" strokeWidth={thickness} />
+            {data.map((d, i) => {
+              const fraction = (isFinite(d.value) ? d.value : 0) / total;
+              const dash = fraction * circumference;
+              const dashArray = `${dash} ${circumference - dash}`;
+              const circle = (
+                <circle
+                  key={i}
+                  r={radius}
+                  fill="transparent"
+                  stroke={d.color || palette[i % palette.length]}
+                  strokeWidth={thickness}
+                  strokeDasharray={dashArray}
+                  strokeDashoffset={-offset}
+                  strokeLinecap="butt"
+                />
+              );
+              offset += dash;
+              return circle;
+            })}
+            {/* center label */}
+            <g>
+              <text textAnchor="middle" dominantBaseline="middle" className="fill-gray-500" y={-10} fontSize="12">
+                {centerLabel}
+              </text>
+              <text textAnchor="middle" dominantBaseline="middle" className="fill-gray-900 font-semibold" y={10} fontSize="18">
+                {centerValue}
+              </text>
+            </g>
+          </g>
+        </svg>
+
+        {/* legend */}
+        <div className="mt-3 grid grid-cols-2 gap-x-6 gap-y-2">
+          {data.map((d, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm">
+              <span className="inline-block w-3 h-3 rounded-sm" style={{ background: d.color || palette[i % palette.length] }} />
+              <span className="text-gray-600">{d.label}:</span>
+              <span className="font-medium text-gray-900">{formatCurrency(d.value)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Bar chart (vertical) with simple gradient and hover tooltip
+  const BarChart: React.FC<{
+    data: { label: string; value: number; color?: string }[];
+    height?: number;
+  }> = ({ data, height = 260 }) => {
+    if (!data.length) return <div className="text-sm text-gray-500">Sem dados para o período.</div>;
+    const max = Math.max(...data.map(d => d.value || 0), 1);
+    return (
+      <div className="relative" style={{ height }}>
+        <div className="absolute inset-0 flex items-stretch gap-5 px-4">
+          {data.map((d, i) => {
+            const pct = Math.max(6, Math.round(((d.value || 0) / max) * 100));
+            const base = d.color || palette[i % palette.length];
+            const top = light(base, 0.32);
+            return (
+              <div key={i} className="group flex flex-col items-center justify-end flex-1 min-w-[60px] h-full">
+                <div className="mb-2 text-[11px] text-gray-600">{formatCurrency(d.value)}</div>
+                <div className="relative w-10 sm:w-12 md:w-14 rounded-t-md transition-all duration-200"
+                     style={{ height: `${pct}%`, background: `linear-gradient(180deg, ${top}, ${base})` }}>
+                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 scale-95 opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all pointer-events-none bg-gray-900 text-white text-xs px-2 py-1 rounded shadow">
+                    {d.label}: {formatCurrency(d.value)}
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-center truncate w-16" title={d.label}>{d.label}</div>
+              </div>
+            );
+          })}
+        </div>
+        {/* x axis line */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-200" />
+      </div>
+    );
+  };
   
   // Converte os módulos do usuário para o formato esperado pela interface
   const quickActions = userModules.map(module => ({
@@ -103,38 +249,154 @@ export default function Home() {
 
   return (
     <>
-      <div className="fixed top-0 left-0 w-full z-10">
+      <div className="top-0 left-0 w-full z-10">
         <Navbar />
       </div>
 
-      <div className={`${font.className} ${styles.container}`}>
-        {/* Header Section */}
+  <div className={`${font.className} ${styles.container} bg-slate-50`}>
+        {/* Header Section - versão normal para roles internos e compacta para usuário externo */}
         <div className={styles.header}>
-          <div className={styles.headerContent}>
+          <div className={isUsuarioExterno ? styles.headerContentCompact : styles.headerContent}>
             <div className={styles.headerText}>
               <div className={styles.logoContainer}>
                 <Image
                   src="/icone_alberi.png"
                   alt="Alberi Consult Logo"
-                  width={200}
-                  height={200}
-                  className={styles.logo}
+                  width={isUsuarioExterno ? 96 : 200}
+                  height={isUsuarioExterno ? 96 : 200}
+                  className={isUsuarioExterno ? styles.logoCompact : styles.logo}
                   priority
                 />
               </div>
-              <h1 className={styles.title}>
+              <h1 className={isUsuarioExterno ? styles.titleCompact : styles.title}>
                 Alberi Consult
               </h1>
-              <p className={styles.subtitle}>
+              <p className={isUsuarioExterno ? styles.subtitleCompact : styles.subtitle}>
                 Sistema de gestão financeira e administrativa
               </p>
-
             </div>
           </div>
         </div>
 
         {/* Main Content */}
         <div className={styles.mainContent}>
+          {/* Greeting banner */}
+      <div className="mb-6 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center justify-between">
+            <div>
+        <h2 className="text-xl font-semibold text-slate-800">{`Bem-vindo(a)${firstName ? ", " + firstName : ''}`}</h2>
+              <p className="text-sm text-slate-600 mt-1">
+                {nomeEmpresa ? `Você está visualizando os dados de ${nomeEmpresa}.` : 'Selecione uma empresa para começar.'}
+              </p>
+            </div>
+            {nomeEmpresa && (
+              <span className="hidden sm:inline-flex items-center gap-2 px-3 py-1 rounded-full border border-slate-300 bg-slate-100 text-slate-700 text-sm">
+                <svg className="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                {nomeEmpresa}
+              </span>
+            )}
+          </div>
+          {/* Dashboard Usuário Externo */}
+          {isUsuarioExterno && (
+            <div className={styles.section}>
+              <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-4">
+                <h2 className={styles.sectionTitle}>Seu mês{nomeEmpresa ? ` - ${nomeEmpresa}` : ''}</h2>
+                <div className="flex flex-wrap items-end gap-3">
+                  <div>
+                    <label className="block text-sm text-gray-600">Mês</label>
+                    <select className="border rounded px-2 py-1" value={mes} onChange={e => setMes(e.target.value)}>
+                      {["01","02","03","04","05","06","07","08","09","10","11","12"].map(m => (
+                        <option key={m} value={m}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600">Ano</label>
+                    <input className="border rounded px-2 py-1 w-24" value={ano} onChange={e => setAno(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Require empresa selecionada */}
+              {!idCliente && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 text-amber-800 p-4 mb-6">
+                  Selecione uma empresa para visualizar os dados do mês.
+                </div>
+              )}
+
+              {/* KPIs */}
+              {idCliente && (
+              <div className={`${styles.statsGrid} mb-6`}>
+                <div className={styles.statsCard}>
+                  <div className={styles.statsContent}>
+                    <div className={`${styles.statsIcon} ${styles.greenIcon}`}><Icons.bank /></div>
+                    <div>
+                      <p className={styles.statsLabel}>Total Entradas</p>
+                      <p className={styles.statsValue}>{formatCurrency(resumo?.totalEntradas)}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className={styles.statsCard}>
+                  <div className={styles.statsContent}>
+                    <div className={`${styles.statsIcon} ${styles.orangeIcon}`}><Icons.category /></div>
+                    <div>
+                      <p className={styles.statsLabel}>Total Saídas</p>
+                      <p className={styles.statsValue}>{formatCurrency(resumo?.totalSaidas)}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className={styles.statsCard}>
+                  <div className={styles.statsContent}>
+                    <div className={`${styles.statsIcon} ${styles.blueIcon}`}><Icons.balance /></div>
+                    <div>
+                      <p className={styles.statsLabel}>Saldo do Mês</p>
+                      <p className={`${styles.statsValue} ${Number(resumo?.saldoMes) < 0 ? 'text-red-600' : 'text-gray-900'}`}>{formatCurrency(resumo?.saldoMes)}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              )}
+
+              {/* Charts row */}
+              {idCliente && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Donut Entradas vs Saídas */}
+                <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold">Entradas x Saídas</h3>
+                  </div>
+                  <DonutChart
+                    data={[
+                      { label: 'Entradas', value: Number(resumo?.totalEntradas || 0), color: '#22c55e' },
+                      { label: 'Saídas', value: Number(resumo?.totalSaidas || 0), color: '#ef4444' },
+                    ]}
+                    centerLabel="Saldo"
+                    centerValue={formatCurrency(resumo?.saldoMes)}
+                  />
+                </div>
+
+                {/* Top categorias (barras) */}
+                <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold">Top 5 categorias por gasto</h3>
+                  </div>
+                  <BarChart
+                    data={(resumo?.topCategorias || [])
+                      .filter((c: { categoria?: string }) => !!c?.categoria && !/^sem\s*categoria/i.test(c.categoria.trim()))
+                      .slice(0, 5)
+                      .map((c: { categoria: string; total: number }, i: number) => ({
+                        label: c.categoria,
+                        value: c.total,
+                        color: palette[(i + 3) % palette.length],
+                      }))}
+                  />
+                </div>
+              </div>
+              )}
+            </div>
+          )}
+
           {/* Quick Actions */}
           <div className={styles.section}>
             <h2 className={styles.sectionTitle}>
@@ -183,7 +445,7 @@ export default function Home() {
           </div>
 
           {/* Stats Section - apenas para administrador e usuário interno */}
-          {['administrador', 'usuario interno'].includes(userRole || '') && (
+          {isAdminOrInterno && (
             <div className={styles.section}>
               <h2 className={styles.sectionTitle}>
                 Resumo do Sistema

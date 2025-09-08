@@ -2,7 +2,6 @@
 .container {
   background-color: #f9fafb;
   min-height: 100vh;
-  padding-top: 80px; /* Espaço para a navbar */
 }
 
 .header {
@@ -293,6 +292,34 @@
 
 .newsButton:hover {
   background-color: #1e2a6b;
+}
+
+/* Versão compacta do header para usuário externo */
+.headerContentCompact {
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem; /* menos alto */
+}
+
+.logoCompact {
+  height: 6rem; /* menor que 15rem */
+  width: auto;
+  filter: brightness(0) invert(1);
+  object-fit: contain;
+}
+
+.titleCompact {
+  font-size: 2rem; /* menor que 3rem */
+  font-weight: 800;
+  color: white;
+  margin-bottom: 0.25rem;
+}
+
+.subtitleCompact {
+  font-size: 1rem; /* menor que 1.25rem */
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 42rem;
+  margin: 0 auto;
 }
 
 /* Cores específicas para os módulos */

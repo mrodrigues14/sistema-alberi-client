@@ -236,7 +236,7 @@ export default function Navbar() {
       <nav className={`bg-gradient-to-r from-slate-50 to-white border-b border-slate-200/60 shadow-lg backdrop-blur-sm ${font.className} z-50 sticky top-0`}>
         <div className="w-full px-6 sm:px-8 lg:px-10">
           <div className="flex items-center justify-between h-16">
-            {/* Logo e Nome da Empresa */}
+            {/* Logo, Nome e Empresa Selecionada */}
             <div className="flex items-center space-x-4 flex-shrink-0">
               <Link href="/home" className="flex items-center space-x-3 group">
                 <div className="relative">
