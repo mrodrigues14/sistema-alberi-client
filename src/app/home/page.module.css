@@ -77,27 +77,22 @@
   text-align: center;
 }
 
+/* Quick actions layout: center when few items */
 .grid {
-  display: grid;
-  grid-template-columns: repeat(1, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: 1.5rem;
+  justify-content: center;
 }
 
-@media (min-width: 640px) {
-  .grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 768px) {
-  .grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
+.grid > a {
+  flex: 1 1 220px;
+  max-width: 260px;
 }
 
 @media (min-width: 1024px) {
-  .grid {
-    grid-template-columns: repeat(4, 1fr);
+  .grid.compactRow {
+    justify-content: flex-start;
   }
 }
 

@@ -5,6 +5,10 @@ export interface ResumoMes {
   totalEntradas: number;
   totalSaidas: number;
   saldoMes: number;
+  totalEntradasPrevistas?: number;
+  totalSaidasPrevistas?: number;
+  saldoConta?: number;
+  saldoInicialCliente?: number;
   topCategorias: { categoria: string; total: number }[];
   countLancamentos: number;
   maiorGasto: number;

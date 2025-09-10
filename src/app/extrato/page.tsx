@@ -15,6 +15,7 @@ import { useFornecedoresPorCliente } from '@/lib/hooks/useFornecedor';
 import { FaChevronDown } from "react-icons/fa";
 import * as XLSX from "xlsx";
 import PreviewExtrato from './components/previewExtrato/previewExtrato';
+import { parsePdfToPreview } from '@/lib/pdf/parsePdfToPreview';
 import { useSubextratos } from '@/lib/hooks/useSubextrato';
 import { useBancoContext } from '@/context/BancoContext';
 import styles from './page.module.css';
@@ -128,50 +129,60 @@ const Extrato: React.FC = () => {
 
     const handleFile = async (file: File) => {
         try {
-            const data = await file.arrayBuffer();
-            const workbook = XLSX.read(data, { type: "array" });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const jsonData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                const bankHint = nomeBancoSelecionado?.toLowerCase().includes('itau') ? 'itau'
+                  : nomeBancoSelecionado?.toLowerCase().includes('brasil') ? 'bb'
+                  : nomeBancoSelecionado?.toLowerCase().includes('infinit') ? 'infinitpay'
+                  : undefined;
+                const result = await parsePdfToPreview(file, bankHint);
+                setDados(result.linhas);
+                setMostrarPreview(true);
+            } else {
+                const data = await file.arrayBuffer();
+                const workbook = XLSX.read(data, { type: "array" });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-            const processado = jsonData.slice(1).map((row) => {
-                if (row.every((cell) => cell === undefined || cell === null || cell === "")) return null;
+                const processado = jsonData.slice(1).map((row) => {
+                    if (row.every((cell) => cell === undefined || cell === null || cell === "")) return null;
 
-                const extrair = (cell: any) => (typeof cell === "object" && cell?.v !== undefined ? cell.v : cell || "");
+                    const extrair = (cell: any) => (typeof cell === "object" && cell?.v !== undefined ? cell.v : cell || "");
 
-                const valorData = extrair(row[0]);
-                const data = typeof valorData === "number" ? excelDateToJSDate(valorData) : "";
-                const categoria = extrair(row[1]);
-                const fornecedor = extrair(row[2]);
-                const nome = extrair(row[3]);
-                const descricao = extrair(row[4]);
-                const rubricaContabil = extrair(row[5]);
-                const valorEntrada = row[6] ? formatarValorFinanceiro(row[6]) : "";
-                const valorSaida = row[7] ? formatarValorFinanceiro(row[7]) : "";
-                const tipo = valorEntrada ? "entrada" : valorSaida ? "saida" : "";
+                    const valorData = extrair(row[0]);
+                    const data = typeof valorData === "number" ? excelDateToJSDate(valorData) : "";
+                    const categoria = extrair(row[1]);
+                    const fornecedor = extrair(row[2]);
+                    const nome = extrair(row[3]);
+                    const descricao = extrair(row[4]);
+                    const rubricaContabil = extrair(row[5]);
+                    const valorEntrada = row[6] ? formatarValorFinanceiro(row[6]) : "";
+                    const valorSaida = row[7] ? formatarValorFinanceiro(row[7]) : "";
+                    const tipo = valorEntrada ? "entrada" : valorSaida ? "saida" : "";
 
-                return {
-                    data,
-                    categoria,
-                    fornecedor,
-                    descricao,
-                    nome,
-                    rubricaContabil,
-                    tipo,
-                    valor: valorEntrada || valorSaida || "",
-                };
-            }).filter(Boolean);
+                    return {
+                        data,
+                        categoria,
+                        fornecedor,
+                        descricao,
+                        nome,
+                        rubricaContabil,
+                        tipo,
+                        valor: valorEntrada || valorSaida || "",
+                    };
+                }).filter(Boolean);
 
-            setDados(processado.filter((item): item is {
-                data: string;
-                categoria: any;
-                fornecedor: any;
-                descricao: any;
-                nome: any;
-                rubricaContabil: any;
-                tipo: string;
-                valor: string;
-            } => item !== null));
-            setMostrarPreview(true);
+                setDados(processado.filter((item): item is {
+                    data: string;
+                    categoria: any;
+                    fornecedor: any;
+                    descricao: any;
+                    nome: any;
+                    rubricaContabil: any;
+                    tipo: string;
+                    valor: string;
+                } => item !== null));
+                setMostrarPreview(true);
+            }
         } catch (error) {
             console.error("Erro ao processar o arquivo:", error);
         }
@@ -341,7 +352,8 @@ const Extrato: React.FC = () => {
                                                 {[
                                                     { value: '', label: 'Selecione o Método' },
                                                     { value: 'manual', label: 'Inserção Manual' },
-                                                    { value: 'importar', label: 'Importar Arquivo' }
+                                                    { value: 'importar', label: 'Importar Arquivo' },
+                                                    { value: 'automatica', label: 'Inserção Automatizada (PDF)' }
                                                 ].map((opt) => {
                                                     const isPlaceholder = opt.value === '';
                                                     const isSelected = metodoInsercao === opt.value && !isPlaceholder;
@@ -537,10 +549,49 @@ const Extrato: React.FC = () => {
                                 <input
                                     id="upload-arquivo"
                                     type="file"
-                                    accept=".csv,.xlsx"
+                                    accept=".csv,.xlsx,.pdf"
                                     onChange={(e) => {
                                         const file = e.target.files?.[0];
                                         if (file) handleFile(file);
+                                    }}
+                                    className="hidden"
+                                />
+                            </label>
+                        </div>
+                    </div>
+                )}
+
+                {/* Inserção automatizada (PDF -> parser do banco selecionado) */}
+                {metodoInsercao === "automatica" && (
+                    <div className={styles.importSection}>
+                        <div className={styles.importGrid}>
+                            <label htmlFor="upload-automatico" className={styles.importButton}>
+                                <FaUpload />
+                                <span>Selecionar PDF</span>
+                                <input
+                                    id="upload-automatico"
+                                    type="file"
+                                    accept=".pdf"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        console.log('[UI] automatic-upload:onChange', { hasFile: !!file, name: file?.name, type: file?.type, size: file?.size });
+                                        if (!file) return;
+                                        try {
+                                            // map nome banco selecionado -> id do parser
+                                            const nameLower = (nomeBancoSelecionado || '').toLowerCase();
+                                            const bankId = nameLower.includes('itau') ? 'itau'
+                                                : nameLower.includes('brasil') ? 'bb'
+                                                : nameLower.includes('infinite') ? 'infinitepay'
+                                                : undefined;
+                                            console.log('[UI] automatic-upload:bankHint', { nomeBancoSelecionado, bankId });
+                                            const result = await parsePdfToPreview(file, bankId);
+                                            console.log('[UI] automatic-upload:parseResult', { linhas: result.linhas.length, warnings: result.warnings });
+                                            setDados(result.linhas);
+                                            setMostrarPreview(true);
+                                        } catch (err) {
+                                            console.error('Falha no parser automático:', err);
+                                            alert('Não foi possível processar o PDF automaticamente.');
+                                        }
                                     }}
                                     className="hidden"
                                 />

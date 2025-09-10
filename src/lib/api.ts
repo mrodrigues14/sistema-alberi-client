@@ -1,4 +1,7 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://www.albericonsult.com.br";
+// Garante URL base correta (sem barra final repetida)
+let base = process.env.NEXT_PUBLIC_API_URL || "https://api.albericonsult.com.br";
+if (base.endsWith('/')) base = base.slice(0, -1);
+const API_URL = base;
 
 
 export const fetcher = async (url: string, options?: RequestInit) => {
@@ -17,11 +20,12 @@ export const fetcher = async (url: string, options?: RequestInit) => {
     },
   };
 
-  console.log('🔍 [Fetcher] URL:', `${API_URL}${url}`);
-  console.log('🔍 [Fetcher] Options:', finalOptions);
-  console.log('🔍 [Fetcher] Body:', finalOptions.body);
+  // Evita duplicar domínio caso url já venha absoluta ou com protocolo
+  const finalUrl = /^https?:\/\//i.test(url) ? url : `${API_URL}${url.startsWith('/') ? url : `/${url}`}`;
 
-  const response = await fetch(`${API_URL}${url}`, finalOptions);
+
+
+  const response = await fetch(finalUrl, finalOptions);
 
   if (!response.ok) {
     const errorText = await response.text();

@@ -10,7 +10,7 @@ import { criarSubextrato } from "@/lib/hooks/useSubextrato";
 import { deleteExtrato, updateExtrato, reorderExtratos } from "@/lib/hooks/useExtrato";
 import { Extrato } from "../../../../../types/Extrato";
 import Anexos from "../anexos/Anexos";
-import { useExtratoAnexos } from "@/lib/hooks/useExtratoAnexos";
+import { useExtratoAnexos, getExtratoAnexo, ExtratoAnexo } from "@/lib/hooks/useExtratoAnexos";
 import { useSaldoInicial, upsertSaldoInicial } from "@/lib/hooks/useSaldoInicial";
 import { useClienteContext } from "@/context/ClienteContext";
 import { useBancoContext } from "@/context/BancoContext";
@@ -66,6 +66,7 @@ const TabelaExtrato: React.FC<Props> = ({
   const [dadosOrdenados, setDadosOrdenados] = useState<any[]>([]);
   const [filtroRubricas, setFiltroRubricas] = useState<string[]>([]);
   const [filtroFornecedores, setFiltroFornecedores] = useState<string[]>([]);
+  const [filtroSubrubricas, setFiltroSubrubricas] = useState<string[]>([]);
   const [filtroRubricasContabeis, setFiltroRubricasContabeis] = useState<string[]>([]);
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
   const [subdividindoIndex, setSubdividindoIndex] = useState<number | null>(null);
@@ -80,6 +81,55 @@ const TabelaExtrato: React.FC<Props> = ({
   const { bancoSelecionado, nomeBancoSelecionado, setBancoSelecionado, setNomeBancoSelecionado } = useBancoContext();
   const [paginaCarregada, setPaginaCarregada] = useState(false);
   const [isLoadingSetSaldo, setIsLoadingSetSaldo] = useState(false);
+  const [baixandoAnexoId, setBaixandoAnexoId] = useState<number | null>(null);
+
+  const downloadBuffer = (bufferData: number[], filename: string) => {
+    const ext = filename.split(".").pop()?.toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      pdf: "application/pdf",
+      jpg: "image/jpeg",
+      jpeg: "image/jpeg",
+      png: "image/png",
+      gif: "image/gif",
+      bmp: "image/bmp",
+      webp: "image/webp",
+      doc: "application/msword",
+      docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      xls: "application/vnd.ms-excel",
+      xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    };
+    const mimeType = mimeTypes[ext || ""] || "application/octet-stream";
+    const blob = new Blob([new Uint8Array(bufferData)], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadAnexo = async (anexo: ExtratoAnexo) => {
+    try {
+      setBaixandoAnexoId(anexo.idAnexo);
+      let buffer = anexo.arquivo?.data;
+      let nome = anexo.nomeArquivo;
+      if (!buffer) {
+        const full = await getExtratoAnexo(anexo.idAnexo);
+        buffer = full.arquivo?.data;
+        nome = full.nomeArquivo || nome;
+      }
+      if (!buffer) {
+        alert("Arquivo indisponível para download.");
+        return;
+      }
+      downloadBuffer(buffer, nome);
+    } catch (e) {
+      console.error("Erro ao baixar anexo:", e);
+      alert("Erro ao baixar anexo.");
+    } finally {
+      setBaixandoAnexoId(null);
+    }
+  };
 
   let saldoAcumulado = saldoInicial ?? 0;
 
@@ -354,7 +404,10 @@ const TabelaExtrato: React.FC<Props> = ({
     const dadosFiltrados = dados.filter(row => {
       const rubricaOk = filtroRubricas.length === 0 || filtroRubricas.includes(row.rubricaSelecionada);
       const fornecedorOk = filtroFornecedores.length === 0 || filtroFornecedores.includes(row.fornecedorSelecionado);
-      const rubricaContabilOk = filtroRubricasContabeis.length === 0 || filtroRubricasContabeis.includes(row.rubricaContabil);
+  const rubricaContabilOk = filtroRubricasContabeis.length === 0 || filtroRubricasContabeis.includes(row.rubricaContabil);
+  // subrubrica: if any subextrato for this row has a categoria (subrubrica) selected
+  const subextratosDoExtrato = subextratos?.filter(s => s.idExtratoPrincipal === row.id) || [];
+  const subrubricaOk = filtroSubrubricas.length === 0 || subextratosDoExtrato.some(s => filtroSubrubricas.includes(String(s.categoria)) || filtroSubrubricas.includes(s.categoria as any));
       return rubricaOk && fornecedorOk && rubricaContabilOk;
     });
 
@@ -385,6 +438,7 @@ const TabelaExtrato: React.FC<Props> = ({
 
     setDadosOrdenados(ordenado);
   }, [ordem, dados, filtroFornecedores, filtroRubricas, filtroRubricasContabeis]);
+
 
 
   console.log(dadosOrdenados);
@@ -542,6 +596,33 @@ const TabelaExtrato: React.FC<Props> = ({
                   ))}
                 </div>
 
+                {/* Subrubrica (subextratos) */}
+                <div>
+                  <h4 className="font-semibold mb-1">Subrubrica</h4>
+                  {(() => {
+                    const unique = [...new Set((subextratos || []).map(s => s.categoria))];
+                    return unique.map((cat, i) => {
+                      const label = categoriasFormatadas.find(cf => cf.value == String(cat))?.label || String(cat);
+                      return (
+                        <label key={i} className="flex items-center gap-2 mb-1">
+                          <input
+                            type="checkbox"
+                            value={String(cat)}
+                            checked={filtroSubrubricas.includes(String(cat))}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setFiltroSubrubricas(prev =>
+                                prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+                              );
+                            }}
+                          />
+                          {label}
+                        </label>
+                      );
+                    })
+                  })()}
+                </div>
+
               </div>
             </div>
           )}
@@ -562,7 +643,6 @@ const TabelaExtrato: React.FC<Props> = ({
               {renderTh("rubricaContabil", "Rubrica Contábil")}
               {renderTh("entrada", "Entrada")}
               {renderTh("saida", "Saída")}
-              <th className="border px-2 py-2">Futuro?</th>
               <th className="border px-2 py-2">Saldo</th>
               <th className="border px-2 py-2">Anexos</th>
               <th className="border px-2 py-2">Ferramentas</th>
@@ -799,23 +879,35 @@ const TabelaExtrato: React.FC<Props> = ({
                         formatarMoeda(row.saida) || '-'
                       )}
                     </td>
-
-                    <td className="border px-2 py-2 text-center">
-                      {row.lancamentoFuturo ? "Sim" : "Não"}
-                    </td>
                     <td className="border px-2 py-2 text-right whitespace-nowrap">
                       {saldoAcumulado.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
                     <td className="border px-2 py-2 text-center">
-                      <button
-                        className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
-                        onClick={() => {
-                          setExtratoSelecionado(row.id);
-                          setAnexosVisiveis(true);
-                        }}
-                      >
-                        <FaPaperclip size={16} className="text-gray-700" />
-                      </button>
+                      <div className="flex items-center justify-center gap-2 flex-wrap">
+                        <button
+                          className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+                          onClick={() => {
+                            setExtratoSelecionado(row.id);
+                            setAnexosVisiveis(true);
+                          }}
+                          title="Gerenciar anexos"
+                        >
+                          <FaPaperclip size={16} className="text-gray-700" />
+                        </button>
+                        {anexos
+                          .filter((a) => a.idExtrato === row.id)
+                          .map((an) => (
+                            <button
+                              key={an.idAnexo}
+                              className={`px-2 py-1 rounded text-xs border ${baixandoAnexoId === an.idAnexo ? "bg-blue-200 text-blue-800" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}
+                              onClick={() => handleDownloadAnexo(an)}
+                              title={an.nomeArquivo}
+                              disabled={baixandoAnexoId === an.idAnexo}
+                            >
+                              {an.tipoExtratoAnexo?.toUpperCase() || "ARQ"}
+                            </button>
+                          ))}
+                      </div>
                     </td>
 
                     <td className="border px-2 py-2 text-center">
