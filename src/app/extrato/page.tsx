@@ -263,10 +263,34 @@ const Extrato: React.FC = () => {
 
     useEffect(() => {
         if (extratos) {
+            const getRubricaInfo = (ex: any): { label: string; parentName?: string; childName?: string; idCat?: number | null; idPai?: number | null } => {
+                const catId = ex?.idCategoria2?.idcategoria ?? ex?.idCategoria ?? null;
+                const nomeFallback = ex?.idCategoria2?.nome;
+                if (!catId || !categoriasCliente || categoriasCliente.length === 0) {
+                    return { label: nomeFallback || "Sem categoria", parentName: undefined, childName: undefined, idCat: null, idPai: null };
+                }
+                const cat = categoriasCliente.find((c: Categoria) => c.idcategoria === catId);
+                if (!cat) return { label: nomeFallback || "Sem categoria", parentName: undefined, childName: undefined, idCat: null, idPai: null };
+                if (cat.idCategoriaPai) {
+                    const pai = categoriasCliente.find((c: Categoria) => c.idcategoria === cat.idCategoriaPai);
+                    return { label: `${pai?.nome || ""} - ${cat.nome}`.trim(), parentName: pai?.nome, childName: cat.nome, idCat: cat.idcategoria, idPai: pai?.idcategoria ?? null };
+                }
+                return { label: cat.nome, parentName: cat.nome, childName: undefined, idCat: cat.idcategoria, idPai: null };
+            };
+
             const novosDados = extratos.map((extrato: any) => ({
                 id: extrato.idextrato,
                 data: formatarData(extrato.data),
-                rubricaSelecionada: extrato.idCategoria2?.nome || "Sem categoria",
+                ...(() => {
+                    const info = getRubricaInfo(extrato);
+                    return {
+                        rubricaSelecionada: info.label,
+                        rubricaPaiNome: info.parentName,
+                        subrubricaNome: info.childName,
+                        idCategoriaSelecionada: info.idCat,
+                        idCategoriaPaiSelecionada: info.idPai,
+                    };
+                })(),
                 fornecedorSelecionado: extrato.idFornecedor2?.nome || "Não informado",
                 observacao: extrato.descricao || "Sem descrição",
                 nomeNoExtrato: extrato.nomeNoExtrato || "Sem nome",
@@ -280,7 +304,7 @@ const Extrato: React.FC = () => {
                 setDadosTabela(novosDados);
             }
         }
-    }, [extratos, dadosTabela]);
+    }, [extratos, dadosTabela, categoriasCliente]);
 
     const subextratosRelacionados = useMemo(() => {
         if (!subextratos || !extratos) return [];
@@ -310,6 +334,46 @@ const Extrato: React.FC = () => {
             setAnoSelecionado(anoAtual);
         }
     }, [mesSelecionado, anoSelecionado]);
+
+    // Totais: a receber, a pagar, saldo atual e com previsões
+    const {
+        totalReceber,
+        totalPagar,
+        entradasEfetivas,
+        saidasEfetivas,
+        saldoAtual,
+        saldoComPrevisoes,
+    } = useMemo(() => {
+        const lista = Array.isArray(extratos) ? extratos : [];
+        let receber = 0;
+        let pagar = 0;
+        let entradasNow = 0;
+        let saídasNow = 0;
+
+        for (const e of lista) {
+            const isFuturo = !!e.lancamentoFuturo;
+            const valor = Number(e.valor) || 0;
+            const isEntrada = e.tipoDeTransacao === 'ENTRADA';
+            if (isFuturo) {
+                if (isEntrada) receber += valor; else pagar += valor;
+            } else {
+                if (isEntrada) entradasNow += valor; else saídasNow += valor;
+            }
+        }
+
+        const base = Number(saldoInicial || 0);
+        const atual = base + entradasNow - saídasNow;
+        const comPrev = atual + receber - pagar;
+
+        return {
+            totalReceber: receber,
+            totalPagar: pagar,
+            entradasEfetivas: entradasNow,
+            saidasEfetivas: saídasNow,
+            saldoAtual: atual,
+            saldoComPrevisoes: comPrev,
+        };
+    }, [extratos, saldoInicial]);
 
     return (
         <>
@@ -616,6 +680,48 @@ const Extrato: React.FC = () => {
                 <div className={styles.calendarSection}>
                     <Calendario onSelectMonth={handleSelectMonth} />
                 </div>
+
+                {/* Resumo financeiro visível no topo */}
+                {shouldFetchData && (
+                    <div className={styles.summaryWrapper}>
+                        <div className={styles.summaryGrid}>
+                            <div className={`${styles.summaryCard} ${styles.cardInicial}`}>
+                                <span className={styles.summaryLabel}>Saldo inicial</span>
+                                <strong className={styles.summaryValue}>
+                                    {Number(saldoInicial || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </strong>
+                            </div>
+
+                            <div className={`${styles.summaryCard} ${styles.cardReceber}`}>
+                                <span className={styles.summaryLabel}>A receber</span>
+                                <strong className={`${styles.summaryValue} ${styles.positivo}`}>
+                                    {totalReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </strong>
+                            </div>
+
+                            <div className={`${styles.summaryCard} ${styles.cardPagar}`}>
+                                <span className={styles.summaryLabel}>A pagar</span>
+                                <strong className={`${styles.summaryValue} ${totalPagar > 0 ? styles.negativo : ''}`}>
+                                    {totalPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </strong>
+                            </div>
+
+                            <div className={`${styles.summaryCard} ${styles.cardAtual}`}>
+                                <span className={styles.summaryLabel}>Saldo atual</span>
+                                <strong className={styles.summaryValue}>
+                                    {saldoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </strong>
+                            </div>
+
+                            <div className={`${styles.summaryCard} ${styles.cardPrev} ${styles.spanLg2}`}>
+                                <span className={styles.summaryLabel}>Saldo com previsões</span>
+                                <strong className={styles.summaryValue}>
+                                    {saldoComPrevisoes.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </strong>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Conteúdo principal */}
                 <div className={styles.mainContent}>

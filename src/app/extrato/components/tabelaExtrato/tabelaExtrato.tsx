@@ -165,7 +165,7 @@ const TabelaExtrato: React.FC<Props> = ({
         data: formatarDataParaISO(editData.data),
         nomeNoExtrato: editData.nomeNoExtrato,
         rubricaContabil: editData.rubricaContabil,
-        observacao: editData.observacao,
+  descricao: editData.observacao,
         idCategoria: categoriaSelecionada?.value ?? null,
         idFornecedor: fornecedorSelecionado?.value ?? null,
         tipoDeTransacao: editData.entrada ? "ENTRADA" : "SAIDA",
@@ -404,13 +404,18 @@ const TabelaExtrato: React.FC<Props> = ({
 
   useEffect(() => {
     const dadosFiltrados = dados.filter(row => {
-      const rubricaOk = filtroRubricas.length === 0 || filtroRubricas.includes(row.rubricaSelecionada);
+      // Rubrica (pai): se houver rubricaPaiNome usa ela, senão usa rubricaSelecionada (que já é pai quando não há filha)
+      const nomePai = row.rubricaPaiNome || row.rubricaSelecionada;
+      const rubricaOk = filtroRubricas.length === 0 || filtroRubricas.includes(nomePai);
+
+      // Subrubrica (filha): filtra pelo nome da filha, se existir no row
+      const nomeFilha = row.subrubricaNome || null;
+      const subrubricaOk = filtroSubrubricas.length === 0 || (nomeFilha ? filtroSubrubricas.includes(nomeFilha) : false === false && filtroSubrubricas.length === 0);
+
       const fornecedorOk = filtroFornecedores.length === 0 || filtroFornecedores.includes(row.fornecedorSelecionado);
-  const rubricaContabilOk = filtroRubricasContabeis.length === 0 || filtroRubricasContabeis.includes(row.rubricaContabil);
-  // subrubrica: if any subextrato for this row has a categoria (subrubrica) selected
-  const subextratosDoExtrato = subextratos?.filter(s => s.idExtratoPrincipal === row.id) || [];
-  const subrubricaOk = filtroSubrubricas.length === 0 || subextratosDoExtrato.some(s => filtroSubrubricas.includes(String(s.categoria)) || filtroSubrubricas.includes(s.categoria as any));
-      return rubricaOk && fornecedorOk && rubricaContabilOk;
+      const rubricaContabilOk = filtroRubricasContabeis.length === 0 || filtroRubricasContabeis.includes(row.rubricaContabil);
+
+      return rubricaOk && subrubricaOk && fornecedorOk && rubricaContabilOk;
     });
 
     if (!ordem) {
@@ -439,7 +444,7 @@ const TabelaExtrato: React.FC<Props> = ({
     });
 
     setDadosOrdenados(ordenado);
-  }, [ordem, dados, filtroFornecedores, filtroRubricas, filtroRubricasContabeis]);
+  }, [ordem, dados, filtroFornecedores, filtroRubricas, filtroSubrubricas, filtroRubricasContabeis]);
 
 
 
@@ -465,7 +470,7 @@ const TabelaExtrato: React.FC<Props> = ({
                       data: formatarDataParaISO(edit.data),
                       nomeNoExtrato: edit.nomeNoExtrato,
                       rubricaContabil: edit.rubricaContabil,
-                      observacao: edit.observacao,
+                      descricao: edit.observacao,
                       idCategoria: categoriaSelecionada?.value ?? null,
                       idFornecedor: fornecedorSelecionado?.value ?? null,
                       tipoDeTransacao: edit.entrada ? "ENTRADA" : "SAIDA",
@@ -500,7 +505,7 @@ const TabelaExtrato: React.FC<Props> = ({
             <h2 className="text-lg font-bold">  Extrato de {mesSelecionado} / {anoSelecionado} - Banco: {banco || "Não informado"}
             </h2>
           </div>
-          <div className="flex space-x-4">
+          {/* <div className="flex space-x-4">
             <div className="text-center mb-4">
               <div className="bg-blue-700 text-white px-4 py-2 rounded-t">
                 Saldo Inicial
@@ -517,7 +522,7 @@ const TabelaExtrato: React.FC<Props> = ({
                 {saldoFinal?.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
         <div className="relative inline-block">
           <button
@@ -535,10 +540,10 @@ const TabelaExtrato: React.FC<Props> = ({
                 <FaTimes className="cursor-pointer" onClick={() => setFiltrosVisiveis(false)} />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm max-h-[60vh] overflow-auto">
-                {/* Rubrica */}
+                {/* Rubrica (apenas pai) */}
                 <div>
                   <h4 className="font-semibold mb-1">Rubrica</h4>
-                  {[...new Set(dados.map(d => d.rubricaSelecionada))].map((r, i) => (
+                  {[...new Set(dados.map(d => d.rubricaPaiNome || d.rubricaSelecionada))].map((r, i) => (
                     <label key={i} className="flex items-center gap-2 mb-1">
                       <input
                         type="checkbox"
@@ -598,31 +603,25 @@ const TabelaExtrato: React.FC<Props> = ({
                   ))}
                 </div>
 
-                {/* Subrubrica (subextratos) */}
+                {/* Subrubrica (apenas filha da categoria) */}
                 <div>
                   <h4 className="font-semibold mb-1">Subrubrica</h4>
-                  {(() => {
-                    const unique = [...new Set((subextratos || []).map(s => s.categoria))];
-                    return unique.map((cat, i) => {
-                      const label = categoriasFormatadas.find(cf => cf.value == String(cat))?.label || String(cat);
-                      return (
-                        <label key={i} className="flex items-center gap-2 mb-1">
-                          <input
-                            type="checkbox"
-                            value={String(cat)}
-                            checked={filtroSubrubricas.includes(String(cat))}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              setFiltroSubrubricas(prev =>
-                                prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
-                              );
-                            }}
-                          />
-                          {label}
-                        </label>
-                      );
-                    })
-                  })()}
+                  {[...new Set(dados.map(d => d.subrubricaNome).filter(Boolean))].map((sr: string, i: number) => (
+                    <label key={i} className="flex items-center gap-2 mb-1">
+                      <input
+                        type="checkbox"
+                        value={sr}
+                        checked={filtroSubrubricas.includes(sr)}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setFiltroSubrubricas(prev =>
+                            prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]
+                          );
+                        }}
+                      />
+                      {sr}
+                    </label>
+                  ))}
                 </div>
 
               </div>

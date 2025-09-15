@@ -11,6 +11,7 @@ import { usePermissions } from "@/lib/hooks/usePermissions";
 import Image from 'next/image';
 import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
+import ClienteSelectorPanel, { ClienteItem as ClienteItemPanel } from "./ClienteSelectorPanel";
 
 // Ícones SVG inline para melhor performance
 const Icons = {
@@ -118,7 +119,8 @@ export default function Navbar() {
   const [showDropdown, setShowDropdown] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'todos' | 'meus'>('todos'); // Estado para controlar o modo de visualização
-  const clienteDropdownRef = useRef<HTMLDivElement | null>(null);
+  const clienteDropdownDesktopRef = useRef<HTMLDivElement | null>(null);
+  const clienteDropdownMobileRef = useRef<HTMLDivElement | null>(null);
   const usuarioDropdownRef = useRef<HTMLDivElement | null>(null);
   const { idCliente, setIdCliente } = useClienteContext();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -172,10 +174,8 @@ export default function Navbar() {
     return viewMode === 'meus' ? meusClientes : sortedClientes;
   })();
 
-  // Filtrar clientes conforme a pesquisa
-  const filteredClientes = clientesParaMostrar.filter((cliente: Cliente) =>
-    (cliente.apelido || cliente.nome).toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filtrar clientes conforme a pesquisa (mantido para outros usos locais)
+  const filteredClientes = clientesParaMostrar.filter((cliente: Cliente) => (cliente.apelido || cliente.nome).toLowerCase().includes(searchQuery.toLowerCase()));
 
   const toggleDropdown = (dropdownName: string) => {
     setShowDropdown(prev => (prev === dropdownName ? null : dropdownName));
@@ -228,7 +228,29 @@ export default function Navbar() {
     }
   }, [idCliente, clientes, selectedCliente?.id, selectedCliente?.nome]);
 
-  // Removido o useEffect que detectava cliques fora - estava causando problemas
+  // Fechar dropdowns ao clicar fora ou ao pressionar ESC
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent | TouchEvent) => {
+      if (!showDropdown) return;
+      const target = e.target as Node | null;
+      const insideClienteDesktop = clienteDropdownDesktopRef.current?.contains(target as Node) ?? false;
+      const insideClienteMobile = clienteDropdownMobileRef.current?.contains(target as Node) ?? false;
+      const insideUsuario = usuarioDropdownRef.current?.contains(target as Node) ?? false;
+      if (insideClienteDesktop || insideClienteMobile || insideUsuario) return;
+      setShowDropdown(null);
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowDropdown(null);
+    };
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside, { passive: true });
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside as any);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [showDropdown]);
   
   return (
     <>
@@ -260,7 +282,7 @@ export default function Navbar() {
             {/* Lado direito: Cliente + Usuário */}
             <div className="flex items-center space-x-3">
               {/* Cliente - Visível apenas no desktop */}
-              <div className="relative hidden md:block" ref={clienteDropdownRef}>
+              <div className="relative hidden md:block" ref={clienteDropdownDesktopRef}>
                 <button
                   onClick={() => toggleDropdown('cliente')}
                   className="flex items-center space-x-3 px-4 py-2.5 text-sm font-medium text-slate-700 bg-white/80 backdrop-blur-sm border border-slate-200/60 rounded-xl hover:bg-white hover:border-slate-300 hover:shadow-md transition-all duration-200 shadow-sm w-56 text-left"
@@ -275,99 +297,18 @@ export default function Navbar() {
                   <Icons.chevronDown />
                 </button>
                 {showDropdown === 'cliente' && (
-                  <div className="absolute top-full right-0 mt-2 w-80 bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-xl z-50 overflow-hidden">
-                    {/* Opções de filtro - ocultas para usuários com roles limitados */}
-                    {!['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole || '') && (
-                      <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 p-3 border-b border-slate-200/40">
-                        <div className="flex space-x-2">
-                          <button
-                            className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                              viewMode === 'todos' 
-                                ? 'bg-blue-500 text-white shadow-md' 
-                                : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm'
-                            }`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleTodosClientesSelect();
-                            }}
-                          >
-                            Todos os Clientes
-                          </button>
-                          <button
-                            className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                              viewMode === 'meus' 
-                                ? 'bg-blue-500 text-white shadow-md' 
-                                : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm'
-                            }`}
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleMeusClientesSelect();
-                            }}
-                          >
-                            {['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole || '') ? 'Minhas Empresas' : 'Meus Clientes'}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="p-3 border-b border-slate-200/40">
-                      <div className="relative">
-                        <input
-                          type="text"
-                          className="w-full px-4 py-2 pl-10 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                          placeholder="🔍 Pesquisar empresa..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                          onFocus={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                          }}
-                        />
-                        <svg className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                      </div>
-                    </div>
-                    
-                    <div className="max-h-64 overflow-y-auto">
-                      {filteredClientes.map((cliente: Cliente) => (
-                        <button
-                          key={cliente.idcliente}
-                          className="w-full px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-150 border-b border-slate-100 last:border-b-0"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleClienteSelect(cliente);
-                          }}
-                        >
-                          <div className="flex items-center space-x-3">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <span className="font-medium">{cliente.apelido || cliente.nome}</span>
-                          </div>
-                        </button>
-                      ))}
-                      {filteredClientes.length === 0 && (
-                        <div className="px-4 py-8 text-center text-slate-500">
-                          <svg className="mx-auto w-12 h-12 text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          <p className="text-sm">
-                            {['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole || '') 
-                              ? 'Nenhuma empresa vinculada encontrada' 
-                              : viewMode === 'meus' 
-                                ? 'Nenhum cliente vinculado encontrado' 
-                                : 'Nenhum cliente encontrado'
-                            }
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                  <div className="absolute top-full right-0 mt-2 bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-xl z-50 overflow-hidden">
+                    <ClienteSelectorPanel
+                      userRole={userRole}
+                      viewMode={viewMode}
+                      setViewMode={(m) => { setViewMode(m); sessionStorage.setItem('viewMode', m); }}
+                      clientesAll={(clientes || []) as ClienteItemPanel[]}
+                      meusClientes={(meusClientes || []) as ClienteItemPanel[]}
+                      onSelectCliente={(c) => { handleClienteSelect(c as unknown as Cliente); }}
+                      onSelectTodos={handleTodosClientesSelect}
+                      onSelectMeus={handleMeusClientesSelect}
+                      compact
+                    />
                   </div>
                 )}
               </div>
@@ -460,7 +401,7 @@ export default function Navbar() {
                               { href: '/estudos/resumo-anual', label: 'Resumo Anual', icon: '📈' },
                               { href: '/estudos/resumo-faturamento', label: 'Resumo Faturamento Mensal', icon: '📋' },
                               { href: '/estudos/resumo-conta', label: 'Resumo da Conta', icon: '🏦' },
-                              { href: '/estudos/metas', label: 'Metas', icon: '🎯' },
+                              // { href: '/estudos/metas', label: 'Metas', icon: '🎯' },
                             ].map((subItem) => (
                               <Link
                                 key={subItem.href}
@@ -505,7 +446,7 @@ export default function Navbar() {
       {/* Menu mobile expandido */}
   <div className={`md:hidden ${isMobileMenuOpen ? 'block' : 'hidden'} bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/60 shadow-lg p-4 mt-4 mx-auto max-w-[94%]`}>
         {/* Seleção de Cliente - Mobile */}
-        <div className="relative mb-4" ref={clienteDropdownRef}>
+  <div className="relative mb-4" ref={clienteDropdownMobileRef}>
           <button
             onClick={() => toggleDropdown('cliente')}
             className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-700 bg-white/80 backdrop-blur-sm rounded-xl border border-slate-200/60 hover:bg-white hover:border-slate-300 transition-all duration-200 shadow-sm w-full"
@@ -521,98 +462,17 @@ export default function Navbar() {
           </button>
           {showDropdown === 'cliente' && (
             <div className="absolute top-full left-0 mt-2 w-full bg-white/95 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-xl z-50 overflow-hidden">
-              {/* Opções de filtro - ocultas para usuários com roles limitados */}
-              {!['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole || '') && (
-                <div className="bg-gradient-to-r from-slate-50 to-slate-100/50 p-3 border-b border-slate-200/40">
-                  <div className="flex space-x-2">
-                    <button
-                      className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                        viewMode === 'todos' 
-                          ? 'bg-blue-500 text-white shadow-md' 
-                          : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm'
-                      }`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleTodosClientesSelect();
-                      }}
-                    >
-                      Todos os Clientes
-                    </button>
-                    <button
-                      className={`flex-1 px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                        viewMode === 'meus' 
-                          ? 'bg-blue-500 text-white shadow-md' 
-                          : 'bg-white/80 text-slate-600 hover:bg-white hover:shadow-sm'
-                      }`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleMeusClientesSelect();
-                      }}
-                    >
-                      {['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole || '') ? 'Minhas Empresas' : 'Meus Clientes'}
-                    </button>
-                  </div>
-                </div>
-              )}
-              
-              <div className="p-3 border-b border-slate-200/40">
-                <div className="relative">
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 pl-10 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    placeholder="🔍 Pesquisar empresa..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onFocus={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                  />
-                  <svg className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-              </div>
-              
-              <div className="max-h-64 overflow-y-auto">
-                {filteredClientes.map((cliente: Cliente) => (
-                  <button
-                    key={cliente.idcliente}
-                    className="w-full px-4 py-3 text-left text-sm text-slate-700 hover:bg-slate-50 transition-colors duration-150 border-b border-slate-100 last:border-b-0"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleClienteSelect(cliente);
-                    }}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span className="font-medium">{cliente.apelido || cliente.nome}</span>
-                    </div>
-                  </button>
-                ))}
-                {filteredClientes.length === 0 && (
-                  <div className="px-4 py-8 text-center text-slate-500">
-                    <svg className="mx-auto w-12 h-12 text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0112 15c-2.34 0-4.29-1.009-5.824-2.562M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <p className="text-sm">
-                      {['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'].includes(userRole || '') 
-                        ? 'Nenhuma empresa vinculada encontrada' 
-                        : viewMode === 'meus' 
-                          ? 'Nenhum cliente vinculado encontrado' 
-                          : 'Nenhum cliente encontrado'
-                      }
-                    </p>
-                  </div>
-                )}
-              </div>
+              <ClienteSelectorPanel
+                userRole={userRole}
+                viewMode={viewMode}
+                setViewMode={(m) => { setViewMode(m); sessionStorage.setItem('viewMode', m); }}
+                clientesAll={(clientes || []) as ClienteItemPanel[]}
+                meusClientes={(meusClientes || []) as ClienteItemPanel[]}
+                onSelectCliente={(c) => { handleClienteSelect(c as unknown as Cliente); }}
+                onSelectTodos={handleTodosClientesSelect}
+                onSelectMeus={handleMeusClientesSelect}
+                compact
+              />
             </div>
           )}
         </div>

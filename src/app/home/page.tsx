@@ -8,10 +8,12 @@ import styles from './page.module.css';
 import { useClienteContext } from "@/context/ClienteContext";
 import { useDashboardResumo } from "@/lib/hooks/useDashboardResumo";
 import { usePermissions } from "@/lib/hooks/usePermissions";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import ExternalDashboard from '@/components/home/ExternalDashboard';
 import { useSession } from "next-auth/react";
 import { useCliente } from "@/lib/hooks/useCliente";
+import { useMeusClientes } from "@/lib/hooks/useMeusClientes";
+import ClienteSelectorPanel, { ClienteItem as ClienteItemPanel } from "@/components/ClienteSelectorPanel";
 
 const font = Poppins({
   subsets: ["latin"],
@@ -95,7 +97,30 @@ const iconMap: { [key: string]: () => JSX.Element } = {
 
 export default function Home() {
   const { userModules, userRole, getRoleDescription, getPermissionStats } = usePermissions();
-  const { idCliente } = useClienteContext();
+  const { idCliente, setIdCliente } = useClienteContext();
+  // Seleção global de empresa: quando não há empresa selecionada, mostramos o seletor
+  // Tipagem mínima de Cliente para este arquivo
+  type ClienteItem = { idcliente: number; apelido?: string | null; nome: string };
+  const rolesLimitados = ['usuario interno (restrito)', 'usuario externo (consulta)', 'usuario externo (financeiro)'];
+  const { clientes: clientesAll = [], isLoading: loadingClientes } = useCliente();
+  const { meusClientes = [], isLoading: loadingMeus } = useMeusClientes();
+  const [viewMode, setViewMode] = useState<'todos' | 'meus'>(() => {
+    if (rolesLimitados.includes(userRole || '')) return 'meus';
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('viewMode') as 'todos' | 'meus' | null;
+      if (saved) return saved;
+    }
+    return 'todos';
+  });
+  useEffect(() => {
+    // Se o role mudar para um limitado, força modo 'meus'
+    if (rolesLimitados.includes(userRole || '')) {
+      setViewMode('meus');
+      if (typeof window !== 'undefined') sessionStorage.setItem('viewMode', 'meus');
+    }
+  }, [userRole]);
+
+  const [searchQuery, setSearchQuery] = useState('');
   const [mes, setMes] = useState<string>(() => String(new Date().getMonth() + 1).padStart(2, '0'));
   const [ano, setAno] = useState<string>(() => String(new Date().getFullYear()));
   const { resumo, isLoading } = useDashboardResumo(idCliente ?? undefined, mes, ano);
@@ -105,9 +130,12 @@ export default function Home() {
   const isAdminOrInterno = roleLc === 'administrador' || roleLc === 'usuario interno';
   // Somente passa ID válido (evita -1 "Meus" e 68 "Todos")
   const idClienteValido = typeof idCliente === 'number' && idCliente > 0 && idCliente !== 68 ? idCliente : undefined;
-  const { cliente } = useCliente(idClienteValido);
-  // Fallback para nome via sessionStorage caso ainda não tenha carregado o cliente pelo ID
-  let nomeEmpresa = cliente?.apelido || cliente?.nome || '';
+  // Deriva nomeEmpresa sem disparar fetch de cliente quando não houver ID (evita pegar o primeiro cliente por engano)
+  let nomeEmpresa = '';
+  if (idClienteValido) {
+    const found = (clientesAll as any[])?.find((c) => c.idcliente === idClienteValido);
+    nomeEmpresa = found?.apelido || found?.nome || '';
+  }
   if (!nomeEmpresa && typeof window !== 'undefined') {
     try {
       const saved = sessionStorage.getItem('selectedCliente');
@@ -115,10 +143,31 @@ export default function Home() {
         const parsed = JSON.parse(saved);
         if (parsed?.nome) nomeEmpresa = parsed.nome;
       }
-    } catch { }
+    } catch {}
   }
   const { data: session } = useSession();
   const firstName = session?.user?.name?.split(' ')[0] || '';
+
+  const handleClienteSelect = (clienteSel: ClienteItem) => {
+    const nome = clienteSel.apelido || clienteSel.nome;
+    sessionStorage.setItem('selectedCliente', JSON.stringify({ id: clienteSel.idcliente, nome }));
+    // Como o Navbar, grava viewMode atual
+    sessionStorage.setItem('viewMode', viewMode);
+    // Atualiza contexto global imediatamente
+    setIdCliente(clienteSel.idcliente);
+  };
+
+  const handleTodosClientes = () => {
+    sessionStorage.setItem('selectedCliente', JSON.stringify({ id: 68, nome: 'Todos Clientes' }));
+    sessionStorage.setItem('viewMode', 'todos');
+    setIdCliente(68);
+  };
+  const handleMeusClientes = () => {
+    const label = userRole === 'usuario' ? 'Minhas Empresas' : 'Meus Clientes';
+    sessionStorage.setItem('selectedCliente', JSON.stringify({ id: -1, nome: label }));
+    sessionStorage.setItem('viewMode', 'meus');
+    setIdCliente(-1);
+  };
 
   // Utils
   const formatCurrency = (val?: number | null) =>
@@ -145,7 +194,7 @@ export default function Home() {
         <Navbar />
       </div>
 
-      <div className={`${font.className} ${styles.container} bg-slate-50`}>
+  <div className={`${font.className} ${styles.container} bg-slate-50`}>
         {/* Header Section - versão normal para roles internos e compacta para usuário externo */}
         <div className={styles.header}>
           <div className={isUsuarioExterno ? styles.headerContentCompact : styles.headerContent}>
@@ -189,7 +238,30 @@ export default function Home() {
               </span>
             )}
           </div>
-          {isUsuarioExterno && (
+
+          {/* Seletor de empresa posicionado abaixo do "Bem-vindo" e acima das Ações Rápidas */}
+          {!nomeEmpresa && (
+            <div className="mb-8 bg-white border border-slate-200 rounded-2xl shadow-sm">
+              <div className="p-5">
+                <h2 className="text-lg font-semibold text-slate-800">Selecione uma empresa para começar</h2>
+                <p className="text-sm text-slate-600 mt-1">Sua escolha ficará salva e valerá para todo o sistema.</p>
+              </div>
+              <div className="p-5 pt-0">
+                <ClienteSelectorPanel
+                  userRole={userRole}
+                  viewMode={viewMode}
+                  setViewMode={(m) => { setViewMode(m); sessionStorage.setItem('viewMode', m); }}
+                  clientesAll={clientesAll as ClienteItemPanel[]}
+                  meusClientes={meusClientes as ClienteItemPanel[]}
+                  onSelectCliente={(c) => handleClienteSelect(c as unknown as ClienteItem)}
+                  onSelectTodos={handleTodosClientes}
+                  onSelectMeus={handleMeusClientes}
+                  compact={false}
+                />
+              </div>
+            </div>
+          )}
+          {isUsuarioExterno && idClienteValido && (
             <ExternalDashboard
               idCliente={idCliente}
               nomeEmpresa={nomeEmpresa}

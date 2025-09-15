@@ -8,7 +8,9 @@ export interface Extrato {
     idFornecedor?: number | null;
     idCategoria?: number | null;
     rubricaContabil?: string | null;
-    observacao?: string | null;
+  // Backend column name is DESCRICAO; keep both for compatibility with UI
+  descricao?: string | null;
+  observacao?: string | null;
     ordem?: number | null;
     extratoAnexo?: string | null;
     idSubextrato?: number | null;
