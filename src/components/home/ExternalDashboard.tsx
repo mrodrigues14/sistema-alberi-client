@@ -30,6 +30,11 @@ export const ExternalDashboard: React.FC<ExternalDashboardProps> = ({
 	palette,
 	Icons,
 }) => {
+	// Cálculo local do saldo previsto
+	const entradasPrevistas = Number(resumo?.totalEntradasPrevistas || 0);
+	const saidasPrevistas = Number(resumo?.totalSaidasPrevistas || 0);
+	const saldoMes = Number(resumo?.saldoMes || 0);
+	const saldoPrevisto = saldoMes + entradasPrevistas - saidasPrevistas;
 	return (
 		<div className={styles.section}>
 			<div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-4">
@@ -85,6 +90,16 @@ export const ExternalDashboard: React.FC<ExternalDashboardProps> = ({
 							</div>
 						</div>
 					</div>
+					<div className={styles.statsCard}>
+						<div className={styles.statsContent}>
+							<div className={`${styles.statsIcon} ${styles.blueIcon}`}><Icons.balance /></div>
+							<div>
+								<p className={styles.statsLabel}>Saldo da Conta</p>
+								<p className={`${styles.statsValue} ${Number(resumo?.saldoConta) < 0 ? 'text-red-600' : 'text-gray-900'}`}>{formatCurrency(resumo?.saldoConta)}</p>
+								<span className="text-[11px] mt-1 text-indigo-500 block">sem previstos</span>
+							</div>
+						</div>
+					</div>
 				</div>
 			)}
 			{idCliente && (
@@ -98,9 +113,9 @@ export const ExternalDashboard: React.FC<ExternalDashboardProps> = ({
 						<span className="text-rose-900 text-lg font-semibold">{formatCurrency(resumo?.totalSaidasPrevistas)}</span>
 					</div>
 					<div className="rounded-xl border border-dashed border-indigo-300 bg-indigo-50 px-4 py-3 flex flex-col">
-						<span className="font-medium text-indigo-700">Saldo da Conta (sem previstos)</span>
-						<span className={`text-lg font-semibold ${Number(resumo?.saldoConta) < 0 ? 'text-red-600' : 'text-indigo-900'}`}>{formatCurrency(resumo?.saldoConta)}</span>
-						<span className="text-[11px] mt-1 text-indigo-500">= Saldo Inicial + Entradas - Saídas</span>
+						<span className="font-medium text-indigo-700">Saldo Previsto</span>
+						<span className={`text-lg font-semibold ${saldoPrevisto < 0 ? 'text-red-600' : 'text-indigo-900'}`}>{formatCurrency(saldoPrevisto)}</span>
+						<span className="text-[11px] mt-1 text-indigo-500">= Saldo do Mês + Entradas Previstas - Saídas Previstas</span>
 					</div>
 				</div>
 			)}

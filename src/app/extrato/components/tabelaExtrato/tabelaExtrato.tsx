@@ -333,15 +333,17 @@ const TabelaExtrato: React.FC<Props> = ({
   };
 
   useEffect(() => {
-    let saldoAcumulado = saldoInicial ?? 0;
+    // Calcula o saldo final do mês ignorando lançamentos futuros
+    let saldoCalculado = saldoInicial ?? 0;
 
     dados.forEach((row) => {
-      const entrada = row.entrada ? parseFloat(row.entrada.replace(/\D/g, "")) / 100 : 0;
-      const saida = row.saida ? parseFloat(row.saida.replace(/\D/g, "")) / 100 : 0;
-      saldoAcumulado += entrada - saida;
+      if (row?.lancamentoFuturo) return; // ignora lançamentos futuros no cálculo
+      const entrada = row.entrada ? parseFloat(String(row.entrada).replace(/\D/g, "")) / 100 : 0;
+      const saida = row.saida ? parseFloat(String(row.saida).replace(/\D/g, "")) / 100 : 0;
+      saldoCalculado += entrada - saida;
     });
 
-    setSaldoFinal(saldoAcumulado);
+    setSaldoFinal(saldoCalculado);
     setPaginaCarregada(true);
 
   }, [dados, saldoInicial]);
@@ -657,7 +659,10 @@ const TabelaExtrato: React.FC<Props> = ({
               const subextratosDoExtrato = subextratos?.filter(
                 (s) => s.idExtratoPrincipal === row.id
               );
-              saldoAcumulado = saldoAcumulado + entrada - saida;
+              // Atualiza o saldo acumulado exibido, ignorando lançamentos futuros
+              if (!row?.lancamentoFuturo) {
+                saldoAcumulado = saldoAcumulado + entrada - saida;
+              }
               const isEditando = editandoLote
                 ? selecionados.includes(row.id)
                 : editIndex === index;
