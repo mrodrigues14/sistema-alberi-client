@@ -1,10 +1,10 @@
 
-import React, { useState } from 'react'
-import {Calculator, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, CreditCard, Banknote, PieChart} from 'lucide-react'
+import { useState } from 'react'
+import {Calculator, TrendingUp, TrendingDown, AlertTriangle, CheckCircle, Banknote, PieChart} from 'lucide-react'
 
 const Modulo2 = () => {
   const [activeTab, setActiveTab] = useState(0)
-  const [extratoData, setExtratoData] = useState({
+  const [extratoData] = useState({
     saldoInicial: 50000,
     entradas: [
       { data: '01/12', descricao: 'PIX Recebido - Cliente A', valor: 15000, categoria: 'Vendas' },
@@ -39,8 +39,8 @@ const Modulo2 = () => {
   }
 
   const categorizarMovimentacoes = () => {
-    const categoriasEntrada = {}
-    const categoriasSaida = {}
+    const categoriasEntrada: Record<string, number> = {}
+    const categoriasSaida: Record<string, number> = {}
 
     extratoData.entradas.forEach(item => {
       categoriasEntrada[item.categoria] = (categoriasEntrada[item.categoria] || 0) + item.valor
