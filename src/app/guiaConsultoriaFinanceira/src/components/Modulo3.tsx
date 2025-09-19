@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react'
-import {FileText, Building2, Calculator, AlertTriangle, CheckCircle, Users, TrendingUp, Shield, BookOpen, Target, DollarSign, BarChart3} from 'lucide-react'
+/* eslint-disable react/no-unescaped-entities */
+import { useState } from 'react'
+import {FileText, Building2, Calculator, AlertTriangle, CheckCircle, Users, BookOpen, BarChart3} from 'lucide-react'
 
 const Modulo3 = () => {
   const [activeTab, setActiveTab] = useState(0)

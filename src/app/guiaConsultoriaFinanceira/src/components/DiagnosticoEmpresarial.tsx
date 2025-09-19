@@ -1,6 +1,6 @@
-
-import React, { useState } from 'react'
-import {Building2, Search, Heart, MapPin, Star, Users, Globe, CheckCircle, AlertTriangle, Lightbulb, Target} from 'lucide-react'
+/* eslint-disable react/no-unescaped-entities */
+import {Building2, Search, Heart, MapPin, Star, CheckCircle} from 'lucide-react'
+import { useState } from 'react'
 
 const DiagnosticoEmpresarial = () => {
   const [activeSection, setActiveSection] = useState(0)
