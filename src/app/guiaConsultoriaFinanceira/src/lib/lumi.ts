@@ -1,9 +1,4 @@
-
-import { createClient } from '@lumi.new/sdk'
-
-export const lumi = createClient({
-  projectId: 'p358685013183488000',
-  apiBaseUrl: 'https://api.lumi.new',
-  authOrigin: 'https://auth.lumi.new',
-})
+// Arquivo neutralizado: SDK Lumi removido do build por ausência do pacote '@lumi.new/sdk'.
+// Caso seja necessário reativar, instalar dependência e restaurar criação do cliente.
+export const lumi = null as any;
 
