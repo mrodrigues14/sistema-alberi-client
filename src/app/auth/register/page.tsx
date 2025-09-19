@@ -48,6 +48,7 @@ export default function Register() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [role, setRole] = useState('usuario');
     const [passwordError, setPasswordError] = useState('');
     const [cpfError, setCpfError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
@@ -86,11 +87,12 @@ export default function Register() {
         setCpfError('');
         setSuccessMessage('');
     
-        const userData = {
+        const userData: any = {
             nome: fullName,
-            cpf: cpfLimpo, 
+            cpf: cpfLimpo,
             password: password,
-            email: email
+            email: email,
+            role: role === 'alunoCurso' ? 'alunoCurso' : role
         };
 
 
@@ -143,6 +145,24 @@ export default function Register() {
                                 onChange={(e) => setFullName(e.target.value)}
                                 required
                             />
+                        </div>
+                        <div className="mb-4">
+                            <label htmlFor="role" className="block text-gray-700">
+                                Perfil
+                            </label>
+                            <select
+                                id="role"
+                                className="mt-1 p-2 w-full border border-gray-300 rounded"
+                                value={role}
+                                onChange={(e) => setRole(e.target.value)}
+                            >
+                                <option value="administrador">Administrador - Acesso total ao sistema</option>
+                                <option value="usuario interno">Usuário Interno - Acesso operacional aos módulos principais</option>
+                                <option value="usuario interno (restrito)">Usuário Interno (Restrito) - Acesso limitado a módulos essenciais</option>
+                                <option value="usuario externo (consulta)">Usuário Externo (Consulta) - Acesso de visualização a estudos e extratos</option>
+                                <option value="usuario externo (financeiro)">Usuário Externo (Financeiro) - Acesso financeiro</option>
+                                <option value="alunoCurso">Aluno Curso - Acesso exclusivo ao guia de consultoria financeira</option>
+                            </select>
                         </div>
                         <div className="mb-4">
                             <label htmlFor="cpf" className="block text-gray-700">

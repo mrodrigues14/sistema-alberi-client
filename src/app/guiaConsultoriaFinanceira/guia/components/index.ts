@@ -1,0 +1,12 @@
+export { default as Modulo1 } from '../../src/components/Modulo1';
+export { default as Modulo3 } from '../../src/components/Modulo3';
+export { default as Modulo4 } from '../../src/components/Modulo4';
+export { default as Modulo5 } from '../../src/components/Modulo5';
+export { default as DiagnosticoFinanceiro } from '../../src/components/DiagnosticoFinanceiro';
+export { default as DiagnosticoEmpresarial } from '../../src/components/DiagnosticoEmpresarial';
+export { default as FluxoCaixaEmpresarial } from '../../src/components/FluxoCaixaEmpresarial';
+export { default as OrcamentoPessoal } from '../../src/components/OrcamentoPessoal';
+export { default as Capa } from '../../src/components/Capa';
+export { default as CapaPF } from '../../src/components/CapaPF';
+export { default as CapaPJ } from '../../src/components/CapaPJ';
+export { default as Conclusao } from '../../src/components/Conclusao';

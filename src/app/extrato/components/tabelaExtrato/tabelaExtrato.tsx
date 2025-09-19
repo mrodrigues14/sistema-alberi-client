@@ -62,6 +62,8 @@ const TabelaExtrato: React.FC<Props> = ({
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>({});
+  // Indices (na lista renderizada) das linhas que formam o bloco sendo arrastado em modo multi-seleção
+  const dragBlockIndices = useRef<number[] | null>(null);
   const [ordem, setOrdem] = useState<{ coluna: string; direcao: "asc" | "desc" } | null>(null);
   const [dadosOrdenados, setDadosOrdenados] = useState<any[]>([]);
   const [filtroRubricas, setFiltroRubricas] = useState<string[]>([]);
@@ -153,9 +155,15 @@ const TabelaExtrato: React.FC<Props> = ({
   const handleSave = async (index: number) => {
     try {
       const row = dados[index];
-
+      const normalizeLabel = (s: string | undefined) => (s || '')
+        .replace(/^\s*└\s*/, '') // remove prefixo visual
+        .normalize('NFD') // remove acentos
+        .replace(/\p{Diacritic}/gu, '')
+        .replace(/[^\p{L}\p{N}]+/gu, '')
+        .toLowerCase()
+        .trim();
       const categoriaSelecionada = categoriasFormatadas.find(
-        (opt) => opt.label === editData.rubricaSelecionada
+        (opt) => normalizeLabel(opt.label) === normalizeLabel(editData.rubricaSelecionada)
       );
       const fornecedorSelecionado = fornecedoresFormatados.find(
         (opt) => opt.label === editData.fornecedorSelecionado
@@ -165,7 +173,7 @@ const TabelaExtrato: React.FC<Props> = ({
         data: formatarDataParaISO(editData.data),
         nomeNoExtrato: editData.nomeNoExtrato,
         rubricaContabil: editData.rubricaContabil,
-  descricao: editData.observacao,
+        descricao: editData.observacao,
         idCategoria: categoriaSelecionada?.value ?? null,
         idFornecedor: fornecedorSelecionado?.value ?? null,
         tipoDeTransacao: editData.entrada ? "ENTRADA" : "SAIDA",
@@ -366,9 +374,9 @@ const TabelaExtrato: React.FC<Props> = ({
               "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
             ].indexOf(proximo.mes) + 1
           ).padStart(2, "0");
-  
+
           const mesAno = `${proximo.ano}-${mesNumero}`;
-  
+
           await upsertSaldoInicial({
             idCliente,
             idBanco: bancoSelecionado,
@@ -376,7 +384,7 @@ const TabelaExtrato: React.FC<Props> = ({
             saldo: saldoFinal,
             definidoManualmente: false,
           });
-  
+
           ultimoSaldoRef.current = saldoFinal;
           mutateSaldoMesSeguinte();
         } catch (err) {
@@ -386,7 +394,7 @@ const TabelaExtrato: React.FC<Props> = ({
         }
       }
     };
-  
+
     atualizarSaldoMesSeguinte();
   }, [
     saldoFinal,
@@ -399,7 +407,7 @@ const TabelaExtrato: React.FC<Props> = ({
     paginaCarregada,
     mutateSaldoMesSeguinte,
   ]);
-  
+
 
 
   useEffect(() => {
@@ -462,8 +470,14 @@ const TabelaExtrato: React.FC<Props> = ({
                   const promises = selecionados.map(async (id) => {
                     const edit = dadosEditadosLote[id];
                     if (!edit) return;
-
-                    const categoriaSelecionada = categoriasFormatadas.find(opt => opt.label === edit.rubricaSelecionada);
+                    const normalizeLabel = (s: string | undefined) => (s || '')
+                      .replace(/^\s*└\s*/, '')
+                      .normalize('NFD')
+                      .replace(/\p{Diacritic}/gu, '')
+                      .replace(/[^\p{L}\p{N}]+/gu, '')
+                      .toLowerCase()
+                      .trim();
+                    const categoriaSelecionada = categoriasFormatadas.find(opt => normalizeLabel(opt.label) === normalizeLabel(edit.rubricaSelecionada));
                     const fornecedorSelecionado = fornecedoresFormatados.find(opt => opt.label === edit.fornecedorSelecionado);
 
                     await updateExtrato(id, {
@@ -632,7 +646,7 @@ const TabelaExtrato: React.FC<Props> = ({
 
 
         {/* Tabela */}
-    <table className="table-auto w-full border-collapse border border-gray-300 text-sm">
+        <table className="table-auto w-full border-collapse border border-gray-300 text-sm">
           <thead>
             <tr className="bg-blue-700 text-white">
               <th className="border px-2 py-2 w-8"></th>
@@ -658,10 +672,7 @@ const TabelaExtrato: React.FC<Props> = ({
               const subextratosDoExtrato = subextratos?.filter(
                 (s) => s.idExtratoPrincipal === row.id
               );
-              // Atualiza o saldo acumulado exibido, ignorando lançamentos futuros
-              if (!row?.lancamentoFuturo) {
-                saldoAcumulado = saldoAcumulado + entrada - saida;
-              }
+              saldoAcumulado = saldoAcumulado + entrada - saida;
               const isEditando = editandoLote
                 ? selecionados.includes(row.id)
                 : editIndex === index;
@@ -679,21 +690,34 @@ const TabelaExtrato: React.FC<Props> = ({
                   )}
 
                   <tr
-                    className={`transition-all duration-200 ease-out ${
-                      selecionados.includes(row.id)
+                    className={`transition-all duration-200 ease-out ${selecionados.includes(row.id)
                         ? "bg-green-200 border-2 border-green-600 shadow-md"
                         : row.lancamentoFuturo
-                        ? "bg-red-100 border border-red-300 ring-2 ring-red-300"
-                        : "odd:bg-white even:bg-gray-100 hover:bg-gray-50"
-                    } ${dragIndex === index ? "opacity-70 bg-blue-50 scale-[0.995] shadow-md" : (dragOverIndex.current === index ? "ring-2 ring-blue-400" : "")}`}
+                          ? "bg-red-100 border border-red-300 ring-2 ring-red-300"
+                          : "odd:bg-white even:bg-gray-100 hover:bg-gray-50"
+                      } ${dragIndex === index ? "opacity-70 bg-blue-50 scale-[0.995] shadow-md" : (dragOverIndex.current === index ? "ring-2 ring-blue-400" : "")}`}
                     draggable
-                    onDragStart={() => setDragIndex(index)}
+                    onDragStart={() => {
+                      if (selecionados.includes(row.id)) {
+                        const indicesBloco = dadosOrdenados
+                          .map((r, i) => ({ id: r.id, i }))
+                          .filter(({ id }) => selecionados.includes(id))
+                          .map(o => o.i)
+                          .sort((a, b) => a - b);
+                        dragBlockIndices.current = indicesBloco;
+                        setDragIndex(index);
+                      } else {
+                        dragBlockIndices.current = null;
+                        setDragIndex(index);
+                      }
+                    }}
                     onDragOver={(e) => {
                       e.preventDefault();
+                      if (dragBlockIndices.current && dragBlockIndices.current.includes(index)) {
+                        return;
+                      }
                       dragOverIndex.current = index;
-                      try {
-                        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-                      } catch {}
+                      try { if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; } catch { }
                       const rect = (e.currentTarget as HTMLTableRowElement).getBoundingClientRect();
                       const offsetY = e.clientY - rect.top;
                       const insertPos = offsetY < rect.height / 2 ? index : index + 1;
@@ -707,16 +731,36 @@ const TabelaExtrato: React.FC<Props> = ({
                     onDrop={async (e) => {
                       e.preventDefault();
                       if (dragIndex === null || insertIndex === null) return;
-                      const list = [...dadosOrdenados];
-                      const [moved] = list.splice(dragIndex, 1);
-                      const targetIndex = insertIndex > dragIndex ? insertIndex - 1 : insertIndex;
-                      list.splice(targetIndex, 0, moved);
-                      setDadosOrdenados(list);
 
-                      // Persistir ordem: ordem sequencial 1..N
+                      const list = [...dadosOrdenados];
+                      let novaLista: any[] = [];
+
+                      if (dragBlockIndices.current && dragBlockIndices.current.length > 1) {
+                        const indices = [...dragBlockIndices.current].sort((a, b) => b - a);
+                        const bloco: any[] = [];
+                        for (const iRem of indices) {
+                          const [rem] = list.splice(iRem, 1);
+                          bloco.unshift(rem); 
+                        }
+                        let targetIndex = insertIndex;
+                        const removedBefore = indices.filter(i => i < insertIndex).length;
+                        targetIndex -= removedBefore;
+                        if (targetIndex < 0) targetIndex = 0;
+                        if (targetIndex > list.length) targetIndex = list.length;
+                        list.splice(targetIndex, 0, ...bloco);
+                        novaLista = list;
+                      } else {
+                        const [moved] = list.splice(dragIndex, 1);
+                        const targetIndex = insertIndex > dragIndex ? insertIndex - 1 : insertIndex;
+                        list.splice(targetIndex, 0, moved);
+                        novaLista = list;
+                      }
+
+                      setDadosOrdenados(novaLista);
+
                       try {
                         setIsSavingOrder(true);
-                        const ordens = list.map((item, i) => ({ idextrato: item.id, ordem: i + 1 }));
+                        const ordens = novaLista.map((item, i) => ({ idextrato: item.id, ordem: i + 1 }));
                         await reorderExtratos(ordens);
                         onAtualizarExtratos();
                       } catch (err) {
@@ -728,6 +772,7 @@ const TabelaExtrato: React.FC<Props> = ({
 
                       setDragIndex(null);
                       dragOverIndex.current = null;
+                      dragBlockIndices.current = null;
                       setInsertIndex(null);
                     }}
                   >
@@ -742,7 +787,7 @@ const TabelaExtrato: React.FC<Props> = ({
                           type="text"
                           value={editData.data}
                           onChange={(e) => handleChange(e, "data")}
-                          className="w-28 border px-2 py-1" // largura fixa
+                          className="w-28 border px-2 py-1" 
                         />
                       ) : (
                         row.data
@@ -754,8 +799,27 @@ const TabelaExtrato: React.FC<Props> = ({
                         <CustomDropdown
                           label="Selecione uma rubrica"
                           options={categoriasFormatadas}
-                          selectedValue={categoriasFormatadas.find(opt => opt.label === editData.rubricaSelecionada) || { label: "", value: "" }}
-                          onSelect={(value) => handleChange({ target: { value: value.label } } as any, "rubricaSelecionada")}
+                          selectedValue={(() => {
+                            if (editData?.idCategoriaSelecionada) {
+                              const byId = categoriasFormatadas.find(opt => opt.value === editData.idCategoriaSelecionada);
+                              if (byId) return byId;
+                            }
+                            const norm = (s: string) => s
+                              .replace(/^\s*└\s*/, '')
+                              .normalize('NFD')
+                              .replace(/\p{Diacritic}/gu, '')
+                              .replace(/[^\p{L}\p{N}]+/gu, '')
+                              .toLowerCase()
+                              .trim();
+                            const alvo = norm(editData.rubricaSelecionada || '');
+                            let found = categoriasFormatadas.find(opt => norm(opt.label) === alvo);
+                            if (!found && alvo) found = categoriasFormatadas.find(opt => norm(opt.label).includes(alvo));
+                            return found || { label: '', value: '' };
+                          })()}
+                          onSelect={(value) => {
+                            handleChange({ target: { value: value.label } } as any, 'rubricaSelecionada');
+                            setEditData((prev: any) => ({ ...prev, idCategoriaSelecionada: value.value }));
+                          }}
                           type="rubrica"
                         />
 
@@ -1173,7 +1237,7 @@ const TabelaExtrato: React.FC<Props> = ({
 
               );
             })}
-            
+
           </tbody>
         </table>
         {anexosVisiveis && extratoSelecionado !== null && (
@@ -1198,7 +1262,7 @@ const TabelaExtrato: React.FC<Props> = ({
         )}
       </div>
 
-      
+
     </div>
   );
 };

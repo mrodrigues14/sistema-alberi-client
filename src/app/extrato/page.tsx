@@ -60,7 +60,6 @@ const Extrato: React.FC = () => {
         shouldFetchData ? mesSelecionado : undefined,
         shouldFetchData ? anoSelecionado : undefined
     );
-
     const { subextratos, isLoading, isError, mutate: mutateSubextratos } = useSubextratos();
 
     const { saldoInicial, definidoManualmente, isLoading: loadingSaldo } = useSaldoInicial(
@@ -131,9 +130,9 @@ const Extrato: React.FC = () => {
         try {
             if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
                 const bankHint = nomeBancoSelecionado?.toLowerCase().includes('itau') ? 'itau'
-                  : nomeBancoSelecionado?.toLowerCase().includes('brasil') ? 'bb'
-                  : nomeBancoSelecionado?.toLowerCase().includes('infinit') ? 'infinitpay'
-                  : undefined;
+                    : nomeBancoSelecionado?.toLowerCase().includes('brasil') ? 'bb'
+                        : nomeBancoSelecionado?.toLowerCase().includes('infinit') ? 'infinitpay'
+                            : undefined;
                 const result = await parsePdfToPreview(file, bankHint);
                 setDados(result.linhas);
                 setMostrarPreview(true);
@@ -645,8 +644,8 @@ const Extrato: React.FC = () => {
                                             const nameLower = (nomeBancoSelecionado || '').toLowerCase();
                                             const bankId = nameLower.includes('itau') ? 'itau'
                                                 : nameLower.includes('brasil') ? 'bb'
-                                                : nameLower.includes('infinite') ? 'infinitepay'
-                                                : undefined;
+                                                    : nameLower.includes('infinite') ? 'infinitepay'
+                                                        : undefined;
                                             console.log('[UI] automatic-upload:bankHint', { nomeBancoSelecionado, bankId });
                                             const result = await parsePdfToPreview(file, bankId);
                                             console.log('[UI] automatic-upload:parseResult', { linhas: result.linhas.length, warnings: result.warnings });
@@ -683,41 +682,34 @@ const Extrato: React.FC = () => {
 
                 {/* Resumo financeiro visível no topo */}
                 {shouldFetchData && (
-                    <div className={styles.summaryWrapper}>
-                        <div className={styles.summaryGrid}>
-                            <div className={`${styles.summaryCard} ${styles.cardInicial}`}>
-                                <span className={styles.summaryLabel}>Saldo inicial</span>
-                                <strong className={styles.summaryValue}>
-                                    {Number(saldoInicial || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </strong>
-                            </div>
-
-                            <div className={`${styles.summaryCard} ${styles.cardReceber}`}>
-                                <span className={styles.summaryLabel}>A receber</span>
-                                <strong className={`${styles.summaryValue} ${styles.positivo}`}>
-                                    {totalReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </strong>
-                            </div>
-
-                            <div className={`${styles.summaryCard} ${styles.cardPagar}`}>
-                                <span className={styles.summaryLabel}>A pagar</span>
-                                <strong className={`${styles.summaryValue} ${totalPagar > 0 ? styles.negativo : ''}`}>
-                                    {totalPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </strong>
-                            </div>
-
-                            <div className={`${styles.summaryCard} ${styles.cardAtual}`}>
-                                <span className={styles.summaryLabel}>Saldo atual</span>
-                                <strong className={styles.summaryValue}>
-                                    {saldoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </strong>
-                            </div>
-
-                            <div className={`${styles.summaryCard} ${styles.cardPrev} ${styles.spanLg2}`}>
-                                <span className={styles.summaryLabel}>Saldo com previsões</span>
-                                <strong className={styles.summaryValue}>
-                                    {saldoComPrevisoes.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </strong>
+                    <div className="mt-6 mb-4">
+                        <div className="max-w-[1520px] mx-auto px-2">
+                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-5">
+                                {/* Saldo inicial */}
+                                <div className="relative overflow-hidden rounded-xl bg-white/80 backdrop-blur border border-slate-200 shadow-sm p-4 flex flex-col">
+                                    <span className="text-xs uppercase tracking-wide font-semibold text-slate-500 mb-1">Saldo inicial</span>
+                                    <span className="text-lg font-bold text-slate-800">{Number(saldoInicial || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
+                                {/* A receber */}
+                                <div className="relative overflow-hidden rounded-xl bg-white/80 backdrop-blur border border-emerald-200 shadow-sm p-4 flex flex-col">
+                                    <span className="text-xs uppercase tracking-wide font-semibold text-emerald-600 mb-1">A receber</span>
+                                    <span className="text-lg font-bold text-emerald-600">{totalReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
+                                {/* A pagar */}
+                                <div className="relative overflow-hidden rounded-xl bg-white/80 backdrop-blur border border-rose-200 shadow-sm p-4 flex flex-col">
+                                    <span className="text-xs uppercase tracking-wide font-semibold text-rose-600 mb-1">A pagar</span>
+                                    <span className="text-lg font-bold text-rose-600">{totalPagar.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
+                                {/* Saldo atual (sem previsões) */}
+                                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-50 via-white to-white border border-indigo-200 shadow-sm p-4 flex flex-col">
+                                    <span className="text-[11px] uppercase tracking-wide font-semibold text-indigo-600 mb-1">Saldo atual (sem previsões)</span>
+                                    <span className="text-lg font-bold text-indigo-700">{saldoAtual.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
+                                {/* Saldo atual (com previsões) */}
+                                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-violet-50 via-white to-white border border-violet-200 shadow-sm p-4 flex flex-col xl:col-span-1 col-span-1">
+                                    <span className="text-[11px] uppercase tracking-wide font-semibold text-violet-600 mb-1">Saldo Futuro (com previsões)</span>
+                                    <span className="text-lg font-bold text-violet-700">{saldoComPrevisoes.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -262,7 +262,8 @@ export const AVAILABLE_ROLES = [
   'usuario interno',
   'usuario interno (restrito)',
   'usuario externo (consulta)',
-  'usuario externo (financeiro)'
+  'usuario externo (financeiro)',
+  'alunoCurso'
 ];
 
 // Descrições dos roles
@@ -271,5 +272,6 @@ export const ROLE_DESCRIPTIONS = {
   'usuario interno': 'Usuário Interno - Acesso operacional aos módulos principais',
   'usuario interno (restrito)': 'Usuário Interno (Restrito) - Acesso limitado a módulos essenciais',
   'usuario externo (consulta)': 'Usuário Externo (Consulta) - Acesso de visualização a estudos e extratos',
-  'usuario externo (financeiro)': 'Usuário Externo (Financeiro) - Acesso financeiro'
+  'usuario externo (financeiro)': 'Usuário Externo (Financeiro) - Acesso financeiro',
+  'alunoCurso': 'Aluno Curso - Acesso exclusivo ao guia de consultoria financeira'
 };

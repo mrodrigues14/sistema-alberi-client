@@ -23,6 +23,7 @@ export function useExtratos(idCliente?: number, idBanco?: number, mes?: string, 
 
   if (idCliente && idBanco) {
     query = `/extratos/cliente/${idCliente}/banco/${idBanco}`;
+    console.log(query)
     if (mesNumero && ano) {
       query += `?mes=${mesNumero}&ano=${ano}`;
     }

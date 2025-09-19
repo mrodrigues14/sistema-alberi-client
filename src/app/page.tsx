@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Poppins } from "next/font/google";
 import { useState, useEffect } from "react";
-import { signIn } from "next-auth/react";
+import { signIn, useSession, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 const font = Poppins({
@@ -19,6 +19,19 @@ export default function Login() {
   const [loginError, setLoginError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const { data: session, status } = useSession();
+
+  // Se já autenticado, envia direto conforme role
+  useEffect(() => {
+    if (status === "authenticated") {
+      if (session?.user?.role === "alunoCurso") {
+        router.replace("/guiaConsultoriaFinanceira");
+      } else {
+        // Evita ficar preso na tela de login se já logado
+        router.replace("/home");
+      }
+    }
+  }, [status, session, router]);
 
   const isValidCPF = (cpf: string) => {
     cpf = cpf.replace(/[^\d]+/g, "");
@@ -46,15 +59,17 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const result = await signIn("credentials", {
-        redirect: false,
-        cpf,
-        senha,
-      });
+      const result = await signIn("credentials", { redirect: false, cpf, senha });
       if (result?.error) {
         setLoginError(result.error);
       } else {
-        router.push("/home");
+        // Obtém sessão atualizada para checar a role
+        const currentSession = await getSession();
+        if (currentSession?.user?.role === "alunoCurso") {
+          router.push("/guiaConsultoriaFinanceira");
+        } else {
+          router.push("/home");
+        }
       }
     } catch (error: any) {
       console.error("Erro ao fazer login:", error);

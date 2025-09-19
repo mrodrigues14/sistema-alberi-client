@@ -1,0 +1,1607 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guia de Consultoria Financeira - Apostila</title>
+    <style>
+        /* Reset e configurações básicas */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Configurações para impressão */
+        @page {
+            size: A4;
+            margin: 2cm 1.5cm;
+        }
+
+        @media print {
+            body {
+                font-size: 11pt;
+                line-height: 1.4;
+            }
+            
+            .page-break {
+                page-break-before: always;
+            }
+            
+            .no-print {
+                display: none;
+            }
+            
+            h1, h2 {
+                page-break-after: avoid;
+            }
+            
+            .section {
+                page-break-inside: avoid;
+                margin-bottom: 1cm;
+            }
+        }
+
+        /* Estilos gerais */
+        body {
+            font-family: 'Arial', sans-serif;
+            color: #333;
+            background: white;
+        }
+
+        /* Capa */
+        .cover {
+            text-align: center;
+            padding: 3cm 0;
+            page-break-after: always;
+        }
+
+        .cover h1 {
+            font-size: 2.5em;
+            color: #2563eb;
+            margin-bottom: 1cm;
+            font-weight: bold;
+        }
+
+        .cover .subtitle {
+            font-size: 1.2em;
+            color: #666;
+            margin-bottom: 2cm;
+        }
+
+        .cover .author {
+            font-size: 1.1em;
+            color: #333;
+            margin-top: 2cm;
+        }
+
+        /* Índice */
+        .toc {
+            page-break-after: always;
+            padding: 1cm 0;
+        }
+
+        .toc h2 {
+            color: #2563eb;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 0.5cm;
+            margin-bottom: 1cm;
+        }
+
+        .toc-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.3cm 0;
+            border-bottom: 1px dotted #ccc;
+        }
+
+        .toc-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Títulos */
+        h1 {
+            color: #2563eb;
+            font-size: 1.8em;
+            margin: 1.5cm 0 1cm 0;
+            border-bottom: 2px solid #2563eb;
+            padding-bottom: 0.3cm;
+        }
+
+        h2 {
+            color: #1e40af;
+            font-size: 1.4em;
+            margin: 1cm 0 0.5cm 0;
+        }
+
+        h3 {
+            color: #1e3a8a;
+            font-size: 1.2em;
+            margin: 0.8cm 0 0.4cm 0;
+        }
+
+        h4 {
+            color: #1e40af;
+            font-size: 1.1em;
+            margin: 0.6cm 0 0.3cm 0;
+        }
+
+        /* Parágrafos e texto */
+        p {
+            margin-bottom: 0.5cm;
+            text-align: justify;
+            line-height: 1.5;
+        }
+
+        /* Listas */
+        ul, ol {
+            margin: 0.5cm 0 0.5cm 1cm;
+        }
+
+        li {
+            margin-bottom: 0.2cm;
+            line-height: 1.4;
+        }
+
+        /* Caixas de destaque */
+        .highlight-box {
+            background: #f0f9ff;
+            border: 1px solid #2563eb;
+            border-left: 4px solid #2563eb;
+            padding: 0.5cm;
+            margin: 0.5cm 0;
+        }
+
+        .warning-box {
+            background: #fef2f2;
+            border: 1px solid #dc2626;
+            border-left: 4px solid #dc2626;
+            padding: 0.5cm;
+            margin: 0.5cm 0;
+        }
+
+        .success-box {
+            background: #f0fdf4;
+            border: 1px solid #16a34a;
+            border-left: 4px solid #16a34a;
+            padding: 0.5cm;
+            margin: 0.5cm 0;
+        }
+
+        .tip-box {
+            background: #fffbeb;
+            border: 1px solid #d97706;
+            border-left: 4px solid #d97706;
+            padding: 0.5cm;
+            margin: 0.5cm 0;
+        }
+
+        /* Tabelas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0.5cm 0;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 0.3cm;
+            text-align: left;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: bold;
+        }
+
+        /* Checklist */
+        .checklist {
+            margin: 0.5cm 0;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 0.2cm;
+        }
+
+        .checkbox {
+            width: 0.4cm;
+            height: 0.4cm;
+            border: 1px solid #333;
+            margin-right: 0.3cm;
+            margin-top: 0.1cm;
+            flex-shrink: 0;
+        }
+
+        /* Rodapé */
+        .footer {
+            position: fixed;
+            bottom: 1cm;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        /* Numeração de páginas */
+        .page-number {
+            position: fixed;
+            bottom: 0.5cm;
+            right: 1.5cm;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        /* Estilos específicos para seções */
+        .module-section {
+            margin-bottom: 1.5cm;
+        }
+
+        .formula {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 0.3cm;
+            font-family: monospace;
+            text-align: center;
+            margin: 0.3cm 0;
+        }
+
+        .example {
+            background: #f0f9ff;
+            border-left: 3px solid #3b82f6;
+            padding: 0.4cm;
+            margin: 0.4cm 0;
+            font-style: italic;
+        }
+
+        /* Botão de impressão (não aparece na impressão) */
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            z-index: 1000;
+        }
+
+        .print-button:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <!-- Botão de impressão -->
+    <button class="print-button no-print" onclick="window.print()">🖨️ Imprimir Apostila</button>
+
+    <!-- CAPA -->
+    <div class="cover">
+        <h1>GUIA DE CONSULTORIA FINANCEIRA</h1>
+        <div class="subtitle">
+            Metodologia Prática Baseada em Análise de Extratos Bancários
+        </div>
+        <div style="margin: 2cm 0;">
+            <div style="font-size: 1.1em; color: #666;">
+                Manual Completo para Consultores Financeiros
+            </div>
+        </div>
+        <div class="author">
+            <strong>Curso Profissionalizante</strong><br>
+            Consultoria Financeira Empresarial e Pessoal
+        </div>
+        <div style="margin-top: 3cm; font-size: 0.9em; color: #888;">
+            Versão para Impressão - 2025
+        </div>
+    </div>
+
+    <!-- ÍNDICE -->
+    <div class="toc">
+        <h2>📋 ÍNDICE</h2>
+        
+        <div class="toc-item">
+            <span><strong>MÓDULO 1 - FUNDAMENTOS</strong></span>
+            <span>3</span>
+        </div>
+        <div class="toc-item">
+            <span>• Capa Introdutória</span>
+            <span>3</span>
+        </div>
+        
+        <div class="toc-item">
+            <span><strong>PESSOA FÍSICA</strong></span>
+            <span>4</span>
+        </div>
+        <div class="toc-item">
+            <span>• Planejamento Estratégico</span>
+            <span>5</span>
+        </div>
+        <div class="toc-item">
+            <span>• Orçamento Pessoal</span>
+            <span>7</span>
+        </div>
+        <div class="toc-item">
+            <span>• Diagnóstico Financeiro</span>
+            <span>9</span>
+        </div>
+        <div class="toc-item">
+            <span>• Estratégias de Investimento</span>
+            <span>13</span>
+        </div>
+        
+        <div class="toc-item">
+            <span><strong>PESSOA JURÍDICA</strong></span>
+            <span>17</span>
+        </div>
+        <div class="toc-item">
+            <span>• Visão Geral da Empresa</span>
+            <span>18</span>
+        </div>
+        <div class="toc-item">
+            <span>• Gestão de Dados</span>
+            <span>22</span>
+        </div>
+        <div class="toc-item">
+            <span>• Metodologia Empresarial</span>
+            <span>24</span>
+        </div>
+        <div class="toc-item">
+            <span>• Entendendo a Linguagem Fiscal e Contábil</span>
+            <span>26</span>
+        </div>
+        
+        <div class="toc-item">
+            <span><strong>CONCLUSÃO</strong></span>
+            <span>30</span>
+        </div>
+    </div>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    
+    <!-- MÓDULO 1 - FUNDAMENTOS -->
+    <div class="page-break">
+        <h1>🎯 MÓDULO 1 - FUNDAMENTOS</h1>
+        
+        <div class="highlight-box">
+            <h3>🎯 OBJETIVO DO CURSO</h3>
+            <p>Este guia tem como objetivo capacitar consultores financeiros com metodologia prática e eficiente, baseada na análise de extratos bancários e comportamento financeiro real dos clientes.</p>
+        </div>
+
+        <h2>📖 Capa Introdutória</h2>
+        
+        <div class="module-section">
+            <h3>🌟 Bem-vindo ao Mundo da Consultoria Financeira</h3>
+            
+            <p>A consultoria financeira é uma das profissões mais recompensadoras e impactantes do mercado atual. Através dela, você tem o poder de transformar vidas, empresas e comunidades inteiras, proporcionando educação financeira e estratégias práticas para o sucesso econômico.</p>
+
+            <div class="success-box">
+                <h4>✅ O QUE VOCÊ VAI APRENDER</h4>
+                <ul>
+                    <li><strong>Metodologia Prática:</strong> Técnicas baseadas em dados reais dos extratos bancários</li>
+                    <li><strong>Diagnóstico Preciso:</strong> Como identificar problemas e oportunidades financeiras</li>
+                    <li><strong>Estratégias Personalizadas:</strong> Soluções adaptadas para cada perfil de cliente</li>
+                    <li><strong>Ferramentas Profissionais:</strong> Planilhas, calculadoras e métodos de análise</li>
+                    <li><strong>Comunicação Efetiva:</strong> Como apresentar resultados e convencer clientes</li>
+                </ul>
+            </div>
+
+            <h3>🎯 Metodologia do Curso</h3>
+            
+            <p>Nossa abordagem é fundamentada em três pilares essenciais:</p>
+            
+            <div class="highlight-box">
+                <h4>1. 📊 ANÁLISE BASEADA EM DADOS</h4>
+                <p>Utilizamos extratos bancários reais para entender o comportamento financeiro dos clientes, identificando padrões de gastos, receitas e oportunidades de otimização.</p>
+            </div>
+
+            <div class="highlight-box">
+                <h4>2. 🎯 ESTRATÉGIAS PERSONALIZADAS</h4>
+                <p>Cada cliente é único. Desenvolvemos soluções específicas considerando perfil, objetivos, limitações e potencial de cada pessoa ou empresa.</p>
+            </div>
+
+            <div class="highlight-box">
+                <h4>3. 📈 RESULTADOS MENSURÁVEIS</h4>
+                <p>Todas as recomendações são acompanhadas de métricas claras e prazos definidos, permitindo acompanhamento e ajustes constantes.</p>
+            </div>
+
+            <h3>🚀 Por que Escolher a Consultoria Financeira?</h3>
+            
+            <div class="tip-box">
+                <h4>💰 POTENCIAL DE MERCADO</h4>
+                <ul>
+                    <li><strong>Alta Demanda:</strong> 95% dos brasileiros não sabem gerir suas finanças adequadamente</li>
+                    <li><strong>Mercado Crescente:</strong> Setor de consultoria cresce 15% ao ano</li>
+                    <li><strong>Baixo Investimento Inicial:</strong> Possível começar com conhecimento e dedicação</li>
+                    <li><strong>Flexibilidade:</strong> Trabalhe presencial, online ou híbrido</li>
+                    <li><strong>Impacto Social:</strong> Transforme vidas através da educação financeira</li>
+                </ul>
+            </div>
+
+            <h3>📋 Como Utilizar Esta Apostila</h3>
+            
+            <div class="checklist">
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <span>Leia cada módulo sequencialmente</span>
+                </div>
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <span>Pratique os exercícios propostos</span>
+                </div>
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <span>Aplique as ferramentas em casos reais</span>
+                </div>
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <span>Faça anotações e adaptações pessoais</span>
+                </div>
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <span>Revise constantemente os conceitos</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PESSOA FÍSICA -->
+    <div class="page-break">
+        <h1>👤 PESSOA FÍSICA</h1>
+        
+        <div class="highlight-box">
+            <h3>🎯 FOCO DESTA SEÇÃO</h3>
+            <p>Estratégias e metodologias específicas para consultoria financeira pessoal, abordando desde o planejamento básico até estratégias avançadas de investimento.</p>
+        </div>
+
+        <h2>📋 Planejamento Estratégico</h2>
+        
+        <div class="module-section">
+            <h3>🎯 Definindo Objetivos Financeiros</h3>
+            
+            <p>O planejamento estratégico pessoal é a base de qualquer consultoria financeira eficaz. Sem objetivos claros e mensuráveis, é impossível criar um plano de ação efetivo.</p>
+
+            <h4>📊 Metodologia SMART para Objetivos Financeiros</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Critério</th>
+                        <th>Descrição</th>
+                        <th>Exemplo Financeiro</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>S</strong>pecífico</td>
+                        <td>Objetivo claro e bem definido</td>
+                        <td>"Quitar financiamento do carro"</td>
+                    </tr>
+                    <tr>
+                        <td><strong>M</strong>ensurável</td>
+                        <td>Possível de quantificar</td>
+                        <td>"R$ 45.000 em débito restante"</td>
+                    </tr>
+                    <tr>
+                        <td><strong>A</strong>tingível</td>
+                        <td>Realista e possível</td>
+                        <td>"Com sobra mensal de R$ 2.000"</td>
+                    </tr>
+                    <tr>
+                        <td><strong>R</strong>elevante</td>
+                        <td>Importante para o cliente</td>
+                        <td>"Reduzir stress financeiro"</td>
+                    </tr>
+                    <tr>
+                        <td><strong>T</strong>emporal</td>
+                        <td>Prazo definido</td>
+                        <td>"Em 24 meses"</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>🏆 Categorias de Objetivos Financeiros</h4>
+            
+            <div class="success-box">
+                <h5>📅 CURTO PRAZO (até 1 ano)</h5>
+                <ul>
+                    <li>Criação de reserva de emergência</li>
+                    <li>Quitação de dívidas de cartão de crédito</li>
+                    <li>Organização do orçamento mensal</li>
+                    <li>Compra de bens de consumo específicos</li>
+                </ul>
+            </div>
+
+            <div class="tip-box">
+                <h5>📅 MÉDIO PRAZO (1 a 5 anos)</h5>
+                <ul>
+                    <li>Financiamento da casa própria</li>
+                    <li>Investimento em educação/cursos</li>
+                    <li>Troca de veículo</li>
+                    <li>Viagens e experiências</li>
+                    <li>Início de investimentos</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <h5>📅 LONGO PRAZO (acima de 5 anos)</h5>
+                <ul>
+                    <li>Aposentadoria confortável</li>
+                    <li>Independência financeira</li>
+                    <li>Educação dos filhos</li>
+                    <li>Patrimônio para herança</li>
+                    <li>Negócio próprio</li>
+                </ul>
+            </div>
+
+            <h4>🔍 Técnicas de Diagnóstico de Objetivos</h4>
+            
+            <div class="warning-box">
+                <h5>⚠️ PERGUNTAS ESSENCIAIS PARA O CLIENTE</h5>
+                <ol>
+                    <li><strong>"Qual é seu maior sonho financeiro?"</strong></li>
+                    <li><strong>"O que te preocupa financeiramente hoje?"</strong></li>
+                    <li><strong>"Onde você se vê financeiramente em 5 anos?"</strong></li>
+                    <li><strong>"Qual seria sua situação financeira ideal?"</strong></li>
+                    <li><strong>"O que te impede de alcançar seus objetivos?"</strong></li>
+                </ol>
+            </div>
+
+            <h4>📈 Priorizando Objetivos</h4>
+            
+            <p>Utilize a <strong>Matriz de Eisenhower</strong> adaptada para finanças:</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Urgente</th>
+                        <th>Não Urgente</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Importante</strong></td>
+                        <td>FAZER AGORA<br>(Dívidas em atraso)</td>
+                        <td>PLANEJAR<br>(Aposentadoria)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Não Importante</strong></td>
+                        <td>DELEGAR<br>(Gastos supérfluos urgentes)</td>
+                        <td>ELIMINAR<br>(Desejos momentâneos)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ORÇAMENTO PESSOAL -->
+    <div class="page-break">
+        <h2>💰 Orçamento Pessoal</h2>
+        
+        <div class="module-section">
+            <h3>📊 Fundamentos do Orçamento Pessoal</h3>
+            
+            <p>O orçamento pessoal é a ferramenta fundamental para o controle financeiro. É através dele que identificamos para onde vai o dinheiro e como otimizar os recursos disponíveis.</p>
+
+            <h4>🔍 Metodologia de Análise de Extratos</h4>
+            
+            <div class="highlight-box">
+                <h5>📋 PASSO A PASSO PARA ANÁLISE</h5>
+                <ol>
+                    <li><strong>Coleta de Dados (3-6 meses de extratos)</strong></li>
+                    <li><strong>Categorização de Gastos</strong></li>
+                    <li><strong>Identificação de Padrões</strong></li>
+                    <li><strong>Cálculo de Médias</strong></li>
+                    <li><strong>Identificação de Oportunidades</strong></li>
+                </ol>
+            </div>
+
+            <h4>📈 Categorização de Gastos</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Categoria</th>
+                        <th>% Ideal da Renda</th>
+                        <th>Exemplos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Gastos Fixos</strong></td>
+                        <td>50-60%</td>
+                        <td>Aluguel, financiamentos, seguros</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Gastos Variáveis</strong></td>
+                        <td>20-30%</td>
+                        <td>Alimentação, transporte, vestuário</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Lazer/Supérfluos</strong></td>
+                        <td>5-10%</td>
+                        <td>Entretenimento, hobbies, viagens</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Investimentos</strong></td>
+                        <td>20%</td>
+                        <td>Poupança, aplicações, previdência</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>🎯 Regra 50-30-20</h4>
+            
+            <div class="formula">
+                50% Necessidades + 30% Desejos + 20% Investimentos = 100% da Renda
+            </div>
+
+            <div class="example">
+                <strong>Exemplo Prático:</strong><br>
+                Renda: R$ 5.000<br>
+                • Necessidades: R$ 2.500 (50%)<br>
+                • Desejos: R$ 1.500 (30%)<br>
+                • Investimentos: R$ 1.000 (20%)
+            </div>
+
+            <h4>🔧 Ferramentas de Controle</h4>
+            
+            <div class="success-box">
+                <h5>📱 APLICATIVOS RECOMENDADOS</h5>
+                <ul>
+                    <li><strong>Mobills:</strong> Controle completo de gastos</li>
+                    <li><strong>GuiaBolso:</strong> Sincronização automática</li>
+                    <li><strong>Organizze:</strong> Interface simples e intuitiva</li>
+                    <li><strong>Excel/Google Sheets:</strong> Personalização total</li>
+                </ul>
+            </div>
+
+            <h4>⚠️ Armadilhas Comuns no Orçamento</h4>
+            
+            <div class="warning-box">
+                <h5>🚫 ERROS FREQUENTES</h5>
+                <ul>
+                    <li><strong>Subestimar gastos pequenos:</strong> "Cafezinho" de R$ 5 = R$ 150/mês</li>
+                    <li><strong>Não considerar gastos anuais:</strong> IPVA, IPTU, seguros</li>
+                    <li><strong>Orçamento muito restritivo:</strong> Impossível de seguir</li>
+                    <li><strong>Não revisar periodicamente:</strong> Desatualização constante</li>
+                    <li><strong>Ignorar a inflação:</strong> Perda de poder de compra</li>
+                </ul>
+            </div>
+
+            <h4>💡 Estratégias de Otimização</h4>
+            
+            <div class="tip-box">
+                <h5>✅ DICAS PRÁTICAS</h5>
+                <ul>
+                    <li><strong>Automatize investimentos:</strong> Débito automático no dia do salário</li>
+                    <li><strong>Use a regra 24h:</strong> Espere um dia antes de compras não planejadas</li>
+                    <li><strong>Negocie contratos:</strong> Reavalie planos e serviços anualmente</li>
+                    <li><strong>Monitore diariamente:</strong> 5 minutos por dia evitam surpresas</li>
+                    <li><strong>Celebre conquistas:</strong> Recompense-se por metas alcançadas</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- DIAGNÓSTICO FINANCEIRO -->
+    <div class="page-break">
+        <h2>🔍 Diagnóstico Financeiro</h2>
+        
+        <div class="module-section">
+            <h3>📊 Metodologia de Diagnóstico Completo</h3>
+            
+            <p>O diagnóstico financeiro é o processo de análise profunda da situação financeira atual, identificando pontos fortes, fracos e oportunidades de melhoria.</p>
+
+            <h4>💰 Cálculo do Patrimônio Líquido</h4>
+            
+            <div class="formula">
+                Patrimônio Líquido = Ativos - Passivos
+            </div>
+
+            <div class="highlight-box">
+                <h5>📈 ATIVOS (Bens e Direitos)</h5>
+                <ul>
+                    <li><strong>Imóveis:</strong> Casa, apartamento, terrenos</li>
+                    <li><strong>Veículos:</strong> Carros, motos, valor de mercado</li>
+                    <li><strong>Investimentos:</strong> Poupança, CDB, ações, fundos</li>
+                    <li><strong>Reserva de Emergência:</strong> Dinheiro líquido disponível</li>
+                    <li><strong>Outros bens:</strong> Joias, eletrônicos, móveis de valor</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <h5>📉 PASSIVOS (Dívidas e Obrigações)</h5>
+                <ul>
+                    <li><strong>Financiamentos:</strong> Casa, carro, outros bens</li>
+                    <li><strong>Cartão de Crédito:</strong> Saldo devedor total</li>
+                    <li><strong>Empréstimos:</strong> Pessoal, consignado, bancário</li>
+                    <li><strong>Cheque Especial:</strong> Valor utilizado</li>
+                    <li><strong>Outras dívidas:</strong> Familiares, fornecedores</li>
+                </ul>
+            </div>
+
+            <h4>💹 Análise do Fluxo de Caixa</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Descrição</th>
+                        <th>Frequência</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Receitas Fixas</strong></td>
+                        <td>Salário, aposentadoria, aluguéis</td>
+                        <td>Mensal</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Receitas Variáveis</strong></td>
+                        <td>Comissões, freelances, bônus</td>
+                        <td>Irregular</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Despesas Fixas</strong></td>
+                        <td>Aluguel, financiamentos, seguros</td>
+                        <td>Mensal</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Despesas Variáveis</strong></td>
+                        <td>Alimentação, transporte, lazer</td>
+                        <td>Mensal</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>📊 Indicadores de Saúde Financeira</h4>
+            
+            <div class="success-box">
+                <h5>✅ INDICADORES POSITIVOS</h5>
+                <ul>
+                    <li><strong>Taxa de Poupança ≥ 20%:</strong> (Sobra Mensal / Renda) × 100</li>
+                    <li><strong>Reserva de Emergência ≥ 6 meses:</strong> Reserva / Gastos Mensais</li>
+                    <li><strong>Endividamento ≤ 30%:</strong> (Dívidas / Patrimônio Bruto) × 100</li>
+                    <li><strong>Liquidez Corrente ≥ 1:</strong> Ativos Líquidos / Dívidas de Curto Prazo</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <h5>⚠️ SINAIS DE ALERTA</h5>
+                <ul>
+                    <li><strong>Gastos > Receitas:</strong> Déficit mensal constante</li>
+                    <li><strong>Reserva < 3 meses:</strong> Insuficiente para emergências</li>
+                    <li><strong>Endividamento > 50%:</strong> Alto risco financeiro</li>
+                    <li><strong>Sem investimentos:</strong> Não há crescimento patrimonial</li>
+                </ul>
+            </div>
+
+            <h4>🎯 Matriz de Prioridades Financeiras</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Prioridade</th>
+                        <th>Ação</th>
+                        <th>Meta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>1ª</strong></td>
+                        <td>Equilibrar orçamento</td>
+                        <td>Receitas ≥ Despesas</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2ª</strong></td>
+                        <td>Quitar dívidas caras</td>
+                        <td>Cartão, cheque especial</td>
+                    </tr>
+                    <tr>
+                        <td><strong>3ª</strong></td>
+                        <td>Formar reserva emergência</td>
+                        <td>6 meses de gastos</td>
+                    </tr>
+                    <tr>
+                        <td><strong>4ª</strong></td>
+                        <td>Iniciar investimentos</td>
+                        <td>20% da renda</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5ª</strong></td>
+                        <td>Objetivos de longo prazo</td>
+                        <td>Aposentadoria, sonhos</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ESTRATÉGIAS DE INVESTIMENTO -->
+    <div class="page-break">
+        <h2>📈 Estratégias de Investimento</h2>
+        
+        <div class="module-section">
+            <h3>🎯 Filosofia de Investimento Pessoal</h3>
+            
+            <p>Investir não é sobre ficar rico rapidamente, mas sobre construir riqueza de forma consistente e sustentável ao longo do tempo.</p>
+
+            <h4>🏆 Tipos de Investimento por Objetivo</h4>
+            
+            <div class="highlight-box">
+                <h5>🎓 EDUCAÇÃO E QUALIFICAÇÃO</h5>
+                <ul>
+                    <li><strong>ROI:</strong> 20-50% de aumento na renda</li>
+                    <li><strong>Prazo:</strong> 1-3 anos para retorno</li>
+                    <li><strong>Risco:</strong> Baixo</li>
+                    <li><strong>Exemplos:</strong> MBA, cursos técnicos, idiomas, certificações</li>
+                </ul>
+                <div class="example">
+                    <strong>Exemplo:</strong> MBA de R$ 30.000 gerando aumento salarial de R$ 2.000/mês
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <h5>🏠 IMÓVEIS</h5>
+                <ul>
+                    <li><strong>ROI:</strong> 6-12% ao ano + valorização</li>
+                    <li><strong>Prazo:</strong> 5-20 anos</li>
+                    <li><strong>Risco:</strong> Médio</li>
+                    <li><strong>Exemplos:</strong> Casa própria, imóveis para renda, fundos imobiliários</li>
+                </ul>
+                <div class="example">
+                    <strong>Exemplo:</strong> Apartamento de R$ 300.000 gerando R$ 2.000/mês de aluguel
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <h5>🏢 NEGÓCIO PRÓPRIO</h5>
+                <ul>
+                    <li><strong>ROI:</strong> Variável (pode ser muito alto)</li>
+                    <li><strong>Prazo:</strong> 2-5 anos</li>
+                    <li><strong>Risco:</strong> Alto</li>
+                    <li><strong>Exemplos:</strong> Franquia, e-commerce, consultoria</li>
+                </ul>
+                <div class="example">
+                    <strong>Exemplo:</strong> Franquia de R$ 80.000 com potencial de R$ 10.000/mês
+                </div>
+            </div>
+
+            <div class="success-box">
+                <h5>💰 INVESTIMENTOS FINANCEIROS</h5>
+                <ul>
+                    <li><strong>ROI:</strong> 6-15% ao ano</li>
+                    <li><strong>Prazo:</strong> 1-30 anos</li>
+                    <li><strong>Risco:</strong> Baixo a Alto</li>
+                    <li><strong>Exemplos:</strong> Tesouro Direto, fundos, ações, previdência</li>
+                </ul>
+                <div class="example">
+                    <strong>Exemplo:</strong> R$ 1.000/mês por 20 anos = R$ 735.000 a 10% a.a.
+                </div>
+            </div>
+
+            <h4>💡 Níveis de Capacidade de Economia</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nível</th>
+                        <th>% da Renda</th>
+                        <th>Estratégias</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Iniciante</strong></td>
+                        <td>5-10%</td>
+                        <td>Cortar supérfluos, trocar marcas, cozinhar mais</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Intermediário</strong></td>
+                        <td>15-20%</td>
+                        <td>Renegociar contratos, transporte público</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Avançado</strong></td>
+                        <td>25-30%</td>
+                        <td>Mudança de casa, venda de bens, renda extra</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>🔄 Estratégia de Diversificação</h4>
+            
+            <div class="formula">
+                30% Reserva + 50% Crescimento + 20% Especulação = Portfolio Balanceado
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Categoria</th>
+                        <th>% Recomendado</th>
+                        <th>Objetivo</th>
+                        <th>Exemplos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Reserva</strong></td>
+                        <td>30%</td>
+                        <td>Segurança e liquidez</td>
+                        <td>Poupança, CDB, Tesouro SELIC</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Crescimento</strong></td>
+                        <td>50%</td>
+                        <td>Rentabilidade consistente</td>
+                        <td>Tesouro IPCA, Fundos DI, LCI/LCA</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Especulação</strong></td>
+                        <td>20%</td>
+                        <td>Alto retorno</td>
+                        <td>Ações, Fundos de Ações, REITs</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>⚠️ Proteção Contra Diminuição da Capacidade Produtiva</h4>
+            
+            <div class="warning-box">
+                <h5>🚨 FATORES DE RISCO</h5>
+                <ul>
+                    <li><strong>Pessoais:</strong> Idade, saúde, qualificação</li>
+                    <li><strong>Econômicos:</strong> Recessão, automação, inflação</li>
+                    <li><strong>Setoriais:</strong> Mudanças tecnológicas, regulamentações</li>
+                </ul>
+            </div>
+
+            <div class="success-box">
+                <h5>🛡️ ESTRATÉGIAS DE PROTEÇÃO</h5>
+                <ul>
+                    <li><strong>Educação Continuada:</strong> Sempre se atualizando</li>
+                    <li><strong>Diversificação de Renda:</strong> Múltiplas fontes</li>
+                    <li><strong>Network Profissional:</strong> Relacionamentos sólidos</li>
+                    <li><strong>Seguros Adequados:</strong> Vida, saúde, invalidez</li>
+                    <li><strong>Reserva Robusta:</strong> 12+ meses para autônomos</li>
+                </ul>
+            </div>
+
+            <h4>📅 Planejamento por Faixa Etária</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Idade</th>
+                        <th>Foco</th>
+                        <th>Alocação Sugerida</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>20-30 anos</strong></td>
+                        <td>Construção</td>
+                        <td>70% crescimento, 20% reserva, 10% especulação</td>
+                    </tr>
+                    <tr>
+                        <td><strong>30-50 anos</strong></td>
+                        <td>Acumulação</td>
+                        <td>60% crescimento, 30% reserva, 10% especulação</td>
+                    </tr>
+                    <tr>
+                        <td><strong>50+ anos</strong></td>
+                        <td>Preservação</td>
+                        <td>40% crescimento, 50% reserva, 10% especulação</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PESSOA JURÍDICA -->
+    <div class="page-break">
+        <h1>🏢 PESSOA JURÍDICA</h1>
+        
+        <div class="highlight-box">
+            <h3>🎯 FOCO DESTA SEÇÃO</h3>
+            <p>Metodologias específicas para consultoria financeira empresarial, abordando desde o diagnóstico organizacional até estratégias de crescimento e otimização fiscal.</p>
+        </div>
+
+        <h2>🔍 Visão Geral da Empresa</h2>
+        
+        <div class="module-section">
+            <h3>📋 Metodologia de Diagnóstico Empresarial</h3>
+            
+            <p>O diagnóstico empresarial é um processo sistemático de análise que permite compreender profundamente o negócio do cliente e identificar oportunidades de melhoria.</p>
+
+            <h4>🎯 FASE 1: Conhecendo a Empresa</h4>
+            
+            <div class="highlight-box">
+                <h5>🔍 PERGUNTA CRUCIAL PRÉ-REUNIÃO</h5>
+                <div style="text-align: center; font-size: 1.2em; font-weight: bold; color: #2563eb; margin: 0.5cm 0;">
+                    "Qual é o ramo de atuação da empresa?"
+                </div>
+                <p><strong>Esta pergunta deve ser feita ANTES da primeira reunião!</strong> Com essa informação, você consegue fazer uma pesquisa prévia e já iniciar suas primeiras anotações.</p>
+            </div>
+
+            <div class="checklist">
+                <h5>📞 CHECKLIST DE PESQUISA PRÉVIA</h5>
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <span>Pesquisar no Google sobre a empresa</span>
+                </div>
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <span>Verificar se tem site institucional</span>
+                </div>
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <span>Analisar redes sociais (Instagram, Facebook)</span>
+                </div>
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <span>Buscar avaliações no Google Maps</span>
+                </div>
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <span>Verificar no Reclame Aqui</span>
+                </div>
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <span>Ligar no estabelecimento como cliente</span>
+                </div>
+                <div class="checklist-item">
+                    <div class="checkbox"></div>
+                    <span>Visitar fisicamente (se possível)</span>
+                </div>
+            </div>
+
+            <h4>💚 FASE 2: Criando Conexão</h4>
+            
+            <div class="success-box">
+                <h5>❤️ PERGUNTA PRINCIPAL PARA CONEXÃO</h5>
+                <div style="text-align: center; font-size: 1.2em; font-weight: bold; color: #16a34a; margin: 0.5cm 0;">
+                    "O que te motivou a procurar uma consultoria financeira?"
+                </div>
+            </div>
+
+            <div class="tip-box">
+                <h5>🎭 POSICIONAMENTO ESTRATÉGICO</h5>
+                <p><strong>"Você está entrando na empresa como um profissional apto a apresentar resultados que supram as expectativas do cliente."</strong></p>
+                <ul>
+                    <li>✅ Posicione-se como especialista técnico</li>
+                    <li>✅ Demonstre confiança sem arrogância</li>
+                    <li>✅ Mostre que já resolveu problemas similares</li>
+                    <li>✅ Seja a opinião técnica e imparcial</li>
+                </ul>
+            </div>
+
+            <h4>🏢 FASE 3: Estrutura Empresarial</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pergunta</th>
+                        <th>Objetivo da Análise</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Quantos setores a empresa possui?</td>
+                        <td>Organização e eficiência</td>
+                    </tr>
+                    <tr>
+                        <td>Qual é o tempo de mercado?</td>
+                        <td>Credibilidade e experiência</td>
+                    </tr>
+                    <tr>
+                        <td>Qual a localização da empresa?</td>
+                        <td>Público-alvo e concorrência</td>
+                    </tr>
+                    <tr>
+                        <td>Qual é o tamanho da estrutura?</td>
+                        <td>Capacidade vs. demanda</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="warning-box">
+                <h5>⚠️ ATENÇÃO ESPECIAL</h5>
+                <p><strong>"Muitas vezes o que o proprietário quer transparecer não é o que de fato se apresenta."</strong></p>
+                <ul>
+                    <li>🔍 Visite pessoalmente a empresa</li>
+                    <li>🔍 Observe o movimento real</li>
+                    <li>🔍 Converse com funcionários</li>
+                    <li>🔍 Analise a vizinhança/concorrência</li>
+                </ul>
+            </div>
+
+            <h4>⭐ FASE 4: Diferencial e Carro-chefe</h4>
+            
+            <div class="highlight-box">
+                <h5>🌟 PERGUNTAS ESSENCIAIS</h5>
+                <div style="text-align: center; margin: 0.5cm 0;">
+                    <div style="font-size: 1.1em; font-weight: bold; color: #d97706; margin-bottom: 0.3cm;">
+                        "Qual é o diferencial da empresa?"
+                    </div>
+                    <div style="font-size: 1.1em; font-weight: bold; color: #16a34a;">
+                        "Qual é o carro-chefe?"
+                    </div>
+                </div>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Aspecto</th>
+                        <th>Diferencial</th>
+                        <th>Carro-chefe</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Foco</strong></td>
+                        <td>O que nos torna únicos?</td>
+                        <td>O que mais vendemos?</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Impacto</strong></td>
+                        <td>Poder de mercado</td>
+                        <td>Receita principal</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Estratégia</strong></td>
+                        <td>Comunicação e marketing</td>
+                        <td>Otimização e foco</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="success-box">
+                <h5>💰 IMPACTO FINANCEIRO</h5>
+                <p><strong>O carro-chefe bem identificado e potencializado pode:</strong></p>
+                <ul>
+                    <li>✅ Aumentar ticket médio em 20-40%</li>
+                    <li>✅ Melhorar margem de lucro</li>
+                    <li>✅ Reduzir custos de marketing</li>
+                    <li>✅ Fidelizar clientes</li>
+                    <li>✅ Facilitar expansão</li>
+                    <li>✅ Aumentar valor da empresa</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- GESTÃO DE DADOS -->
+    <div class="page-break">
+        <h2>📊 Gestão de Dados</h2>
+        
+        <div class="module-section">
+            <h3>💾 Importância da Gestão de Dados Empresariais</h3>
+            
+            <p>A gestão eficiente de dados é fundamental para a tomada de decisões assertivas e o crescimento sustentável da empresa.</p>
+
+            <h4>📈 Tipos de Dados Empresariais</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Categoria</th>
+                        <th>Exemplos</th>
+                        <th>Frequência de Análise</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Financeiros</strong></td>
+                        <td>Faturamento, custos, margem, fluxo de caixa</td>
+                        <td>Diária/Semanal</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Operacionais</strong></td>
+                        <td>Vendas, estoque, produtividade</td>
+                        <td>Diária</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Clientes</strong></td>
+                        <td>Perfil, comportamento, satisfação</td>
+                        <td>Mensal</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Mercado</strong></td>
+                        <td>Concorrência, tendências, oportunidades</td>
+                        <td>Trimestral</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>🔧 Ferramentas de Gestão</h4>
+            
+            <div class="success-box">
+                <h5>💻 SISTEMAS RECOMENDADOS</h5>
+                <ul>
+                    <li><strong>ERP:</strong> SAP, Oracle, Totvs (empresas grandes)</li>
+                    <li><strong>CRM:</strong> Salesforce, HubSpot, RD Station</li>
+                    <li><strong>BI:</strong> Power BI, Tableau, Google Analytics</li>
+                    <li><strong>Planilhas:</strong> Excel, Google Sheets (PMEs)</li>
+                </ul>
+            </div>
+
+            <h4>📊 KPIs Essenciais por Área</h4>
+            
+            <div class="highlight-box">
+                <h5>💰 FINANCEIROS</h5>
+                <ul>
+                    <li><strong>Margem Bruta:</strong> (Receita - CMV) / Receita</li>
+                    <li><strong>Margem Líquida:</strong> Lucro Líquido / Receita</li>
+                    <li><strong>ROI:</strong> (Ganho - Investimento) / Investimento</li>
+                    <li><strong>Prazo Médio de Recebimento:</strong> Contas a Receber / Vendas × 30</li>
+                </ul>
+            </div>
+
+            <div class="tip-box">
+                <h5>📈 OPERACIONAIS</h5>
+                <ul>
+                    <li><strong>Ticket Médio:</strong> Faturamento / Número de Vendas</li>
+                    <li><strong>Taxa de Conversão:</strong> Vendas / Leads × 100</li>
+                    <li><strong>Giro de Estoque:</strong> CMV / Estoque Médio</li>
+                    <li><strong>Produtividade:</strong> Receita / Funcionário</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- METODOLOGIA EMPRESARIAL -->
+    <div class="page-break">
+        <h2>🎯 Metodologia Empresarial</h2>
+        
+        <div class="module-section">
+            <h3>🏗️ Estruturação de Processos Empresariais</h3>
+            
+            <p>Uma metodologia empresarial sólida é a base para o crescimento sustentável e a otimização de resultados.</p>
+
+            <h4>📋 Pilares da Metodologia</h4>
+            
+            <div class="highlight-box">
+                <h5>1️⃣ PLANEJAMENTO ESTRATÉGICO</h5>
+                <ul>
+                    <li><strong>Missão:</strong> Razão de existir da empresa</li>
+                    <li><strong>Visão:</strong> Onde queremos chegar</li>
+                    <li><strong>Valores:</strong> Como fazemos negócios</li>
+                    <li><strong>Objetivos:</strong> Metas específicas e mensuráveis</li>
+                </ul>
+            </div>
+
+            <div class="tip-box">
+                <h5>2️⃣ GESTÃO OPERACIONAL</h5>
+                <ul>
+                    <li><strong>Processos:</strong> Padronização de atividades</li>
+                    <li><strong>Qualidade:</strong> Controles e melhorias contínuas</li>
+                    <li><strong>Eficiência:</strong> Otimização de recursos</li>
+                    <li><strong>Inovação:</strong> Adaptação e evolução</li>
+                </ul>
+            </div>
+
+            <div class="success-box">
+                <h5>3️⃣ GESTÃO FINANCEIRA</h5>
+                <ul>
+                    <li><strong>Controles:</strong> Fluxo de caixa e orçamentos</li>
+                    <li><strong>Análises:</strong> Indicadores e relatórios</li>
+                    <li><strong>Planejamento:</strong> Projeções e cenários</li>
+                    <li><strong>Otimização:</strong> Redução de custos e aumento de receitas</li>
+                </ul>
+            </div>
+
+            <h4>🔄 Ciclo de Melhoria Contínua</h4>
+            
+            <div class="formula">
+                PLAN → DO → CHECK → ACT → PLAN...
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fase</th>
+                        <th>Atividades</th>
+                        <th>Ferramentas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>PLAN</strong></td>
+                        <td>Planejar mudanças e melhorias</td>
+                        <td>Brainstorming, análise SWOT</td>
+                    </tr>
+                    <tr>
+                        <td><strong>DO</strong></td>
+                        <td>Implementar as mudanças</td>
+                        <td>Cronogramas, treinamentos</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CHECK</strong></td>
+                        <td>Verificar resultados</td>
+                        <td>KPIs, relatórios, auditorias</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ACT</strong></td>
+                        <td>Padronizar melhorias</td>
+                        <td>Procedimentos, treinamentos</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ENTENDENDO A LINGUAGEM FISCAL E CONTÁBIL -->
+    <div class="page-break">
+        <h2>📚 Entendendo a Linguagem Fiscal e Contábil</h2>
+        
+        <div class="module-section">
+            <h3>🔗 A Contabilidade como Elo</h3>
+            
+            <p>A contabilidade é o elo entre empresa e governo. Muitos empresários vivem o tabu de que pagar imposto quebra empresas, mas na verdade, <strong>não pagar o imposto corretamente</strong> é que vem quebrando muitas empresas.</p>
+
+            <h4>❌ Problemas da Sonegação</h4>
+            
+            <div class="warning-box">
+                <h5>🚨 CONSEQUÊNCIAS DIRETAS</h5>
+                <ul>
+                    <li><strong>Multas:</strong> 75% a 150% do imposto devido</li>
+                    <li><strong>Juros:</strong> 1% ao mês + taxa Selic</li>
+                    <li><strong>Bloqueios:</strong> Contas bancárias e bens</li>
+                    <li><strong>Restrições:</strong> Impossibilidade de parcelamentos</li>
+                    <li><strong>Protestos:</strong> Nome em cartório</li>
+                </ul>
+            </div>
+
+            <div class="warning-box">
+                <h5>💼 IMPACTOS EMPRESARIAIS</h5>
+                <ul>
+                    <li>Dificuldade para conseguir empréstimos</li>
+                    <li>Problemas na venda da empresa</li>
+                    <li>Impossibilidade de implementar franquias</li>
+                    <li>Perda de benefícios fiscais</li>
+                    <li>Deterioração da imagem</li>
+                </ul>
+            </div>
+
+            <h4>✅ Benefícios da Regularidade</h4>
+            
+            <div class="success-box">
+                <h5>🎁 INCENTIVOS FISCAIS</h5>
+                <p>O governo oferece diversos benefícios fiscais para reduzir impostos, mas poucos sabem da existência ou não conseguem aplicar devido à falha de contabilização.</p>
+                <ul>
+                    <li>Facilidade para empréstimos bancários</li>
+                    <li>Melhores taxas de juros</li>
+                    <li>Linhas de crédito especiais</li>
+                    <li>Programas governamentais</li>
+                    <li>Maior valor na venda da empresa</li>
+                </ul>
+            </div>
+
+            <h4>🏢 Departamentos Contábeis</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Departamento</th>
+                        <th>Responsabilidades</th>
+                        <th>Impacto no Negócio</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Fiscal</strong></td>
+                        <td>Notas fiscais, impostos, declarações</td>
+                        <td>Custos diretos da empresa</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Contábil</strong></td>
+                        <td>Demonstrativos, análises, relatórios</td>
+                        <td>Informações para decisão</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pessoal</strong></td>
+                        <td>Folha, admissões, rescisões</td>
+                        <td>Custos fixos mensais</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>📊 Enquadramentos Empresariais</h4>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Faturamento Limite</th>
+                        <th>Características Principais</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>MEI</strong></td>
+                        <td>R$ 81 mil/ano</td>
+                        <td>Até 1 funcionário, tributo fixo</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ME</strong></td>
+                        <td>R$ 360 mil/ano</td>
+                        <td>Permite sócios, Simples Nacional</td>
+                    </tr>
+                    <tr>
+                        <td><strong>EPP</strong></td>
+                        <td>R$ 4,8 milhões/ano</td>
+                        <td>Benefícios fiscais, exige contabilidade</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LTDA</strong></td>
+                        <td>Sem limite</td>
+                        <td>Até 7 sócios, patrimônio protegido</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>💰 Regimes Tributários</h4>
+            
+            <div class="highlight-box">
+                <h5>🟢 SIMPLES NACIONAL</h5>
+                <ul>
+                    <li><strong>Limite:</strong> R$ 4,8 milhões/ano</li>
+                    <li><strong>Vantagem:</strong> Unifica impostos, alíquotas reduzidas</li>
+                    <li><strong>Desvantagem:</strong> Limitações de atividades</li>
+                </ul>
+            </div>
+
+            <div class="tip-box">
+                <h5>🔵 LUCRO PRESUMIDO</h5>
+                <ul>
+                    <li><strong>Limite:</strong> R$ 78 milhões/ano</li>
+                    <li><strong>Vantagem:</strong> Simplicidade no cálculo</li>
+                    <li><strong>Desvantagem:</strong> Tributação sobre presunção</li>
+                </ul>
+            </div>
+
+            <div class="success-box">
+                <h5>🟣 LUCRO REAL</h5>
+                <ul>
+                    <li><strong>Limite:</strong> Sem limite</li>
+                    <li><strong>Vantagem:</strong> Tributação sobre lucro real</li>
+                    <li><strong>Desvantagem:</strong> Maior complexidade</li>
+                </ul>
+            </div>
+
+            <h4>⚠️ Riscos Contábeis</h4>
+            
+            <div class="warning-box">
+                <h5>🚨 CUSTOS DOS ERROS</h5>
+                <ul>
+                    <li><strong>Multas fiscais:</strong> R$ 500 a R$ 50.000</li>
+                    <li><strong>Juros de mora:</strong> 1% ao mês + Selic</li>
+                    <li><strong>Honorários advocatícios:</strong> 10% a 20% do débito</li>
+                    <li><strong>Custos cartorários:</strong> R$ 200 a R$ 2.000</li>
+                    <li><strong>Perda de oportunidades:</strong> Impossível mensurar</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONCLUSÃO -->
+    <div class="page-break">
+        <h1>🎓 CONCLUSÃO</h1>
+        
+        <div class="module-section">
+            <h3>🌟 Jornada de Transformação Completa</h3>
+            
+            <p>Parabéns por concluir este guia completo de consultoria financeira! Você agora possui as ferramentas e conhecimentos necessários para transformar vidas e empresas através da educação financeira.</p>
+
+            <div class="success-box">
+                <h4>✅ O QUE VOCÊ CONQUISTOU</h4>
+                <ul>
+                    <li><strong>Metodologia Prática:</strong> Técnicas baseadas em análise real de extratos</li>
+                    <li><strong>Visão Holística:</strong> Compreensão completa de finanças pessoais e empresariais</li>
+                    <li><strong>Ferramentas Profissionais:</strong> Checklists, fórmulas e processos testados</li>
+                    <li><strong>Conhecimento Fiscal:</strong> Entendimento da linguagem contábil e tributária</li>
+                    <li><strong>Estratégias de Investimento:</strong> Orientações para diferentes perfis e objetivos</li>
+                </ul>
+            </div>
+
+            <h4>🚀 Próximos Passos</h4>
+            
+            <div class="highlight-box">
+                <h5>📈 DESENVOLVIMENTO CONTÍNUO</h5>
+                <ol>
+                    <li><strong>Pratique constantemente:</strong> Aplique os conhecimentos em casos reais</li>
+                    <li><strong>Mantenha-se atualizado:</strong> Acompanhe mudanças na legislação</li>
+                    <li><strong>Desenvolva networking:</strong> Conecte-se com contadores e outros profissionais</li>
+                    <li><strong>Especialize-se:</strong> Escolha nichos específicos para aprofundamento</li>
+                    <li><strong>Construa sua marca:</strong> Desenvolva presença digital e credibilidade</li>
+                </ol>
+            </div>
+
+            <h4>💡 Lembretes Finais</h4>
+            
+            <div class="tip-box">
+                <h5>🎯 PRINCÍPIOS FUNDAMENTAIS</h5>
+                <ul>
+                    <li><strong>Ética sempre em primeiro lugar:</strong> Seja transparente e honesto</li>
+                    <li><strong>Foque no cliente:</strong> Suas soluções devem gerar valor real</li>
+                    <li><strong>Seja didático:</strong> Eduque, não apenas venda</li>
+                    <li><strong>Mensure resultados:</strong> Acompanhe o progresso dos clientes</li>
+                    <li><strong>Nunca pare de aprender:</strong> O mercado está sempre evoluindo</li>
+                </ul>
+            </div>
+
+            <div class="highlight-box">
+                <h4>🌍 IMPACTO SOCIAL</h4>
+                <p>Lembre-se: como consultor financeiro, você está contribuindo para:</p>
+                <ul>
+                    <li>✅ Redução da inadimplência nacional</li>
+                    <li>✅ Melhoria da qualidade de vida das famílias</li>
+                    <li>✅ Fortalecimento da economia local</li>
+                    <li>✅ Educação financeira da população</li>
+                    <li>✅ Criação de uma sociedade mais próspera</li>
+                </ul>
+            </div>
+
+            <div class="success-box">
+                <h4>🏆 MENSAGEM FINAL</h4>
+                <p style="text-align: center; font-size: 1.1em; font-style: italic;">
+                    "O consultor financeiro é o caminho mais consciente para alcançar o sucesso financeiro. 
+                    Sua missão é transformar vidas através do conhecimento, da disciplina e da estratégia. 
+                    Vá em frente e faça a diferença!"
+                </p>
+            </div>
+
+            <div style="text-align: center; margin-top: 2cm; padding: 1cm; border: 2px solid #2563eb; border-radius: 10px;">
+                <h3 style="color: #2563eb; margin-bottom: 0.5cm;">📞 SUPORTE CONTÍNUO</h3>
+                <p>Para dúvidas, atualizações e networking:</p>
+                <p><strong>Continue sua jornada de crescimento profissional!</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT PARA IMPRESSÃO -->
+    <script>
+        // Função para imprimir
+        function printApostila() {
+            window.print();
+        }
+
+        // Adicionar numeração de páginas
+        window.addEventListener('beforeprint', function() {
+            // Remover botão de impressão
+            document.querySelector('.print-button').style.display = 'none';
+        });
+
+        window.addEventListener('afterprint', function() {
+            // Mostrar botão de impressão novamente
+            document.querySelector('.print-button').style.display = 'block';
+        });
+
+        // Configurações para impressão otimizada
+        if (window.matchMedia) {
+            var mediaQueryList = window.matchMedia('print');
+            mediaQueryList.addListener(function(mql) {
+                if (mql.matches) {
+                    // Configurações específicas para impressão
+                    document.body.style.fontSize = '11pt';
+                    document.body.style.lineHeight = '1.4';
+                } else {
+                    // Configurações para tela
+                    document.body.style.fontSize = '';
+                    document.body.style.lineHeight = '';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
