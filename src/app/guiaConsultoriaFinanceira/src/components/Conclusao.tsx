@@ -1,5 +1,4 @@
 /* eslint-disable react/no-unescaped-entities */
-/* eslint-disable @typescript-eslint/no-unused-vars */
 // React import removido (JSX runtime automático)
 import {Award, CheckCircle, TrendingUp, Users, Target, BookOpen, Star, Zap} from 'lucide-react'
 
