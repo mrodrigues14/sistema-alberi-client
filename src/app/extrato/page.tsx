@@ -14,6 +14,8 @@ import { Categoria, useCategoriasPorCliente } from '@/lib/hooks/useCategoria';
 import { useFornecedoresPorCliente } from '@/lib/hooks/useFornecedor';
 import { FaChevronDown } from "react-icons/fa";
 import * as XLSX from "xlsx";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import PreviewExtrato from './components/previewExtrato/previewExtrato';
 import { parsePdfToPreview } from '@/lib/pdf/parsePdfToPreview';
 import { useSubextratos } from '@/lib/hooks/useSubextrato';
@@ -374,6 +376,131 @@ const Extrato: React.FC = () => {
         };
     }, [extratos, saldoInicial]);
 
+    // Função para exportar para Excel
+    const exportarParaExcel = () => {
+        if (!dadosTabela.length) {
+            alert('Não há dados para exportar');
+            return;
+        }
+
+        // Separar dados efetivados e previsões, mantendo a ordem das previsões no final
+        const dadosEfetivados = dadosTabela.filter(row => !row.lancamentoFuturo);
+        const dadosPrevisoes = dadosTabela.filter(row => row.lancamentoFuturo);
+        const dadosOrdenados = [...dadosEfetivados, ...dadosPrevisoes];
+
+        const dadosParaExportar = dadosOrdenados.map(row => {
+            // Separar rubrica pai e subrubrica em colunas diferentes
+            const rubricaPai = row.rubricaPaiNome || row.rubricaSelecionada;
+            const subrubrica = row.subrubricaNome || '';
+            
+            return {
+                'Data': row.data,
+                'Rubrica': rubricaPai,
+                'Subrubrica': subrubrica,
+                'Fornecedor': row.fornecedorSelecionado,
+                'Observação': row.observacao,
+                'Nome no Extrato': row.nomeNoExtrato,
+                'Rubrica Contábil': row.rubricaContabil,
+                'Entrada': row.entrada ? parseFloat(row.entrada).toFixed(2) : '',
+                'Saída': row.saida ? parseFloat(row.saida).toFixed(2) : '',
+                'Tipo': row.lancamentoFuturo ? 'Previsão' : 'Efetivado'
+            };
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(dadosParaExportar);
+        
+        // Aplicar formatação vermelha nas linhas de previsão
+        const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+        const inicioPrevisoes = dadosEfetivados.length + 1; // +1 porque a primeira linha é o cabeçalho
+        
+        // Criar estilos para as células das previsões
+        for (let rowNum = inicioPrevisoes + 1; rowNum <= range.e.r + 1; rowNum++) {
+            for (let colNum = range.s.c; colNum <= range.e.c; colNum++) {
+                const cellAddress = XLSX.utils.encode_cell({ r: rowNum, c: colNum });
+                if (!worksheet[cellAddress]) continue;
+                
+                // Adicionar estilo vermelho para as células de previsão
+                if (!worksheet[cellAddress].s) worksheet[cellAddress].s = {};
+                worksheet[cellAddress].s = {
+                    font: { color: { rgb: "FF0000" } },
+                    fill: { fgColor: { rgb: "FFE6E6" } }
+                };
+            }
+        }
+
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Extrato');
+        
+        const fileName = `Extrato_${nomeBancoSelecionado || 'Banco'}_${mesSelecionado}_${anoSelecionado}.xlsx`;
+        XLSX.writeFile(workbook, fileName);
+    };
+
+    // Função para exportar para PDF
+    const exportarParaPDF = () => {
+        if (!dadosTabela.length) {
+            alert('Não há dados para exportar');
+            return;
+        }
+
+        const doc = new jsPDF('l', 'mm', 'a4');
+        
+        // Título do documento
+        doc.setFontSize(16);
+        doc.text(`Extrato - ${nomeBancoSelecionado || 'Banco'} - ${mesSelecionado}/${anoSelecionado}`, 20, 20);
+        
+        // Informações do saldo
+        doc.setFontSize(10);
+        doc.text(`Saldo Inicial: R$ ${(saldoInicial || 0).toFixed(2).replace('.', ',')}`, 20, 30);
+        doc.text(`Saldo Atual: R$ ${saldoAtual.toFixed(2).replace('.', ',')}`, 100, 30);
+        doc.text(`Saldo com Previsões: R$ ${saldoComPrevisoes.toFixed(2).replace('.', ',')}`, 180, 30);
+        
+        // Preparar dados para a tabela
+        const headers = [
+            'Data', 'Rubrica', 'Subrubrica', 'Fornecedor', 'Observação', 
+            'Nome no Extrato', 'Rubrica Contábil', 'Entrada', 'Saída', 'Tipo'
+        ];
+        
+        const dados = dadosTabela.map(row => [
+            row.data,
+            row.rubricaPaiNome || row.rubricaSelecionada,
+            row.subrubricaNome || '',
+            row.fornecedorSelecionado,
+            row.observacao,
+            row.nomeNoExtrato,
+            row.rubricaContabil,
+            row.entrada ? `R$ ${parseFloat(row.entrada).toFixed(2).replace('.', ',')}` : '',
+            row.saida ? `R$ ${parseFloat(row.saida).toFixed(2).replace('.', ',')}` : '',
+            row.lancamentoFuturo ? 'Previsão' : 'Efetivado'
+        ]);
+
+        // Adicionar tabela ao PDF
+        autoTable(doc, {
+            head: [headers],
+            body: dados,
+            startY: 40,
+            styles: {
+                fontSize: 8,
+                cellPadding: 2
+            },
+            columnStyles: {
+                0: { cellWidth: 20 }, // Data
+                1: { cellWidth: 25 }, // Rubrica
+                2: { cellWidth: 20 }, // Subrubrica
+                3: { cellWidth: 25 }, // Fornecedor
+                4: { cellWidth: 30 }, // Observação
+                5: { cellWidth: 25 }, // Nome no Extrato
+                6: { cellWidth: 25 }, // Rubrica Contábil
+                7: { cellWidth: 20 }, // Entrada
+                8: { cellWidth: 20 }, // Saída
+                9: { cellWidth: 20 }  // Tipo
+            },
+            theme: 'striped'
+        });
+        
+        const fileName = `Extrato_${nomeBancoSelecionado || 'Banco'}_${mesSelecionado}_${anoSelecionado}.pdf`;
+        doc.save(fileName);
+    };
+
     return (
         <>
             <div>
@@ -583,14 +710,33 @@ const Extrato: React.FC = () => {
                                                 Editar Todas as Linhas
                                             </button>
                                         </div>
-                                    )}
+                                    )}  
                                 </div>
+
+                                {/* Botões de Exportação */}
+                                <button
+                                    onClick={exportarParaExcel}
+                                    className={styles.actionButton}
+                                    disabled={!dadosTabela.length}
+                                    title="Exportar para Excel"
+                                >
+                                    <FaFileExcel size={16} />
+                                    Excel
+                                </button>
+
+                                <button
+                                    onClick={exportarParaPDF}
+                                    className={styles.actionButton}
+                                    disabled={!dadosTabela.length}
+                                    title="Exportar para PDF"
+                                >
+                                    <FaFilePdf size={16} />
+                                    PDF
+                                </button>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                {/* Seção de importação */}
+                </div>                {/* Seção de importação */}
                 {metodoInsercao === "importar" && (
                     <div className={styles.importSection}>
                         <div className={styles.importGrid}>

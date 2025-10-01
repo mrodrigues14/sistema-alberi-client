@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { FaDivide, FaEdit, FaHandPointer, FaPaperclip, FaSave, FaTrash, FaTimes, FaSort, FaSortUp, FaSortDown, FaFilter, FaCheck, FaGripVertical } from "react-icons/fa";
+import { FaDivide, FaEdit, FaHandPointer, FaPaperclip, FaSave, FaTrash, FaTimes, FaSort, FaSortUp, FaSortDown, FaFilter, FaCheck, FaGripVertical, FaFileExcel, FaFilePdf } from "react-icons/fa";
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import CustomDropdown from "../dropdown/CustomDropdown";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
@@ -427,14 +430,36 @@ const TabelaExtrato: React.FC<Props> = ({
     });
 
     if (!ordem) {
-      setDadosOrdenados(dadosFiltrados);
+      // Mesmo sem ordenação específica, garantir que lançamentos futuros fiquem no final
+      const dadosOrdenadosPorTipo = dadosFiltrados.sort((a, b) => {
+        const aFuturo = a.lancamentoFuturo || false;
+        const bFuturo = b.lancamentoFuturo || false;
+        
+        // Se um é futuro e outro não, o futuro vai para o final
+        if (aFuturo && !bFuturo) return 1;
+        if (!aFuturo && bFuturo) return -1;
+        
+        // Se ambos são do mesmo tipo, mantém a ordem original
+        return 0;
+      });
+      
+      setDadosOrdenados(dadosOrdenadosPorTipo);
       return;
     }
 
 
     const { coluna, direcao } = ordem;
 
-    const ordenado = [...dados].sort((a, b) => {
+    const ordenado = [...dadosFiltrados].sort((a, b) => {
+      // Primeiro, separar lançamentos futuros (previsões) para ficarem sempre no final
+      const aFuturo = a.lancamentoFuturo || false;
+      const bFuturo = b.lancamentoFuturo || false;
+      
+      // Se um é futuro e outro não, o futuro vai para o final
+      if (aFuturo && !bFuturo) return 1;
+      if (!aFuturo && bFuturo) return -1;
+      
+      // Se ambos são do mesmo tipo (futuros ou não), aplica a ordenação normal
       const valA = a[coluna] || "";
       const valB = b[coluna] || "";
 
