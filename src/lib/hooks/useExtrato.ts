@@ -69,12 +69,14 @@ export async function updateExtrato(
   idExtrato: number,
   updates: Partial<Extrato>
 ) {
+  console.log(updates)
+  console.log(idExtrato)
   const response = await fetch(`${API_URL}/extratos/${idExtrato}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updates),
   });
-
+  console.log(response)
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Erro ao atualizar extrato: ${response.status} - ${errorText}`);

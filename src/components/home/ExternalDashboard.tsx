@@ -35,10 +35,23 @@ export const ExternalDashboard: React.FC<ExternalDashboardProps> = ({
 	const saidasPrevistas = Number(resumo?.totalSaidasPrevistas || 0);
 	const saldoMes = Number(resumo?.saldoMes || 0);
 	const saldoPrevisto = saldoMes + entradasPrevistas - saidasPrevistas;
+
+	// Função para converter número do mês em nome completo
+	const getNomeMes = (mesNumero: string) => {
+		const meses = [
+			'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+			'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+		];
+		const indice = parseInt(mesNumero) - 1;
+		return meses[indice] || 'Mês';
+	};
+
+	const mesAnoCompleto = `${getNomeMes(mes)}/${ano}`;
+
 	return (
 		<div className={styles.section}>
 			<div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-4">
-				<h2 className={styles.sectionTitle}>Seu mês{nomeEmpresa ? ` - ${nomeEmpresa}` : ''}</h2>
+				<h2 className={styles.sectionTitle}>{mesAnoCompleto}{nomeEmpresa ? ` - ${nomeEmpresa}` : ''}</h2>
 				<div className="flex flex-wrap items-end gap-3">
 					<div>
 						<label className="block text-sm text-gray-600">Mês</label>

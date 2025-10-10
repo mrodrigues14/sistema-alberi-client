@@ -254,6 +254,8 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 1rem;
+    transform: scale(0.8); /* 90% do tamanho */
+  transform-origin: top; /* ponto de referência da escala */
 }
 
 /* Summary bar */

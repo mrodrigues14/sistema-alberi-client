@@ -282,6 +282,7 @@ const Extrato: React.FC = () => {
             const novosDados = extratos.map((extrato: any) => ({
                 id: extrato.idextrato,
                 data: formatarData(extrato.data),
+                mesReferencia: extrato.mesReferencia ?? null,
                 ...(() => {
                     const info = getRubricaInfo(extrato);
                     return {
@@ -296,8 +297,10 @@ const Extrato: React.FC = () => {
                 observacao: extrato.descricao || "Sem descrição",
                 nomeNoExtrato: extrato.nomeNoExtrato || "Sem nome",
                 rubricaContabil: extrato.rubricaContabilRelacionada?.nome || "Não definida",
+                juros: extrato.juros ?? null,
                 entrada: extrato.tipoDeTransacao === "ENTRADA" ? extrato.valor.toFixed(2) : "",
                 saida: extrato.tipoDeTransacao === "SAIDA" ? extrato.valor.toFixed(2) : "",
+                tipoDeTransacao: extrato.tipoDeTransacao,
                 lancamentoFuturo: !!extrato.lancamentoFuturo,
             }));
 
@@ -812,7 +815,6 @@ const Extrato: React.FC = () => {
                 {/* Seção de inserção manual */}
                 {metodoInsercao === "manual" && (
                     <div className={styles.manualSection}>
-                        <h2 className={styles.manualTitle}>Inserção Manual</h2>
                         <InsercaoManual
                             idCliente={idCliente}
                             bancoSelecionado={bancoSelecionado}

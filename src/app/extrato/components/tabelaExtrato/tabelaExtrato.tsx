@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { FaDivide, FaEdit, FaHandPointer, FaPaperclip, FaSave, FaTrash, FaTimes, FaSort, FaSortUp, FaSortDown, FaFilter, FaCheck, FaGripVertical, FaFileExcel, FaFilePdf } from "react-icons/fa";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -40,6 +41,18 @@ interface Props {
 
 
 
+// Full-screen overlay rendered via portal to cover the entire viewport
+const FullScreenOverlay: React.FC<{ open: boolean; children: React.ReactNode }> = ({ open, children }) => {
+  if (!open) return null;
+  if (typeof document === "undefined") return null;
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-black bg-opacity-40 flex items-center justify-center">
+      {children}
+    </div>,
+    document.body
+  );
+};
+
 const TabelaExtrato: React.FC<Props> = ({
   dados,
   subextratos,
@@ -63,7 +76,7 @@ const TabelaExtrato: React.FC<Props> = ({
   const dragOverIndex = useRef<number | null>(null);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
-  const [editIndex, setEditIndex] = useState<number | null>(null);
+  const [editId, setEditId] = useState<number | null>(null);
   const [editData, setEditData] = useState<any>({});
   // Indices (na lista renderizada) das linhas que formam o bloco sendo arrastado em modo multi-seleção
   const dragBlockIndices = useRef<number[] | null>(null);
@@ -138,9 +151,15 @@ const TabelaExtrato: React.FC<Props> = ({
 
   let saldoAcumulado = saldoInicial ?? 0;
 
-  const handleEdit = (index: number) => {
-    setEditIndex(index);
-    setEditData(dados[index]);
+  const handleEdit = (id: number) => {
+    const row = dadosOrdenados.find(r => r.id === id) || dados.find(r => r.id === id);
+    if (!row) return;
+    setEditId(id);
+    // Garante que temos o idCategoriaSelecionada disponível durante a edição
+    setEditData({
+      ...row,
+      idCategoriaSelecionada: row.idCategoria ?? row.idCategoriaSelecionada ?? undefined,
+    });
   };
 
   function formatarDataParaISO(data: string): string {
@@ -155,9 +174,10 @@ const TabelaExtrato: React.FC<Props> = ({
     return '';
   }
 
-  const handleSave = async (index: number) => {
+  const handleSave = async (id: number) => {
     try {
-      const row = dados[index];
+      const row = dadosOrdenados.find(r => r.id === id) || dados.find(r => r.id === id);
+      if (!row) return;
       const normalizeLabel = (s: string | undefined) => (s || '')
         .replace(/^\s*└\s*/, '') // remove prefixo visual
         .normalize('NFD') // remove acentos
@@ -172,23 +192,34 @@ const TabelaExtrato: React.FC<Props> = ({
         (opt) => opt.label === editData.fornecedorSelecionado
       );
 
+      // Monta payload preservando campos quando não alterados
       const payload: Partial<Extrato> = {
-        data: formatarDataParaISO(editData.data),
-        nomeNoExtrato: editData.nomeNoExtrato,
-        rubricaContabil: editData.rubricaContabil,
-        descricao: editData.observacao,
-        idCategoria: categoriaSelecionada?.value ?? null,
-        idFornecedor: fornecedorSelecionado?.value ?? null,
-        tipoDeTransacao: editData.entrada ? "ENTRADA" : "SAIDA",
-        valor: parseFloat(editData.entrada || editData.saida || "0"),
+        data: formatarDataParaISO(editData.data || row.data),
+        nomeNoExtrato: editData.nomeNoExtrato ?? row.nomeNoExtrato,
+        rubricaContabil: editData.rubricaContabil ?? row.rubricaContabil,
+        descricao: editData.observacao ?? row.observacao,
+        tipoDeTransacao: editData.entrada ? "ENTRADA" : (editData.saida ? "SAIDA" : row.tipoDeTransacao),
+        valor: parseFloat(editData.entrada || editData.saida || row.entrada || row.saida || "0"),
+        juros: editData.juros != null ? extrairNumero(String(editData.juros)) : (row.juros ?? null),
+        mesReferencia: editData.mesReferencia != null
+          ? (normalizarMesReferencia(String(editData.mesReferencia)) || null)
+          : (row.mesReferencia ?? null),
       };
 
-      await updateExtrato(row.id, payload);
+      const idCategoriaFinal = (editData.idCategoriaSelecionada ?? categoriaSelecionada?.value ?? row.idCategoriaSelecionada) as number | undefined;
+      if (typeof idCategoriaFinal === 'number') {
+        payload.idCategoria = idCategoriaFinal;
+      }
+      if (fornecedorSelecionado && typeof fornecedorSelecionado.value === 'number') {
+        payload.idFornecedor = fornecedorSelecionado.value as number;
+      }
+      console.log(payload);
+  await updateExtrato(row.id, payload);
 
       // Força atualização da tabela para refletir as mudanças
       onAtualizarExtratos();
 
-      setEditIndex(null);
+      setEditId(null);
       alert("Extrato atualizado com sucesso!");
     } catch (err) {
       console.error("Erro ao atualizar extrato:", err);
@@ -224,7 +255,7 @@ const TabelaExtrato: React.FC<Props> = ({
 
 
   const handleCancel = () => {
-    setEditIndex(null);
+    setEditId(null);
     setEditData({});
   };
 
@@ -256,6 +287,37 @@ const TabelaExtrato: React.FC<Props> = ({
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
+  };
+
+  const formatarMesReferencia = (valor?: string | null) => {
+    if (!valor) return "-";
+    // Expecting formats like YYYY-MM or YYYY-M
+    const m = valor.match(/^(\d{4})-(\d{1,2})$/);
+    if (m) {
+      const ano = m[1];
+      const mes = m[2].padStart(2, "0");
+      return `${mes}/${ano}`;
+    }
+    return valor; // fallback raw
+  };
+  const normalizarMesReferencia = (valor: string): string => {
+    if (!valor) return "";
+    const v = valor.trim();
+    // MM/YYYY -> YYYY-MM
+    const mmYYYY = v.match(/^(\d{1,2})\/(\d{4})$/);
+    if (mmYYYY) {
+      const mm = mmYYYY[1].padStart(2, "0");
+      const yyyy = mmYYYY[2];
+      return `${yyyy}-${mm}`;
+    }
+    // YYYY-MM stays
+    const yyyyMM = v.match(/^(\d{4})-(\d{1,2})$/);
+    if (yyyyMM) {
+      const yyyy = yyyyMM[1];
+      const mm = yyyyMM[2].padStart(2, "0");
+      return `${yyyy}-${mm}`;
+    }
+    return v;
   };
 
   const formatarMoedaDigitar = (valor: string) => {
@@ -434,15 +496,15 @@ const TabelaExtrato: React.FC<Props> = ({
       const dadosOrdenadosPorTipo = dadosFiltrados.sort((a, b) => {
         const aFuturo = a.lancamentoFuturo || false;
         const bFuturo = b.lancamentoFuturo || false;
-        
+
         // Se um é futuro e outro não, o futuro vai para o final
         if (aFuturo && !bFuturo) return 1;
         if (!aFuturo && bFuturo) return -1;
-        
+
         // Se ambos são do mesmo tipo, mantém a ordem original
         return 0;
       });
-      
+
       setDadosOrdenados(dadosOrdenadosPorTipo);
       return;
     }
@@ -454,11 +516,11 @@ const TabelaExtrato: React.FC<Props> = ({
       // Primeiro, separar lançamentos futuros (previsões) para ficarem sempre no final
       const aFuturo = a.lancamentoFuturo || false;
       const bFuturo = b.lancamentoFuturo || false;
-      
+
       // Se um é futuro e outro não, o futuro vai para o final
       if (aFuturo && !bFuturo) return 1;
       if (!aFuturo && bFuturo) return -1;
-      
+
       // Se ambos são do mesmo tipo (futuros ou não), aplica a ordenação normal
       const valA = a[coluna] || "";
       const valB = b[coluna] || "";
@@ -495,6 +557,8 @@ const TabelaExtrato: React.FC<Props> = ({
                   const promises = selecionados.map(async (id) => {
                     const edit = dadosEditadosLote[id];
                     if (!edit) return;
+
+                    const originalRow = dadosOrdenados.find((r) => r.id === id) || dados.find((r) => r.id === id);
                     const normalizeLabel = (s: string | undefined) => (s || '')
                       .replace(/^\s*└\s*/, '')
                       .normalize('NFD')
@@ -502,19 +566,33 @@ const TabelaExtrato: React.FC<Props> = ({
                       .replace(/[^\p{L}\p{N}]+/gu, '')
                       .toLowerCase()
                       .trim();
-                    const categoriaSelecionada = categoriasFormatadas.find(opt => normalizeLabel(opt.label) === normalizeLabel(edit.rubricaSelecionada));
+
+                    let idCategoriaFinal: number | null | undefined = edit.idCategoriaSelecionada;
+                    if (idCategoriaFinal == null) {
+                      const catByLabel = categoriasFormatadas.find(
+                        (opt) => normalizeLabel(opt.label) === normalizeLabel(edit.rubricaSelecionada)
+                      );
+                      idCategoriaFinal = (catByLabel?.value as number | undefined) ?? originalRow?.idCategoriaSelecionada ?? null;
+                    }
+
                     const fornecedorSelecionado = fornecedoresFormatados.find(opt => opt.label === edit.fornecedorSelecionado);
 
-                    await updateExtrato(id, {
-                      data: formatarDataParaISO(edit.data),
-                      nomeNoExtrato: edit.nomeNoExtrato,
-                      rubricaContabil: edit.rubricaContabil,
-                      descricao: edit.observacao,
-                      idCategoria: categoriaSelecionada?.value ?? null,
-                      idFornecedor: fornecedorSelecionado?.value ?? null,
-                      tipoDeTransacao: edit.entrada ? "ENTRADA" : "SAIDA",
-                      valor: parseFloat(edit.entrada || edit.saida || "0"),
-                    });
+                    const payload: Partial<Extrato> = {
+                      data: formatarDataParaISO(edit.data ?? originalRow?.data),
+                      nomeNoExtrato: edit.nomeNoExtrato ?? originalRow?.nomeNoExtrato,
+                      rubricaContabil: edit.rubricaContabil ?? originalRow?.rubricaContabil,
+                      descricao: edit.observacao ?? originalRow?.observacao,
+                      idCategoria: idCategoriaFinal ?? null,
+                      tipoDeTransacao: edit.entrada ? "ENTRADA" : (edit.saida ? "SAIDA" : originalRow?.tipoDeTransacao),
+                      valor: parseFloat(edit.entrada || edit.saida || String(originalRow?.valor || "0")),
+                      juros: edit.juros != null ? extrairNumero(String(edit.juros)) : originalRow?.juros ?? null,
+                      mesReferencia: edit.mesReferencia != null ? normalizarMesReferencia(String(edit.mesReferencia)) || null : originalRow?.mesReferencia ?? null,
+                    };
+                    if (edit.fornecedorSelecionado && fornecedorSelecionado && typeof fornecedorSelecionado.value === 'number') {
+                      payload.idFornecedor = fornecedorSelecionado.value as number;
+                    }
+
+                    await updateExtrato(id, payload);
                   });
 
                   await Promise.all(promises);
@@ -676,11 +754,13 @@ const TabelaExtrato: React.FC<Props> = ({
             <tr className="bg-blue-700 text-white">
               <th className="border px-2 py-2 w-8"></th>
               {renderTh("data", "Data")}
+              {renderTh("mesReferencia", "Mês referência")}
               {renderTh("rubricaSelecionada", "Rubrica Financeira")}
               {renderTh("fornecedorSelecionado", "Fornecedor")}
               {renderTh("observacao", "Observação")}
               {renderTh("nomeNoExtrato", "Nome no Extrato")}
               {renderTh("rubricaContabil", "Rubrica Contábil")}
+              {renderTh("juros", "Juros e multa")}
               {renderTh("entrada", "Entrada")}
               {renderTh("saida", "Saída")}
               <th className="border px-2 py-2">Saldo</th>
@@ -700,7 +780,7 @@ const TabelaExtrato: React.FC<Props> = ({
               saldoAcumulado = saldoAcumulado + entrada - saida;
               const isEditando = editandoLote
                 ? selecionados.includes(row.id)
-                : editIndex === index;
+                : editId === row.id;
 
               return (
 
@@ -708,7 +788,7 @@ const TabelaExtrato: React.FC<Props> = ({
 
                   {insertIndex === index && (
                     <tr>
-                      <td className="p-0" colSpan={13}>
+                      <td className="p-0" colSpan={14}>
                         <div className="h-2 bg-blue-300/50 rounded" />
                       </td>
                     </tr>
@@ -716,10 +796,10 @@ const TabelaExtrato: React.FC<Props> = ({
 
                   <tr
                     className={`transition-all duration-200 ease-out ${selecionados.includes(row.id)
-                        ? "bg-green-200 border-2 border-green-600 shadow-md"
-                        : row.lancamentoFuturo
-                          ? "bg-red-100 border border-red-300 ring-2 ring-red-300"
-                          : "odd:bg-white even:bg-gray-100 hover:bg-gray-50"
+                      ? "bg-green-200 border-2 border-green-600 shadow-md"
+                      : row.lancamentoFuturo
+                        ? "bg-red-100 border border-red-300 ring-2 ring-red-300"
+                        : "odd:bg-white even:bg-gray-100 hover:bg-gray-50"
                       } ${dragIndex === index ? "opacity-70 bg-blue-50 scale-[0.995] shadow-md" : (dragOverIndex.current === index ? "ring-2 ring-blue-400" : "")}`}
                     draggable
                     onDragStart={() => {
@@ -765,7 +845,7 @@ const TabelaExtrato: React.FC<Props> = ({
                         const bloco: any[] = [];
                         for (const iRem of indices) {
                           const [rem] = list.splice(iRem, 1);
-                          bloco.unshift(rem); 
+                          bloco.unshift(rem);
                         }
                         let targetIndex = insertIndex;
                         const removedBefore = indices.filter(i => i < insertIndex).length;
@@ -807,20 +887,34 @@ const TabelaExtrato: React.FC<Props> = ({
                       </span>
                     </td>
                     <td className="border px-2 py-2 whitespace-nowrap">
-                      {editIndex === index ? (
+                      {isEditando ? (
                         <input
                           type="text"
                           value={editData.data}
                           onChange={(e) => handleChange(e, "data")}
-                          className="w-28 border px-2 py-1" 
+                          className="w-28 border px-2 py-1"
                         />
                       ) : (
                         row.data
                       )}
                     </td>
 
-                    <td className={`border px-2 py-2 whitespace-nowrap relative group ${editIndex === index ? "min-w-[250px]" : ""}`}>
-                      {editIndex === index ? (
+                    <td className="border px-2 py-2 whitespace-nowrap">
+                      {isEditando ? (
+                        <input
+                          type="text"
+                          value={formatarMesReferencia(editData.mesReferencia)}
+                          onChange={(e) => setEditData({ ...editData, mesReferencia: e.target.value })}
+                          placeholder="MM/AAAA ou YYYY-MM"
+                          className="w-28 border px-2 py-1"
+                        />
+                      ) : (
+                        formatarMesReferencia(row.mesReferencia)
+                      )}
+                    </td>
+
+                    <td className={`border px-2 py-2 whitespace-nowrap relative group ${isEditando ? "min-w-[250px]" : ""}`}>
+                      {isEditando ? (
                         <CustomDropdown
                           label="Selecione uma rubrica"
                           options={categoriasFormatadas}
@@ -860,8 +954,8 @@ const TabelaExtrato: React.FC<Props> = ({
                       )}
                     </td>
 
-                    <td className={`border px-2 py-2 whitespace-nowrap relative group ${editIndex === index ? "min-w-[250px]" : ""}`}>
-                      {editIndex === index ? (
+                    <td className={`border px-2 py-2 whitespace-nowrap relative group ${isEditando ? "min-w-[250px]" : ""}`}>
+                      {isEditando ? (
                         <CustomDropdown
                           label="Fornecedor"
                           options={fornecedoresFormatados}
@@ -883,7 +977,7 @@ const TabelaExtrato: React.FC<Props> = ({
                     </td>
 
                     <td className="border px-2 py-2 whitespace-nowrap relative group">
-                      {editIndex === index ? (
+                      {isEditando ? (
                         <input
                           type="text"
                           value={editData.observacao}
@@ -903,7 +997,7 @@ const TabelaExtrato: React.FC<Props> = ({
                     </td>
 
                     <td className="border px-2 py-2 whitespace-nowrap relative group">
-                      {editIndex === index ? (
+                      {isEditando ? (
                         <input
                           type="text"
                           value={editData.nomeNoExtrato}
@@ -923,7 +1017,7 @@ const TabelaExtrato: React.FC<Props> = ({
                     </td>
 
                     <td className="border px-2 py-2 whitespace-nowrap relative group">
-                      {editIndex === index ? (
+                      {isEditando ? (
                         <input
                           type="text"
                           value={editData.rubricaContabil}
@@ -943,7 +1037,23 @@ const TabelaExtrato: React.FC<Props> = ({
                     </td>
 
                     <td className="border px-2 py-2 text-right whitespace-nowrap">
-                      {editIndex === index ? (
+                      {isEditando ? (
+                        <input
+                          type="text"
+                          value={formatarMoedaDigitar(editData.juros || '')}
+                          onChange={(e) => {
+                            const rawValue = e.target.value.replace(/[^\d,]/g, "").replace(",", ".");
+                            setEditData({ ...editData, juros: rawValue });
+                          }}
+                          className="w-full border px-2 py-1 text-right"
+                        />
+                      ) : (
+                        row.juros != null && row.juros !== "" ? formatarMoeda(row.juros) : "-"
+                      )}
+                    </td>
+
+                    <td className="border px-2 py-2 text-right whitespace-nowrap">
+                      {isEditando ? (
                         <input
                           type="text"
                           value={formatarMoedaDigitar(editData.entrada)}
@@ -958,7 +1068,7 @@ const TabelaExtrato: React.FC<Props> = ({
                       )}
                     </td>
                     <td className="border px-2 py-2 text-right whitespace-nowrap">
-                      {editIndex === index ? (
+                      {isEditando ? (
                         <input
                           type="text"
                           value={formatarMoedaDigitar(editData.saida)} // Formata na exibição
@@ -1005,9 +1115,9 @@ const TabelaExtrato: React.FC<Props> = ({
 
                     <td className="border px-2 py-2 text-center">
                       <div className="flex justify-center items-center space-x-4 h-full">
-                        {editIndex === index ? (
+                        {isEditando ? (
                           <>
-                            <button className="text-green-500 hover:text-green-700" onClick={() => handleSave(index)}>
+                            <button className="text-green-500 hover:text-green-700" onClick={() => handleSave(row.id)}>
                               <FaSave size={20} />
                             </button>
                             <button className="text-red-500 hover:text-red-700" onClick={handleCancel}>
@@ -1017,7 +1127,7 @@ const TabelaExtrato: React.FC<Props> = ({
                           </>
                         ) : (
                           <>
-                            <button className="text-blue-500 hover:text-blue-700" onClick={() => handleEdit(index)}>
+                            <button className="text-blue-500 hover:text-blue-700" onClick={() => handleEdit(row.id)}>
                               <FaEdit size={20} />
                             </button>
 
@@ -1075,6 +1185,8 @@ const TabelaExtrato: React.FC<Props> = ({
                           required
                         />
                       </td>
+                      {/* Mês referência placeholder */}
+                      <td className="border px-2 py-2 text-center">—</td>
                       <td className="border px-2 py-2">
                         <CustomDropdown
                           label="Rubrica"
@@ -1120,6 +1232,9 @@ const TabelaExtrato: React.FC<Props> = ({
                           onChange={(e) => setNovoSubextrato({ ...novoSubextrato, rubricaContabil: e.target.value })}
                         />
                       </td>
+
+                      {/* Juros e multa placeholder (apenas exibição) */}
+                      <td className="border px-2 py-2 text-right">—</td>
 
                       <td className="border px-2 py-2 text-right">
                         <input
@@ -1209,6 +1324,9 @@ const TabelaExtrato: React.FC<Props> = ({
                         <td className="border px-2 py-2 text-center">—</td>
                         <td className="border px-2 py-2 whitespace-nowrap">{sub.data}</td>
 
+                        {/* Mês referência placeholder */}
+                        <td className="border px-2 py-2 text-center">—</td>
+
                         <td className="border px-2 py-2 whitespace-nowrap">
                           {sub.categoria?.nome || "—"}
                         </td>
@@ -1229,6 +1347,9 @@ const TabelaExtrato: React.FC<Props> = ({
                         <td className="border px-2 py-2 whitespace-nowrap">
                           {sub.rubricaContabil || "—"}
                         </td>
+
+                        {/* Juros e multa placeholder */}
+                        <td className="border px-2 py-2 text-right whitespace-nowrap">—</td>
 
                         <td className="border px-2 py-2 text-right whitespace-nowrap">
                           {sub.tipoDeTransacao === "ENTRADA"
@@ -1252,7 +1373,7 @@ const TabelaExtrato: React.FC<Props> = ({
 
                   {index === dadosOrdenados.length - 1 && insertIndex === dadosOrdenados.length && (
                     <tr>
-                      <td className="p-0" colSpan={13}>
+                      <td className="p-0" colSpan={14}>
                         <div className="h-2 bg-blue-300/50 rounded" />
                       </td>
                     </tr>
@@ -1278,13 +1399,12 @@ const TabelaExtrato: React.FC<Props> = ({
             Salvando nova ordem...
           </div>
         )}
-        {isLoadingSetSaldo && (
-          <div className="fixed inset-0 z-[9999] bg-black bg-opacity-40 flex items-center justify-center">
-            <div className="bg-white p-6 rounded shadow text-center">
-              <p className="text-gray-800 font-medium">Processando...</p>
-            </div>
+        <FullScreenOverlay open={isLoadingSetSaldo}>
+          <div className="bg-white p-6 rounded shadow text-center">
+            <p className="text-gray-800 font-medium">Processando...</p>
           </div>
-        )}
+        </FullScreenOverlay>
+
       </div>
 
 

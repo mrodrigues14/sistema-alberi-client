@@ -1,5 +1,5 @@
 // Garante URL base correta (sem barra final repetida)
-let base = process.env.NEXT_PUBLIC_API_URL || "https://api.albericonsult.com.br";
+let base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 if (base.endsWith('/')) base = base.slice(0, -1);
 const API_URL = base;
 

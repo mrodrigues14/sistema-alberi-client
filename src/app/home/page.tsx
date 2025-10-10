@@ -261,7 +261,7 @@ export default function Home() {
               </div>
             </div>
           )}
-          {isUsuarioExterno && idClienteValido && (
+          {idClienteValido && (
             <ExternalDashboard
               idCliente={idCliente}
               nomeEmpresa={nomeEmpresa}
