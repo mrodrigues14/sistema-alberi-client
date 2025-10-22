@@ -212,10 +212,10 @@ const Extrato: React.FC = () => {
         const selectedBancoId = Number(event.target.value);
         const banco = bancos?.find(b => b.idbanco === selectedBancoId);
 
-        if (bancoSelecionado !== selectedBancoId) {
-            setBancoSelecionado(selectedBancoId);
-            setNomeBancoSelecionado(banco?.nome || null);
-        }
+        setBancoSelecionado(selectedBancoId);
+        setNomeBancoSelecionado(banco?.nome || null);
+        sessionStorage.setItem("nomeBancoSelecionado", banco?.nome || "");
+        sessionStorage.setItem("bancoSelecionado", String(selectedBancoId));
     };
 
     const handleInsercaoChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -243,24 +243,25 @@ const Extrato: React.FC = () => {
         }
     };
 
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            const storedBanco = sessionStorage.getItem("bancoSelecionado");
-            if (storedBanco && bancoSelecionado === null) {
-                setBancoSelecionado(Number(storedBanco));
-            }
-        }
-    }, []);
 
     useEffect(() => {
-        if (bancoSelecionado !== null && bancos.length > 0) {
-            const banco = bancos.find(b => b.idbanco === bancoSelecionado);
-            if (banco) {
-                setNomeBancoSelecionado(banco.nome);
-                sessionStorage.setItem("nomeBancoSelecionado", banco.nome);
-            }
+        // Sempre que cliente ou bancos mudarem, garanta que bancoSelecionado é válido
+        if (!bancos || bancos.length === 0) {
+            setBancoSelecionado(null);
+            setNomeBancoSelecionado(null);
+            return;
         }
-    }, [bancoSelecionado, bancos, setNomeBancoSelecionado]);
+        // Se bancoSelecionado não está nas opções, reseta para vazio ou primeiro banco
+        const bancoValido = bancos.find(b => b.idbanco === bancoSelecionado);
+        if (!bancoValido) {
+            setBancoSelecionado(bancos[0].idbanco);
+            setNomeBancoSelecionado(bancos[0].nome);
+            sessionStorage.setItem("bancoSelecionado", String(bancos[0].idbanco));
+            sessionStorage.setItem("nomeBancoSelecionado", bancos[0].nome);
+        }
+    }, [idCliente, bancos]);
+
+    // Removido: nomeBancoSelecionado agora é atualizado diretamente no handleBancoChange
 
     useEffect(() => {
         if (extratos) {
@@ -395,7 +396,7 @@ const Extrato: React.FC = () => {
             // Separar rubrica pai e subrubrica em colunas diferentes
             const rubricaPai = row.rubricaPaiNome || row.rubricaSelecionada;
             const subrubrica = row.subrubricaNome || '';
-            
+
             return {
                 'Data': row.data,
                 'Rubrica': rubricaPai,
@@ -411,17 +412,17 @@ const Extrato: React.FC = () => {
         });
 
         const worksheet = XLSX.utils.json_to_sheet(dadosParaExportar);
-        
+
         // Aplicar formatação vermelha nas linhas de previsão
         const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
         const inicioPrevisoes = dadosEfetivados.length + 1; // +1 porque a primeira linha é o cabeçalho
-        
+
         // Criar estilos para as células das previsões
         for (let rowNum = inicioPrevisoes + 1; rowNum <= range.e.r + 1; rowNum++) {
             for (let colNum = range.s.c; colNum <= range.e.c; colNum++) {
                 const cellAddress = XLSX.utils.encode_cell({ r: rowNum, c: colNum });
                 if (!worksheet[cellAddress]) continue;
-                
+
                 // Adicionar estilo vermelho para as células de previsão
                 if (!worksheet[cellAddress].s) worksheet[cellAddress].s = {};
                 worksheet[cellAddress].s = {
@@ -433,7 +434,7 @@ const Extrato: React.FC = () => {
 
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Extrato');
-        
+
         const fileName = `Extrato_${nomeBancoSelecionado || 'Banco'}_${mesSelecionado}_${anoSelecionado}.xlsx`;
         XLSX.writeFile(workbook, fileName);
     };
@@ -446,23 +447,23 @@ const Extrato: React.FC = () => {
         }
 
         const doc = new jsPDF('l', 'mm', 'a4');
-        
+
         // Título do documento
         doc.setFontSize(16);
         doc.text(`Extrato - ${nomeBancoSelecionado || 'Banco'} - ${mesSelecionado}/${anoSelecionado}`, 20, 20);
-        
+
         // Informações do saldo
         doc.setFontSize(10);
         doc.text(`Saldo Inicial: R$ ${(saldoInicial || 0).toFixed(2).replace('.', ',')}`, 20, 30);
         doc.text(`Saldo Atual: R$ ${saldoAtual.toFixed(2).replace('.', ',')}`, 100, 30);
         doc.text(`Saldo com Previsões: R$ ${saldoComPrevisoes.toFixed(2).replace('.', ',')}`, 180, 30);
-        
+
         // Preparar dados para a tabela
         const headers = [
-            'Data', 'Rubrica', 'Subrubrica', 'Fornecedor', 'Observação', 
+            'Data', 'Rubrica', 'Subrubrica', 'Fornecedor', 'Observação',
             'Nome no Extrato', 'Rubrica Contábil', 'Entrada', 'Saída', 'Tipo'
         ];
-        
+
         const dados = dadosTabela.map(row => [
             row.data,
             row.rubricaPaiNome || row.rubricaSelecionada,
@@ -499,7 +500,7 @@ const Extrato: React.FC = () => {
             },
             theme: 'striped'
         });
-        
+
         const fileName = `Extrato_${nomeBancoSelecionado || 'Banco'}_${mesSelecionado}_${anoSelecionado}.pdf`;
         doc.save(fileName);
     };
@@ -713,7 +714,7 @@ const Extrato: React.FC = () => {
                                                 Editar Todas as Linhas
                                             </button>
                                         </div>
-                                    )}  
+                                    )}
                                 </div>
 
                                 {/* Botões de Exportação */}

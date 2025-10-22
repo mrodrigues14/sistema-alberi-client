@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ExtratoAnexo, deleteExtratoAnexo, uploadExtratoAnexo } from "@/lib/hooks/useExtratoAnexos";
+import { ExtratoAnexo, deleteExtratoAnexo, uploadExtratoAnexo, getExtratoAnexo } from "@/lib/hooks/useExtratoAnexos";
 import { FaTrash, FaTimes, FaPlus, FaDownload } from "react-icons/fa";
 
 interface Props {
@@ -26,6 +26,8 @@ const Anexos: React.FC<Props> = ({ anexos, onFechar, onAtualizar, idExtrato }) =
   const [previewURL, setPreviewURL] = useState<string | null>(null);
   const [tipoSelecionado, setTipoSelecionado] = useState<string>("bo");
   const [uploading, setUploading] = useState<boolean>(false);
+  const [loadingPreviewId, setLoadingPreviewId] = useState<number | null>(null);
+  const [previews, setPreviews] = useState<Record<number, string>>({}); // idAnexo -> objectURL
   const inputRef = useRef<HTMLInputElement>(null);
 
   const getExt = (nome: string) => nome.split(".").pop()?.toLowerCase() || "";
@@ -108,9 +110,42 @@ const Anexos: React.FC<Props> = ({ anexos, onFechar, onAtualizar, idExtrato }) =
     URL.revokeObjectURL(url);
   };
 
+  const ensurePreview = async (anexo: ExtratoAnexo) => {
+    if (previews[anexo.idAnexo]) return; // already loaded
+    try {
+      setLoadingPreviewId(anexo.idAnexo);
+      // Try to use existing buffer; if not present, fetch
+      let data = anexo.arquivo?.data as number[] | undefined;
+      let nome = anexo.nomeArquivo;
+      if (!data) {
+        const full = await getExtratoAnexo(anexo.idAnexo);
+        data = full.arquivo?.data as number[] | undefined;
+        nome = full.nomeArquivo || nome;
+      }
+      if (!data) return;
+      // Create object URL
+      const ext = nome.split(".").pop()?.toLowerCase();
+      const mimeTypes: Record<string, string> = {
+        pdf: "application/pdf",
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        png: "image/png",
+        gif: "image/gif",
+        bmp: "image/bmp",
+        webp: "image/webp",
+      };
+      const mime = mimeTypes[ext || ""] || "application/octet-stream";
+      const blob = new Blob([new Uint8Array(data)], { type: mime });
+      const url = URL.createObjectURL(blob);
+      setPreviews(prev => ({ ...prev, [anexo.idAnexo]: url }));
+    } finally {
+      setLoadingPreviewId(null);
+    }
+  };
+
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style={{ backdropFilter: 'blur(6px)' }}>
       <div className="bg-white p-6 rounded-lg w-[700px] max-h-[80vh] overflow-auto shadow-lg relative">
         <button onClick={onFechar} className="absolute top-3 right-3 text-gray-500 hover:text-red-600">
           <FaTimes size={18} />
@@ -123,23 +158,30 @@ const Anexos: React.FC<Props> = ({ anexos, onFechar, onAtualizar, idExtrato }) =
 
             return (
               <div key={anexo.idAnexo} className="border rounded p-2 shadow-sm relative">
-                <div className="w-full h-32 mb-2 flex items-center justify-center rounded bg-gray-100">
-                  {isImagem(ext) ? (
-                    <Image 
-                      src={`data:;base64,${anexo.caminho}`} 
-                      alt={anexo.nomeArquivo} 
+                <div className="w-full h-32 mb-2 flex items-center justify-center rounded bg-gray-100 overflow-hidden">
+                  {isImagem(ext) && previews[anexo.idAnexo] ? (
+                    // Show loaded preview
+                    <Image
+                      src={previews[anexo.idAnexo]}
+                      alt={anexo.nomeArquivo}
                       className="object-cover h-full w-full rounded"
                       width={200}
                       height={128}
                     />
-                  ) : isPDF(ext) ? (
-                    <span className="text-blue-600 font-semibold">📄 PDF</span>
-                  ) : isWord(ext) ? (
-                    <span className="text-purple-600 font-semibold">📄 Word</span>
-                  ) : isExcel(ext) ? (
-                    <span className="text-green-600 font-semibold">📊 Excel</span>
                   ) : (
-                    <span className="text-gray-500">📎 Arquivo</span>
+                    <div className="flex flex-col items-center justify-center text-sm text-gray-600">
+                      <span className="text-2xl">📎</span>
+                      <span className="mt-1 uppercase">{ext || "ARQ"}</span>
+                      {isImagem(ext) && (
+                        <button
+                          onClick={() => ensurePreview(anexo)}
+                          className="mt-2 px-2 py-1 text-xs rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+                          disabled={loadingPreviewId === anexo.idAnexo}
+                        >
+                          {loadingPreviewId === anexo.idAnexo ? "Carregando…" : "Pré-visualizar"}
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -150,7 +192,21 @@ const Anexos: React.FC<Props> = ({ anexos, onFechar, onAtualizar, idExtrato }) =
 
                 <div className="flex gap-2">
                   <button
-                    onClick={() => anexo.arquivo?.data && downloadBuffer(anexo.arquivo.data, anexo.nomeArquivo)}
+                    onClick={async () => {
+                      if (anexo.arquivo?.data) {
+                        downloadBuffer(anexo.arquivo.data, anexo.nomeArquivo);
+                        return;
+                      }
+                      try {
+                        const full = await getExtratoAnexo(anexo.idAnexo);
+                        const data = full.arquivo?.data;
+                        if (data) downloadBuffer(data, full.nomeArquivo || anexo.nomeArquivo);
+                        else alert("Arquivo indisponível para download.");
+                      } catch (e) {
+                        console.error(e);
+                        alert("Erro ao baixar anexo.");
+                      }
+                    }}
                     className="bg-blue-600 text-white flex-1 py-1 rounded text-sm hover:bg-blue-700 flex items-center justify-center gap-1"
                   >
                     <FaDownload /> Baixar

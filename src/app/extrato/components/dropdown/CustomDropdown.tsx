@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface Option {
   label: string;
@@ -32,7 +33,9 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   const [showOptions, setShowOptions] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [menuStyle, setMenuStyle] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 0 });
   useEffect(() => {
     setFilteredOptions(options);
   }, [options]);
@@ -53,23 +56,60 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
     setShowOptions(false);
     setSearch("");
   };
+  const computeMenuPosition = () => {
+    const trigger = dropdownRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    // Using fixed positioning: use viewport coordinates directly (no scroll offsets)
+    setMenuStyle({
+      top: rect.bottom,
+      left: rect.left,
+      width: rect.width,
+    });
+  };
+
   const handleDropdownToggle = () => {
-    setShowOptions(!showOptions);
-    if (allowSearch) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+    const next = !showOptions;
+    setShowOptions(next);
+    if (next) {
+      computeMenuPosition();
+      if (allowSearch) {
+        setTimeout(() => inputRef.current?.focus(), 0);
+      }
     }
   };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setTimeout(() => setShowOptions(false), 100);
+      const target = event.target as Node;
+      const triggerContains = dropdownRef.current?.contains(target);
+      const menuContains = menuRef.current?.contains(target);
+      if (!triggerContains && !menuContains) {
+        setShowOptions(false);
       }
     };
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setShowOptions(false);
+      }
+    };
+
+    const handleScrollOrResize = () => {
+      if (showOptions) computeMenuPosition();
+    };
+
     document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("scroll", handleScrollOrResize, true);
+    window.addEventListener("resize", handleScrollOrResize);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("scroll", handleScrollOrResize, true);
+      window.removeEventListener("resize", handleScrollOrResize);
+    };
+  }, [showOptions]);
   return (
     <div className="relative w-full" ref={dropdownRef}>
       {/* Dropdown principal */}
@@ -81,9 +121,13 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
         {options.find((opt) => opt.label === selectedValue.label)?.label || label}
       </div>
 
-      {/* Opções do Dropdown */}
-      {showOptions && (
-        <div className="absolute bg-white border rounded shadow-md mt-1 w-full z-50">
+      {/* Opções do Dropdown via portal */}
+      {showOptions && createPortal(
+        <div
+          ref={menuRef}
+          style={{ position: "fixed", top: menuStyle.top, left: menuStyle.left, width: menuStyle.width, zIndex: 10000 }}
+          className="bg-white border rounded shadow-md mt-1"
+        >
           {allowSearch && (
             <input
               ref={inputRef}
@@ -96,13 +140,12 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
             />
           )}
 
-          <div className="max-h-48 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             {filteredOptions.length > 0 ? (
               filteredOptions.map(({ label, value, disabled }, index) => (
                 <div
                   key={index}
-                  className={`px-2 py-1 ${disabled ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200 cursor-pointer"
-                    }`}
+                  className={`px-2 py-1 ${disabled ? "text-gray-400 cursor-not-allowed" : "hover:bg-gray-200 cursor-pointer"}`}
                   onMouseDown={() => handleSelect({ label, value }, disabled)}
                 >
                   {label}
@@ -121,10 +164,10 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
                       : "Adicionar Fornecedor"}
                 </button>
               </div>
-
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {showModal && (

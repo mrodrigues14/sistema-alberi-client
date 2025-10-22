@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useExtratoAnexosPorExtrato } from "@/lib/hooks/useExtratoAnexosPorExtrato";
 import { createPortal } from "react-dom";
-import { FaDivide, FaEdit, FaHandPointer, FaPaperclip, FaSave, FaTrash, FaTimes, FaSort, FaSortUp, FaSortDown, FaFilter, FaCheck, FaGripVertical, FaFileExcel, FaFilePdf } from "react-icons/fa";
+import { FaDivide, FaEdit, FaHandPointer, FaPaperclip, FaSave, FaTrash, FaTimes, FaSort, FaSortUp, FaSortDown, FaFilter, FaCheck, FaGripVertical, FaFileExcel, FaFilePdf, FaClock } from "react-icons/fa";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -10,7 +11,7 @@ import CustomDropdown from "../dropdown/CustomDropdown";
 import "react-date-range/dist/styles.css";
 import "react-date-range/dist/theme/default.css";
 import { Subextrato } from "../../../../../types/Subextrato";
-import { criarSubextrato } from "@/lib/hooks/useSubextrato";
+import { criarSubextrato, atualizarSubextrato, deletarSubextrato } from "@/lib/hooks/useSubextrato";
 import { deleteExtrato, updateExtrato, reorderExtratos } from "@/lib/hooks/useExtrato";
 import { Extrato } from "../../../../../types/Extrato";
 import Anexos from "../anexos/Anexos";
@@ -82,6 +83,11 @@ const TabelaExtrato: React.FC<Props> = ({
   const dragBlockIndices = useRef<number[] | null>(null);
   const [ordem, setOrdem] = useState<{ coluna: string; direcao: "asc" | "desc" } | null>(null);
   const [dadosOrdenados, setDadosOrdenados] = useState<any[]>([]);
+
+  // Sincroniza dadosOrdenados com dados sempre que os dados mudam
+  useEffect(() => {
+    setDadosOrdenados(dados);
+  }, [dados]);
   const [filtroRubricas, setFiltroRubricas] = useState<string[]>([]);
   const [filtroFornecedores, setFiltroFornecedores] = useState<string[]>([]);
   const [filtroSubrubricas, setFiltroSubrubricas] = useState<string[]>([]);
@@ -89,12 +95,68 @@ const TabelaExtrato: React.FC<Props> = ({
   const [filtrosVisiveis, setFiltrosVisiveis] = useState(false);
   const [subdividindoIndex, setSubdividindoIndex] = useState<number | null>(null);
   const [novoSubextrato, setNovoSubextrato] = useState<any>({});
+  const [editandoSubId, setEditandoSubId] = useState<number | null>(null);
+  const [subEdit, setSubEdit] = useState<any>({});
   const [anexosVisiveis, setAnexosVisiveis] = useState(false);
   const [extratoSelecionado, setExtratoSelecionado] = useState<number | null>(null);
   const [dadosEditadosLote, setDadosEditadosLote] = useState<Record<number, any>>({});
   const [deletandoId, setDeletandoId] = useState<number | null>(null);
   const [confirmandoId, setConfirmandoId] = useState<number | null>(null);
-  const { anexos, mutate } = useExtratoAnexos();
+  const [marcandoPrevisaoId, setMarcandoPrevisaoId] = useState<number | null>(null);
+  // Paginação para reduzir DOM e re-render durante drag
+  const [pageSize, setPageSize] = useState<number>(100);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Opções de filtro pesadas (memoizadas para não recalcular a cada render)
+  const uniqueRubricas = React.useMemo(
+    () => [...new Set(dados.map(d => d.rubricaPaiNome || d.rubricaSelecionada))],
+    [dados]
+  );
+  const uniqueFornecedores = React.useMemo(
+    () => [...new Set(dados.map(d => d.fornecedorSelecionado))],
+    [dados]
+  );
+  const uniqueRubricasContabeis = React.useMemo(
+    () => [...new Set(dados.map(d => d.rubricaContabil))],
+    [dados]
+  );
+  const uniqueSubrubricas = React.useMemo(
+    () => [...new Set(dados.map(d => d.subrubricaNome).filter(Boolean))],
+    [dados]
+  );
+
+  // Derivados de paginação
+  const totalPages = React.useMemo(() => Math.max(1, Math.ceil((dadosOrdenados?.length || 0) / pageSize)), [dadosOrdenados, pageSize]);
+  useEffect(() => { if (currentPage > totalPages) setCurrentPage(1); }, [totalPages]);
+  const startIndex = React.useMemo(() => (currentPage - 1) * pageSize, [currentPage, pageSize]);
+  const endIndex = React.useMemo(() => Math.min(startIndex + pageSize, dadosOrdenados.length), [startIndex, pageSize, dadosOrdenados.length]);
+
+  // Primeira página que contém lançamentos futuros (para pular direto)
+  const futurePage = React.useMemo(() => {
+    const idx = dadosOrdenados.findIndex((r) => !!r.lancamentoFuturo);
+    if (idx === -1) return null;
+    return Math.floor(idx / pageSize) + 1;
+  }, [dadosOrdenados, pageSize]);
+
+  // Saldo acumulado até o início da página atual
+  const pageSaldoInicialAcumulado = React.useMemo(() => {
+    let acc = saldoInicial ?? 0;
+    for (let i = 0; i < startIndex; i++) {
+      const row = dadosOrdenados[i];
+      if (!row) continue;
+      const entrada = parseFloat(row.entrada || "0");
+      const saida = parseFloat(row.saida || "0");
+      acc += entrada - saida;
+    }
+    return acc;
+  }, [saldoInicial, dadosOrdenados, startIndex]);
+
+  // Buscar anexos só para extratos visíveis na página
+  const idsExtratoPagina = React.useMemo(() => {
+    const slice = dadosOrdenados.slice(startIndex, endIndex);
+    return Array.from(new Set(slice.map(r => r.id))).sort((a: number, b: number) => a - b);
+  }, [dadosOrdenados, startIndex, endIndex]);
+  const { anexosPorExtrato, isLoading, isError, mutate } = useExtratoAnexosPorExtrato(idsExtratoPagina);
   const { idCliente } = useClienteContext();
   const { bancoSelecionado, nomeBancoSelecionado, setBancoSelecionado, setNomeBancoSelecionado } = useBancoContext();
   const [paginaCarregada, setPaginaCarregada] = useState(false);
@@ -192,6 +254,15 @@ const TabelaExtrato: React.FC<Props> = ({
         (opt) => opt.label === editData.fornecedorSelecionado
       );
 
+        // Converte entrada/saída digitadas (dígitos -> centavos) para número com precisão
+        const valorCampo = (() => {
+          if (editData.entrada != null && editData.entrada !== '') return parseMoedaInput(editData.entrada as any);
+          if (editData.saida != null && editData.saida !== '') return parseMoedaInput(editData.saida as any);
+          // fallback para valor original já numérico, senão tenta derivar de strings pré-existentes
+          if (typeof row.valor === 'number') return row.valor;
+          return extrairNumero(String(row.entrada || row.saida || '0'));
+        })();
+
       // Monta payload preservando campos quando não alterados
       const payload: Partial<Extrato> = {
         data: formatarDataParaISO(editData.data || row.data),
@@ -199,8 +270,8 @@ const TabelaExtrato: React.FC<Props> = ({
         rubricaContabil: editData.rubricaContabil ?? row.rubricaContabil,
         descricao: editData.observacao ?? row.observacao,
         tipoDeTransacao: editData.entrada ? "ENTRADA" : (editData.saida ? "SAIDA" : row.tipoDeTransacao),
-        valor: parseFloat(editData.entrada || editData.saida || row.entrada || row.saida || "0"),
-        juros: editData.juros != null ? extrairNumero(String(editData.juros)) : (row.juros ?? null),
+          valor: valorCampo,
+  juros: editData.juros != null ? parseMoedaInput(editData.juros as any) : (row.juros ?? null),
         mesReferencia: editData.mesReferencia != null
           ? (normalizarMesReferencia(String(editData.mesReferencia)) || null)
           : (row.mesReferencia ?? null),
@@ -214,7 +285,7 @@ const TabelaExtrato: React.FC<Props> = ({
         payload.idFornecedor = fornecedorSelecionado.value as number;
       }
       console.log(payload);
-  await updateExtrato(row.id, payload);
+      await updateExtrato(row.id, payload);
 
       // Força atualização da tabela para refletir as mudanças
       onAtualizarExtratos();
@@ -253,6 +324,19 @@ const TabelaExtrato: React.FC<Props> = ({
     }
   };
 
+  const handleMarcarComoPrevisao = async (id: number) => {
+    setMarcandoPrevisaoId(id);
+    try {
+      await updateExtrato(id, { lancamentoFuturo: true });
+      onAtualizarExtratos();
+    } catch (error) {
+      console.error("Erro ao marcar como previsão:", error);
+      alert("Erro ao marcar lançamento como previsão.");
+    } finally {
+      setMarcandoPrevisaoId(null);
+    }
+  };
+
 
   const handleCancel = () => {
     setEditId(null);
@@ -261,6 +345,69 @@ const TabelaExtrato: React.FC<Props> = ({
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, field: string) => {
     setEditData({ ...editData, [field]: e.target.value });
+  };
+
+  const iniciarEdicaoSub = (sub: Subextrato) => {
+    setEditandoSubId(sub.idSubextrato);
+    setSubEdit({
+      data: formatarDataParaISO(sub.data),
+      observacao: sub.observacao || "",
+      nomeNoExtrato: sub.nomeNoExtrato || "",
+      rubricaContabil: sub.rubricaContabil || "",
+      tipoDeTransacao: sub.tipoDeTransacao,
+      valor: Number(sub.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 }),
+      mesReferencia: sub.mesReferencia || "",
+      juros: sub.juros ?? "",
+      idCategoriaSelecionada: sub.categoria?.idcategoria,
+      idFornecedorSelecionado: sub.fornecedor?.idfornecedor,
+    });
+  };
+
+  const salvarSub = async (sub: Subextrato) => {
+    try {
+      const valorNumero = parsePtBrToFloat(String(subEdit.valor || "0"));
+      const payload: any = {
+        data: subEdit.data,
+        observacao: subEdit.observacao || null,
+        nomeNoExtrato: subEdit.nomeNoExtrato || null,
+        rubricaContabil: subEdit.rubricaContabil || null,
+        tipoDeTransacao: subEdit.tipoDeTransacao,
+        valor: String(valorNumero),
+        mesReferencia: subEdit.mesReferencia != null ? normalizarMesReferencia(String(subEdit.mesReferencia)) || null : sub.mesReferencia ?? null,
+        juros: subEdit.juros != null && subEdit.juros !== "" ? extrairNumero(String(subEdit.juros)) : (sub.juros ?? null),
+      };
+
+      if (subEdit.idCategoriaSelecionada) {
+        payload.categoria = { idcategoria: subEdit.idCategoriaSelecionada };
+      }
+      if (subEdit.idFornecedorSelecionado) {
+        payload.fornecedor = { idfornecedor: subEdit.idFornecedorSelecionado };
+      }
+
+      await atualizarSubextrato(sub.idSubextrato, payload);
+      setEditandoSubId(null);
+      setSubEdit({});
+      onAtualizarSubextratos && onAtualizarSubextratos();
+    } catch (e) {
+      console.error("Erro ao atualizar subextrato", e);
+      alert("Erro ao atualizar subextrato.");
+    }
+  };
+
+  const cancelarSub = () => {
+    setEditandoSubId(null);
+    setSubEdit({});
+  };
+
+  const excluirSub = async (id: number) => {
+    if (!confirm("Excluir este subextrato?")) return;
+    try {
+      await deletarSubextrato(id);
+      onAtualizarSubextratos && onAtualizarSubextratos();
+    } catch (e) {
+      console.error("Erro ao excluir subextrato", e);
+      alert("Erro ao excluir subextrato.");
+    }
   };
 
   const formatarMoeda = (valor: string | number) => {
@@ -332,10 +479,32 @@ const TabelaExtrato: React.FC<Props> = ({
     });
   };
 
+  // Converte string de input de moeda (armazenada como apenas dígitos em centavos) para número
+  const parseMoedaInput = (valor: string | number | undefined | null): number => {
+    if (valor === undefined || valor === null) return 0;
+    const s = String(valor);
+    const numeros = s.replace(/\D/g, "");
+    if (!numeros) return 0;
+    return Number(numeros) / 100;
+  };
+
   const extrairNumero = (valor: string) => {
-    const numero = valor.replace(/\D/g, "");
-    const numeroDividido = Number(numero) / 100
-    return numeroDividido;
+    if (valor === undefined || valor === null) return 0;
+    let s = String(valor).trim();
+    if (s === "") return 0;
+    // Remove spaces
+    s = s.replace(/\s/g, "");
+    // Caso comum pt-BR: '1.234,56' -> remove '.' (milhares) e troca ',' por '.' (decimal)
+    if (s.indexOf(',') > -1 && s.indexOf('.') > -1) {
+      s = s.replace(/\./g, '').replace(/,/g, '.');
+    } else if (s.indexOf(',') > -1) {
+      // '1000,50' -> '1000.50'
+      s = s.replace(/,/g, '.');
+    }
+    // Remove any non-number (except dot and minus)
+    s = s.replace(/[^0-9.-]/g, '');
+    const n = parseFloat(s);
+    return isNaN(n) ? 0 : n;
   };
 
   const toggleOrdem = (coluna: string) => {
@@ -491,21 +660,20 @@ const TabelaExtrato: React.FC<Props> = ({
       return rubricaOk && subrubricaOk && fornecedorOk && rubricaContabilOk;
     });
 
+
     if (!ordem) {
-      // Mesmo sem ordenação específica, garantir que lançamentos futuros fiquem no final
-      const dadosOrdenadosPorTipo = dadosFiltrados.sort((a, b) => {
+      // Ordena sempre pelo campo 'ordem' (do banco) e garante lançamentos futuros no final
+      const dadosOrdenadosPorOrdem = [...dadosFiltrados].sort((a, b) => {
         const aFuturo = a.lancamentoFuturo || false;
         const bFuturo = b.lancamentoFuturo || false;
-
-        // Se um é futuro e outro não, o futuro vai para o final
         if (aFuturo && !bFuturo) return 1;
         if (!aFuturo && bFuturo) return -1;
-
-        // Se ambos são do mesmo tipo, mantém a ordem original
-        return 0;
+        // Se ambos são do mesmo tipo, ordena pelo campo 'ordem'
+        const ordemA = typeof a.ordem === 'number' ? a.ordem : 99999;
+        const ordemB = typeof b.ordem === 'number' ? b.ordem : 99999;
+        return ordemA - ordemB;
       });
-
-      setDadosOrdenados(dadosOrdenadosPorTipo);
+      setDadosOrdenados(dadosOrdenadosPorOrdem);
       return;
     }
 
@@ -543,7 +711,6 @@ const TabelaExtrato: React.FC<Props> = ({
 
 
 
-  console.log(dadosOrdenados);
   return (
     <div className="flex justify-center items-center mt-8">
       <div className="w-[5000px] bg-white rounded-lg shadow-lg p-4">
@@ -577,6 +744,14 @@ const TabelaExtrato: React.FC<Props> = ({
 
                     const fornecedorSelecionado = fornecedoresFormatados.find(opt => opt.label === edit.fornecedorSelecionado);
 
+                    // Calcula valor considerando inputs como dígitos (centavos)
+                    const valorCampoLote = (() => {
+                      if (edit.entrada != null && edit.entrada !== '') return parseMoedaInput(edit.entrada as any);
+                      if (edit.saida != null && edit.saida !== '') return parseMoedaInput(edit.saida as any);
+                      if (typeof originalRow?.valor === 'number') return originalRow.valor as number;
+                      return extrairNumero(String(originalRow?.entrada || originalRow?.saida || '0'));
+                    })();
+
                     const payload: Partial<Extrato> = {
                       data: formatarDataParaISO(edit.data ?? originalRow?.data),
                       nomeNoExtrato: edit.nomeNoExtrato ?? originalRow?.nomeNoExtrato,
@@ -584,8 +759,8 @@ const TabelaExtrato: React.FC<Props> = ({
                       descricao: edit.observacao ?? originalRow?.observacao,
                       idCategoria: idCategoriaFinal ?? null,
                       tipoDeTransacao: edit.entrada ? "ENTRADA" : (edit.saida ? "SAIDA" : originalRow?.tipoDeTransacao),
-                      valor: parseFloat(edit.entrada || edit.saida || String(originalRow?.valor || "0")),
-                      juros: edit.juros != null ? extrairNumero(String(edit.juros)) : originalRow?.juros ?? null,
+                      valor: valorCampoLote,
+                      juros: edit.juros != null ? parseMoedaInput(edit.juros as any) : originalRow?.juros ?? null,
                       mesReferencia: edit.mesReferencia != null ? normalizarMesReferencia(String(edit.mesReferencia)) || null : originalRow?.mesReferencia ?? null,
                     };
                     if (edit.fornecedorSelecionado && fornecedorSelecionado && typeof fornecedorSelecionado.value === 'number') {
@@ -660,7 +835,7 @@ const TabelaExtrato: React.FC<Props> = ({
                 {/* Rubrica (apenas pai) */}
                 <div>
                   <h4 className="font-semibold mb-1">Rubrica</h4>
-                  {[...new Set(dados.map(d => d.rubricaPaiNome || d.rubricaSelecionada))].map((r, i) => (
+                  {uniqueRubricas.map((r, i) => (
                     <label key={i} className="flex items-center gap-2 mb-1">
                       <input
                         type="checkbox"
@@ -681,7 +856,7 @@ const TabelaExtrato: React.FC<Props> = ({
                 {/* Fornecedor */}
                 <div>
                   <h4 className="font-semibold mb-1">Fornecedor</h4>
-                  {[...new Set(dados.map(d => d.fornecedorSelecionado))].map((f, i) => (
+                  {uniqueFornecedores.map((f, i) => (
                     <label key={i} className="flex items-center gap-2 mb-1">
                       <input
                         type="checkbox"
@@ -702,7 +877,7 @@ const TabelaExtrato: React.FC<Props> = ({
                 {/* Rubrica Contábil */}
                 <div>
                   <h4 className="font-semibold mb-1">Rubrica Contábil</h4>
-                  {[...new Set(dados.map(d => d.rubricaContabil))].map((rc, i) => (
+                  {uniqueRubricasContabeis.map((rc, i) => (
                     <label key={i} className="flex items-center gap-2 mb-1">
                       <input
                         type="checkbox"
@@ -723,7 +898,7 @@ const TabelaExtrato: React.FC<Props> = ({
                 {/* Subrubrica (apenas filha da categoria) */}
                 <div>
                   <h4 className="font-semibold mb-1">Subrubrica</h4>
-                  {[...new Set(dados.map(d => d.subrubricaNome).filter(Boolean))].map((sr: string, i: number) => (
+                  {uniqueSubrubricas.map((sr: string, i: number) => (
                     <label key={i} className="flex items-center gap-2 mb-1">
                       <input
                         type="checkbox"
@@ -746,7 +921,47 @@ const TabelaExtrato: React.FC<Props> = ({
           )}
         </div>
 
-
+        {/* Controles de paginação */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-600">Itens por página:</span>
+            <select
+              className="border rounded px-2 py-1 text-sm"
+              value={pageSize}
+              onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+            >
+              {[25, 50, 100, 200, 500].map(sz => (
+                <option key={sz} value={sz}>{sz}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            {futurePage && (
+              <button
+                className="px-3 py-1 rounded border"
+                onClick={() => setCurrentPage(futurePage)}
+                title="Ir para lançamentos futuros"
+              >
+                Ir para previsões
+              </button>
+            )}
+            <button
+              className="px-3 py-1 rounded border disabled:opacity-50"
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+            >
+              Anterior
+            </button>
+            <span>Página {currentPage} de {totalPages}</span>
+            <button
+              className="px-3 py-1 rounded border disabled:opacity-50"
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage >= totalPages}
+            >
+              Próxima
+            </button>
+          </div>
+        </div>
 
         {/* Tabela */}
         <table className="table-auto w-full border-collapse border border-gray-300 text-sm">
@@ -769,9 +984,10 @@ const TabelaExtrato: React.FC<Props> = ({
             </tr>
           </thead>
 
-
           <tbody>
-            {dadosOrdenados.map((row, index) => {
+            {(() => { saldoAcumulado = pageSaldoInicialAcumulado; return null; })()}
+            {Array.from({ length: endIndex - startIndex }, (_, i) => i + startIndex).map((index) => {
+              const row = dadosOrdenados[index];
               const entrada = parseFloat(row.entrada || "0");
               const saida = parseFloat(row.saida || "0");
               const subextratosDoExtrato = subextratos?.filter(
@@ -793,6 +1009,43 @@ const TabelaExtrato: React.FC<Props> = ({
                       </td>
                     </tr>
                   )}
+
+
+                  {/* Aviso de divergência de valor dos subextratos considerando entradas/saídas */}
+                  {(() => {
+                    const subextratosDaLinha = subextratos?.filter(s => s.idExtratoPrincipal === row.id) || [];
+                    // Soma entradas e saídas dos subextratos
+                    const somaEntradas = subextratosDaLinha.filter(s => s.tipoDeTransacao === "ENTRADA").reduce((acc, s) => acc + (parseFloat(s.valor) || 0), 0);
+                    const somaSaidas = subextratosDaLinha.filter(s => s.tipoDeTransacao === "SAIDA").reduce((acc, s) => acc + (parseFloat(s.valor) || 0), 0);
+                    const saldoSubextratos = somaEntradas - somaSaidas;
+                    let valorOriginal = 0;
+                    const tipoOriginal = row.tipoDeTransacao;
+                    if (tipoOriginal === "ENTRADA") {
+                      valorOriginal = parseFloat(row.entrada ?? row.valor ?? "0");
+                    } else if (tipoOriginal === "SAIDA") {
+                      valorOriginal = -Math.abs(parseFloat(row.saida ?? row.valor ?? "0"));
+                    } else {
+                      valorOriginal = parseFloat(row.valor ?? "0");
+                    }
+                    // Para ENTRADA, saldoSubextratos deve ser igual ao valorOriginal
+                    // Para SAIDA, saldoSubextratos deve ser igual ao valorOriginal negativo
+                    let diverge = false;
+                    if (subextratosDaLinha.length > 0) {
+                      if (tipoOriginal === "ENTRADA" && Math.abs(saldoSubextratos - valorOriginal) > 0.01) diverge = true;
+                      if (tipoOriginal === "SAIDA" && Math.abs(saldoSubextratos + valorOriginal) > 0.01) diverge = true;
+                    }
+                    if (diverge) {
+                      return (
+                        <tr>
+                          <td colSpan={100} className="bg-red-50 text-red-700 text-center py-1 animate-pulse border-t border-b border-red-400">
+                            <span className="font-bold">Atenção:</span> Diferença entre rateio de pagamento, no valor de <b>{saldoSubextratos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b> e valor original de <b>{tipoOriginal === "ENTRADA" ? "ENTRADA" : tipoOriginal === "SAIDA" ? "SAÍDA" : ""}</b> (<b>{Math.abs(valorOriginal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>)<br />
+                            <span className="font-bold">Diferença:</span> <b>{(saldoSubextratos - valorOriginal).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b>
+                          </td>
+                        </tr>
+                      );
+                    }
+                    return null;
+                  })()}
 
                   <tr
                     className={`transition-all duration-200 ease-out ${selecionados.includes(row.id)
@@ -825,7 +1078,10 @@ const TabelaExtrato: React.FC<Props> = ({
                       try { if (e.dataTransfer) e.dataTransfer.dropEffect = "move"; } catch { }
                       const rect = (e.currentTarget as HTMLTableRowElement).getBoundingClientRect();
                       const offsetY = e.clientY - rect.top;
-                      const insertPos = offsetY < rect.height / 2 ? index : index + 1;
+                      let insertPos = offsetY < rect.height / 2 ? index : index + 1;
+                      // Permite mover para antes da primeira linha e depois da última
+                      if (insertPos < 0) insertPos = 0;
+                      if (insertPos > dadosOrdenados.length) insertPos = dadosOrdenados.length;
                       if (insertIndex !== insertPos) setInsertIndex(insertPos);
                     }}
                     onDragEnd={() => {
@@ -863,11 +1119,27 @@ const TabelaExtrato: React.FC<Props> = ({
 
                       setDadosOrdenados(novaLista);
 
+
                       try {
                         setIsSavingOrder(true);
                         const ordens = novaLista.map((item, i) => ({ idextrato: item.id, ordem: i + 1 }));
+                        // Validação: IDs únicos e ordens válidas
+                        const ids = ordens.map(o => o.idextrato);
+                        const ordensSet = new Set(ordens.map(o => o.ordem));
+                        const idsSet = new Set(ids);
+                        const hasNullId = ids.some(id => id == null);
+                        const hasNullOrdem = ordens.some(o => o.ordem == null || o.ordem <= 0);
+                        if (ids.length !== idsSet.size || ordensSet.size !== ordens.length || hasNullId || hasNullOrdem) {
+                          alert("Erro: IDs duplicados, nulos ou ordens inválidas detectados. Não foi possível salvar a ordem.");
+                          setIsSavingOrder(false);
+                          return;
+                        }
                         await reorderExtratos(ordens);
-                        onAtualizarExtratos();
+                        // Força o refetch dos extratos após reordenação
+                        // mutate removido: anexos agora são buscados por extrato individual
+                        if (typeof onAtualizarExtratos === "function") {
+                          onAtualizarExtratos();
+                        }
                       } catch (err) {
                         console.error("Erro ao salvar ordem:", err);
                         alert("Erro ao salvar nova ordem");
@@ -1042,8 +1314,8 @@ const TabelaExtrato: React.FC<Props> = ({
                           type="text"
                           value={formatarMoedaDigitar(editData.juros || '')}
                           onChange={(e) => {
-                            const rawValue = e.target.value.replace(/[^\d,]/g, "").replace(",", ".");
-                            setEditData({ ...editData, juros: rawValue });
+                            const digits = e.target.value.replace(/\D/g, "");
+                            setEditData({ ...editData, juros: digits });
                           }}
                           className="w-full border px-2 py-1 text-right"
                         />
@@ -1058,8 +1330,8 @@ const TabelaExtrato: React.FC<Props> = ({
                           type="text"
                           value={formatarMoedaDigitar(editData.entrada)}
                           onChange={(e) => {
-                            const rawValue = e.target.value.replace(/[^\d,]/g, "").replace(",", ".");
-                            setEditData({ ...editData, entrada: rawValue });
+                            const digits = e.target.value.replace(/\D/g, "");
+                            setEditData({ ...editData, entrada: digits });
                           }}
                           className="w-full border px-2 py-1 text-right"
                         />
@@ -1073,8 +1345,8 @@ const TabelaExtrato: React.FC<Props> = ({
                           type="text"
                           value={formatarMoedaDigitar(editData.saida)} // Formata na exibição
                           onChange={(e) => {
-                            const rawValue = e.target.value.replace(/[^\d,]/g, "").replace(",", ".");
-                            setEditData({ ...editData, saida: rawValue });
+                            const digits = e.target.value.replace(/\D/g, "");
+                            setEditData({ ...editData, saida: digits });
                           }}
                           className="w-full border px-2 py-1 text-right"
                         />
@@ -1097,19 +1369,17 @@ const TabelaExtrato: React.FC<Props> = ({
                         >
                           <FaPaperclip size={16} className="text-gray-700" />
                         </button>
-                        {anexos
-                          .filter((a) => a.idExtrato === row.id)
-                          .map((an) => (
-                            <button
-                              key={an.idAnexo}
-                              className={`px-2 py-1 rounded text-xs border ${baixandoAnexoId === an.idAnexo ? "bg-blue-200 text-blue-800" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}
-                              onClick={() => handleDownloadAnexo(an)}
-                              title={an.nomeArquivo}
-                              disabled={baixandoAnexoId === an.idAnexo}
-                            >
-                              {an.tipoExtratoAnexo?.toUpperCase() || "ARQ"}
-                            </button>
-                          ))}
+                        {(anexosPorExtrato[row.id] || []).map((an: any) => (
+                          <button
+                            key={an.idAnexo}
+                            className={`px-2 py-1 rounded text-xs border ${baixandoAnexoId === an.idAnexo ? "bg-blue-200 text-blue-800" : "bg-blue-100 text-blue-700 hover:bg-blue-200"}`}
+                            onClick={() => handleDownloadAnexo(an)}
+                            title={an.nomeArquivo}
+                            disabled={baixandoAnexoId === an.idAnexo}
+                          >
+                            {an.tipoExtratoAnexo?.toUpperCase() || "ARQ"}
+                          </button>
+                        ))}
                       </div>
                     </td>
 
@@ -1131,6 +1401,14 @@ const TabelaExtrato: React.FC<Props> = ({
                               <FaEdit size={20} />
                             </button>
 
+                            <button
+                              className="text-purple-600 hover:text-purple-700"
+                              title={subdividindoIndex === row.id ? "Fechar subdivisão" : "Subdividir (adicionar subextrato)"}
+                              onClick={() => setSubdividindoIndex(prev => prev === row.id ? null : row.id)}
+                            >
+                              <FaDivide size={20} />
+                            </button>
+
                             {row.lancamentoFuturo && (
                               <button
                                 className="text-green-600 hover:text-green-700"
@@ -1142,6 +1420,21 @@ const TabelaExtrato: React.FC<Props> = ({
                                   <span className="animate-spin inline-block w-5 h-5 border-2 border-green-600 border-t-transparent rounded-full"></span>
                                 ) : (
                                   <FaCheck size={20} />
+                                )}
+                              </button>
+                            )}
+
+                            {!row.lancamentoFuturo && (
+                              <button
+                                className="text-amber-600 hover:text-amber-700"
+                                title="Transformar em previsão"
+                                onClick={() => handleMarcarComoPrevisao(row.id)}
+                                disabled={marcandoPrevisaoId === row.id}
+                              >
+                                {marcandoPrevisaoId === row.id ? (
+                                  <span className="animate-spin inline-block w-5 h-5 border-2 border-amber-500 border-t-transparent rounded-full"></span>
+                                ) : (
+                                  <FaClock size={20} />
                                 )}
                               </button>
                             )}
@@ -1173,7 +1466,7 @@ const TabelaExtrato: React.FC<Props> = ({
                     </td>
                   </tr>
 
-                  {subdividindoIndex === index && (
+            {subdividindoIndex === row.id && (
                     <tr className="bg-blue-50 text-xs">
                       <td className="border px-2 py-2 text-center">—</td>
                       <td className="border px-2 py-2 whitespace-nowrap">
@@ -1181,7 +1474,7 @@ const TabelaExtrato: React.FC<Props> = ({
                           type="date"
                           className="w-full px-2 py-1 border"
                           value={novoSubextrato.data || ""}
-                          onChange={(e) => setNovoSubextrato({ ...novoSubextrato, data: e.target.value.split("/").reverse().join("-") })}
+                          onChange={(e) => setNovoSubextrato({ ...novoSubextrato, data: e.target.value })}
                           required
                         />
                       </td>
@@ -1288,32 +1581,57 @@ const TabelaExtrato: React.FC<Props> = ({
                           }}
                         />
                       </td>
-                      <td className="border px-2 py-2 text-center">—</td>
+                      {/* Saldo (subextrato não afeta) */}
                       <td className="border px-2 py-2 text-right">—</td>
+                      {/* Anexos (não aplicável em subextrato inline) */}
                       <td className="border px-2 py-2 text-center">—</td>
+                      {/* Ferramentas: Salvar/Cancelar */}
                       <td className="border px-2 py-2 text-center">
-                        <button
-                          className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
-                          onClick={async () => {
-                            try {
-                              const payload = {
-                                ...novoSubextrato,
-                                idExtratoPrincipal: row.id,
-                                valor: parsePtBrToFloat(novoSubextrato.valor || "0"),
-                              };
-                              await criarSubextrato(payload);
+                        <div className="flex items-center justify-center gap-3">
+                          <button
+                            className="text-green-600 hover:text-green-700 inline-flex items-center gap-1"
+                            title="Salvar subextrato"
+                            onClick={async () => {
+                              try {
+                                const payload: any = {
+                                  idExtratoPrincipal: row.id,
+                                  data: novoSubextrato.data,
+                                  nomeNoExtrato: novoSubextrato.nomeNoExtrato || null,
+                                  observacao: novoSubextrato.observacao || null,
+                                  rubricaContabil: novoSubextrato.rubricaContabil || null,
+                                  tipoDeTransacao: novoSubextrato.tipoDeTransacao,
+                                  valor: parsePtBrToFloat(novoSubextrato.valor || "0"),
+                                };
+                                if (novoSubextrato.categoria) {
+                                  payload.categoria = { idcategoria: novoSubextrato.categoria };
+                                }
+                                if (novoSubextrato.fornecedor) {
+                                  payload.fornecedor = { idfornecedor: novoSubextrato.fornecedor };
+                                }
+                                await criarSubextrato(payload);
+                                setSubdividindoIndex(null);
+                                setNovoSubextrato({});
+                                if (typeof onAtualizarSubextratos === "function") {
+                                  onAtualizarSubextratos();
+                                }
+                              } catch (error) {
+                                console.error("Erro ao criar subextrato:", error);
+                              }
+                            }}
+                          >
+                            <FaSave size={18} />
+                          </button>
+                          <button
+                            className="text-red-500 hover:text-red-600 inline-flex items-center gap-1"
+                            title="Cancelar subdivisão"
+                            onClick={() => {
                               setSubdividindoIndex(null);
                               setNovoSubextrato({});
-                              if (typeof onAtualizarSubextratos === "function") {
-                                onAtualizarSubextratos();
-                              }
-                            } catch (error) {
-                              console.error("Erro ao criar subextrato:", error);
-                            }
-                          }}
-                        >
-                          Salvar
-                        </button>
+                            }}
+                          >
+                            <FaTimes size={18} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )}
@@ -1322,51 +1640,206 @@ const TabelaExtrato: React.FC<Props> = ({
                     subextratosDoExtrato.map((sub) => (
                       <tr key={`subextrato-${sub.idSubextrato}`} className="bg-yellow-100 text-xs">
                         <td className="border px-2 py-2 text-center">—</td>
-                        <td className="border px-2 py-2 whitespace-nowrap">{sub.data}</td>
-
-                        {/* Mês referência placeholder */}
-                        <td className="border px-2 py-2 text-center">—</td>
-
                         <td className="border px-2 py-2 whitespace-nowrap">
-                          {sub.categoria?.nome || "—"}
+                          {editandoSubId === sub.idSubextrato ? (
+                            <input
+                              type="date"
+                              className="w-full px-2 py-1 border"
+                              value={subEdit.data || ""}
+                              onChange={(e) => setSubEdit((p: any) => ({ ...p, data: e.target.value }))}
+                            />
+                          ) : (
+                            sub.data
+                          )}
+                        </td>
+
+                        {/* Mês referência */}
+                        <td className="border px-2 py-2 whitespace-nowrap">
+                          {editandoSubId === sub.idSubextrato ? (
+                            <input
+                              type="text"
+                              value={formatarMesReferencia((subEdit as any).mesReferencia)}
+                              onChange={(e) => setSubEdit((p: any) => ({ ...p, mesReferencia: e.target.value }))}
+                              placeholder="MM/AAAA ou YYYY-MM"
+                              className="w-28 border px-2 py-1"
+                            />
+                          ) : (
+                            formatarMesReferencia(sub.mesReferencia)
+                          )}
                         </td>
 
                         <td className="border px-2 py-2 whitespace-nowrap">
-                          {sub.fornecedor?.nome || "—"}
+                          {editandoSubId === sub.idSubextrato ? (
+                            <CustomDropdown
+                              label="Rubrica"
+                              options={categoriasFormatadas}
+                              selectedValue={(function(){
+                                const idSel = (subEdit as any).idCategoriaSelecionada ?? sub.categoria?.idcategoria;
+                                return categoriasFormatadas.find((opt: any) => opt.value === idSel) || { label: "", value: "" };
+                              })()}
+                              onSelect={(opt: any) => setSubEdit((p: any) => ({ ...p, idCategoriaSelecionada: opt.value }))}
+                              type="rubrica"
+                            />
+                          ) : (
+                            sub.categoria?.nome || "—"
+                          )}
                         </td>
 
                         <td className="border px-2 py-2 whitespace-nowrap">
-                          {sub.observacao || "—"}
+                          {editandoSubId === sub.idSubextrato ? (
+                            <CustomDropdown
+                              label="Fornecedor"
+                              options={fornecedoresFormatados}
+                              selectedValue={(function(){
+                                const idSel = (subEdit as any).idFornecedorSelecionado ?? sub.fornecedor?.idfornecedor;
+                                return fornecedoresFormatados.find((opt: any) => opt.value === idSel) || { label: "", value: "" };
+                              })()}
+                              onSelect={(opt: any) => setSubEdit((p: any) => ({ ...p, idFornecedorSelecionado: opt.value }))}
+                              type="fornecedor"
+                            />
+                          ) : (
+                            sub.fornecedor?.nome || "—"
+                          )}
                         </td>
 
                         <td className="border px-2 py-2 whitespace-nowrap">
-                          {sub.nomeNoExtrato || "—"}
-
+                          {editandoSubId === sub.idSubextrato ? (
+                            <input
+                              type="text"
+                              className="w-full px-2 py-1 border"
+                              value={subEdit.observacao || ""}
+                              onChange={(e) => setSubEdit((p: any) => ({ ...p, observacao: e.target.value }))}
+                            />
+                          ) : (
+                            sub.observacao || "—"
+                          )}
                         </td>
 
                         <td className="border px-2 py-2 whitespace-nowrap">
-                          {sub.rubricaContabil || "—"}
+                          {editandoSubId === sub.idSubextrato ? (
+                            <input
+                              type="text"
+                              className="w-full px-2 py-1 border"
+                              value={subEdit.nomeNoExtrato || ""}
+                              onChange={(e) => setSubEdit((p: any) => ({ ...p, nomeNoExtrato: e.target.value }))}
+                            />
+                          ) : (
+                            sub.nomeNoExtrato || "—"
+                          )}
                         </td>
 
-                        {/* Juros e multa placeholder */}
-                        <td className="border px-2 py-2 text-right whitespace-nowrap">—</td>
+                        <td className="border px-2 py-2 whitespace-nowrap">
+                          {editandoSubId === sub.idSubextrato ? (
+                            <input
+                              type="text"
+                              className="w-full px-2 py-1 border"
+                              value={subEdit.rubricaContabil || ""}
+                              onChange={(e) => setSubEdit((p: any) => ({ ...p, rubricaContabil: e.target.value }))}
+                            />
+                          ) : (
+                            sub.rubricaContabil || "—"
+                          )}
+                        </td>
+
+                        {/* Juros e multa */}
+                        <td className="border px-2 py-2 text-right whitespace-nowrap">
+                          {editandoSubId === sub.idSubextrato ? (
+                            <input
+                              type="text"
+                              value={formatarMoedaDigitar((subEdit as any).juros || "")}
+                              onChange={(e) => {
+                                const rawValue = e.target.value.replace(/[^\d,]/g, "").replace(",", ".");
+                                setSubEdit((p: any) => ({ ...p, juros: rawValue }));
+                              }}
+                              className="w-full border px-2 py-1 text-right"
+                            />
+                          ) : (
+                            sub.juros != null ? formatarMoeda(sub.juros) : "—"
+                          )}
+                        </td>
 
                         <td className="border px-2 py-2 text-right whitespace-nowrap">
-                          {sub.tipoDeTransacao === "ENTRADA"
-                            ? Number(sub.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })
-                            : ""}
+                          {editandoSubId === sub.idSubextrato ? (
+                            <input
+                              type="text"
+                              className="w-full px-2 py-1 border text-right"
+                              placeholder="Entrada"
+                              value={subEdit.tipoDeTransacao === "ENTRADA" ? subEdit.valor || "" : ""}
+                              onChange={(e) => {
+                                const numeros = e.target.value.replace(/\D/g, "");
+                                const numero = Number(numeros) / 100;
+                                setSubEdit((p: any) => ({ ...p, tipoDeTransacao: "ENTRADA", valor: numero.toLocaleString("pt-BR", { minimumFractionDigits: 2 }) }));
+                              }}
+                            />
+                          ) : (
+                            sub.tipoDeTransacao === "ENTRADA"
+                              ? Number(sub.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })
+                              : ""
+                          )}
                         </td>
 
                         <td className="border px-2 py-2 text-right whitespace-nowrap">
-                          {sub.tipoDeTransacao === "SAIDA"
-                            ? Number(sub.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })
-                            : ""}
+                          {editandoSubId === sub.idSubextrato ? (
+                            <input
+                              type="text"
+                              className="w-full px-2 py-1 border text-right"
+                              placeholder="Saída"
+                              value={subEdit.tipoDeTransacao === "SAIDA" ? subEdit.valor || "" : ""}
+                              onChange={(e) => {
+                                const numeros = e.target.value.replace(/\D/g, "");
+                                const numero = Number(numeros) / 100;
+                                setSubEdit((p: any) => ({ ...p, tipoDeTransacao: "SAIDA", valor: numero.toLocaleString("pt-BR", { minimumFractionDigits: 2 }) }));
+                              }}
+                            />
+                          ) : (
+                            sub.tipoDeTransacao === "SAIDA"
+                              ? Number(sub.valor).toLocaleString("pt-BR", { minimumFractionDigits: 2 })
+                              : ""
+                          )}
                         </td>
 
+                        {/* Saldo */}
                         <td className="border px-2 py-2 text-center whitespace-nowrap">—</td>
+                        {/* Anexos */}
                         <td className="border px-2 py-2 text-right whitespace-nowrap">—</td>
-                        <td className="border px-2 py-2 text-center">—</td>
-                        <td className="border px-2 py-2 text-center">—</td>
+                        {/* Ferramentas */}
+                        <td className="border px-2 py-2 text-center">
+                          {editandoSubId === sub.idSubextrato ? (
+                            <div className="flex items-center justify-center gap-3">
+                              <button
+                                className="text-green-600 hover:text-green-700"
+                                title="Salvar subextrato"
+                                onClick={() => salvarSub(sub)}
+                              >
+                                <FaSave size={16} />
+                              </button>
+                              <button
+                                className="text-red-500 hover:text-red-600"
+                                title="Cancelar edição"
+                                onClick={cancelarSub}
+                              >
+                                <FaTimes size={16} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center gap-3">
+                              <button
+                                className="text-blue-600 hover:text-blue-700"
+                                title="Editar subextrato"
+                                onClick={() => iniciarEdicaoSub(sub)}
+                              >
+                                <FaEdit size={16} />
+                              </button>
+                              <button
+                                className="text-red-500 hover:text-red-600"
+                                title="Excluir subextrato"
+                                onClick={() => excluirSub(sub.idSubextrato)}
+                              >
+                                <FaTrash size={16} />
+                              </button>
+                            </div>
+                          )}
+                        </td>
                       </tr>
                     ))
                   )}
@@ -1386,20 +1859,18 @@ const TabelaExtrato: React.FC<Props> = ({
 
           </tbody>
         </table>
-        {anexosVisiveis && extratoSelecionado !== null && (
-          <Anexos
-            idExtrato={extratoSelecionado} // ← ESSENCIAL
-            anexos={anexos.filter(a => a.idExtrato === extratoSelecionado)}
-            onFechar={() => setAnexosVisiveis(false)}
-            onAtualizar={() => mutate()}
-          />
+        {anexosVisiveis && extratoSelecionado !== null && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center" style={{ backdropFilter: 'blur(6px)', background: 'rgba(0,0,0,0.5)' }}>
+            <Anexos
+              idExtrato={extratoSelecionado}
+              anexos={anexosPorExtrato[extratoSelecionado] || []}
+              onFechar={() => setAnexosVisiveis(false)}
+              onAtualizar={() => { if (typeof mutate === 'function') mutate(); }}
+            />
+          </div>,
+          document.body
         )}
-        {isSavingOrder && (
-          <div className="fixed bottom-4 right-4 bg-white shadow-lg rounded px-3 py-2 text-sm border">
-            Salvando nova ordem...
-          </div>
-        )}
-        <FullScreenOverlay open={isLoadingSetSaldo}>
+        <FullScreenOverlay open={isLoadingSetSaldo || isLoading}>
           <div className="bg-white p-6 rounded shadow text-center">
             <p className="text-gray-800 font-medium">Processando...</p>
           </div>

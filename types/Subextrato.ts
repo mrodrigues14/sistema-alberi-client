@@ -20,5 +20,7 @@ export interface Categoria {
     idExtratoPrincipal: number;
     observacao: string | null;
     rubricaContabil: string | null;
+    mesReferencia?: string | null;
+    juros?: number | null;
   }
   

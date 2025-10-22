@@ -21,9 +21,7 @@ export const fetcher = async (url: string, options?: RequestInit) => {
   };
 
   // Evita duplicar domínio caso url já venha absoluta ou com protocolo
-  const finalUrl = /^https?:\/\//i.test(url) ? url : `${API_URL}${url.startsWith('/') ? url : `/${url}`}`;
-
-
+  const finalUrl = /^https?:\/+/.test(url) ? url : `${API_URL}${url.startsWith('/') ? url : `/${url}`}`;
 
   const response = await fetch(finalUrl, finalOptions);
 
@@ -33,5 +31,6 @@ export const fetcher = async (url: string, options?: RequestInit) => {
     throw new Error(`Erro: ${response.status} - ${response.statusText}`);
   }
 
-  return response.json();
+  const json = await response.json();
+  return json;
 };

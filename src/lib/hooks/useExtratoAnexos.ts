@@ -19,7 +19,7 @@ export interface ExtratoAnexo {
 // 🔹 Hook para listar todos os anexos
 export function useExtratoAnexos() {
   const { data, error, isLoading, mutate } = useSWR<ExtratoAnexo[]>(`/extrato-anexos`, fetcher);
-
+  console.log('[useExtratoAnexos] data:', data, 'error:', error, 'loading:', isLoading);
   return {
     anexos: data || [],
     isLoading,

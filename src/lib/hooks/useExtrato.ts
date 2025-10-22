@@ -23,13 +23,17 @@ export function useExtratos(idCliente?: number, idBanco?: number, mes?: string, 
 
   if (idCliente && idBanco) {
     query = `/extratos/cliente/${idCliente}/banco/${idBanco}`;
-    console.log(query)
     if (mesNumero && ano) {
       query += `?mes=${mesNumero}&ano=${ano}`;
     }
   }
 
-  const { data, error, isLoading, mutate } = useSWR(query, fetcher);
+  const { data, error, isLoading, mutate } = useSWR(query, fetcher, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    revalidateIfStale: false,
+    dedupingInterval: 120000, // 2 min
+  });
 
   return {
     extratos: data || [],
@@ -70,13 +74,11 @@ export async function updateExtrato(
   updates: Partial<Extrato>
 ) {
   console.log(updates)
-  console.log(idExtrato)
   const response = await fetch(`${API_URL}/extratos/${idExtrato}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updates),
   });
-  console.log(response)
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`Erro ao atualizar extrato: ${response.status} - ${errorText}`);

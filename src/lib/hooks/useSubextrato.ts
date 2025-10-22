@@ -48,7 +48,7 @@ export function useSubextrato(id?: number) {
 
 // 🔹 Atualizar um subextrato
 export async function atualizarSubextrato(id: number, updates: Partial<Subextrato>): Promise<Subextrato> {
-  const response = await fetch(`/subextrato/${id}`, {
+  const response = await fetch(`${API_URL}/subextrato/${id}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -65,7 +65,7 @@ export async function atualizarSubextrato(id: number, updates: Partial<Subextrat
 
 // 🔹 Deletar um subextrato
 export async function deletarSubextrato(id: number): Promise<void> {
-  const response = await fetch(`/subextrato/${id}`, {
+  const response = await fetch(`${API_URL}/subextrato/${id}`, {
     method: "DELETE",
   });
 
